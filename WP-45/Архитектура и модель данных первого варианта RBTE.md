@@ -511,6 +511,46 @@ PSD, OCE, HCD, RMP и SIE. Наличие записи не включает д�
 
 `id`, `ai_message_id`, `fragment_id`, `mcp_query`, `use_kind`, `rank`, `created_at`.
 
+#### `domain_work_products`
+
+`id`, `revision_id`, `domain`, `pattern_id`, `product_kind`, `status`,
+`source_product_id` nullable, `content_ref`, `created_by`, `created_at`.
+
+Запись хранит непосредственного владельца результата и связь передачи между
+доменами. Наличие результата одного домена не присваивает ему статус результата
+принимающего домена.
+
+#### `administrative_cases`
+
+`id`, `revision_id`, `service_kind`, `applicable_policy_version`, `requested_by`,
+`decided_by`, `authority_scope`, `status`, `outcome_ref`, `reason_code`,
+`effective_at`, `created_at`.
+
+Административное разрешение, содержательное решение и выполненное действие
+хранятся раздельно. Изменение политики применяется с установленного момента и не
+переписывает ранее открытый случай без отдельного решения.
+
+#### `research_runs`
+
+`id`, `revision_id`, `question_product_id`, `design_product_id`,
+`protocol_product_id`, `execution_status`, `evidence_set_ref`,
+`validity_product_id`, `synthesis_product_id`, `transfer_product_id`,
+`started_at`, `completed_at`.
+
+План исследования не становится фактом выполнения. Каждый последующий результат
+ссылается на фактически предшествующий продукт RMP; исследовательский маршрут
+остаётся условным.
+
+#### `learning_material_evaluations`
+
+`id`, `revision_id`, `material_version`, `audience_ref`, `task_ref`,
+`support_conditions`, `initial_work_ref`, `evaluation_product_id`,
+`repair_scope`, `post_repair_work_ref`, `created_at`.
+
+Оценка материала отделена от оценки способности человека и утверждения об
+эффекте обучения. После ремонта повторно проверяется затронутое использование, а
+не автоматически весь материал.
+
 ### 9.9. Аудит
 
 #### `audit_events`
