@@ -551,6 +551,27 @@ PSD, OCE, HCD, RMP и SIE. Наличие записи не включает д�
 эффекте обучения. После ремонта повторно проверяется затронутое использование, а
 не автоматически весь материал.
 
+#### `advice_utility_checks`
+
+`id`, `revision_id`, `recipient_ref`, `current_decision_ref`, `proposed_work_ref`,
+`expected_decision_contribution`, `availability`, `time_limit`, `cost_limit`,
+`risk_limit`, `outcome`, `created_at`.
+
+Запись о пробеле в данных не становится заданием на сбор. Дополнительная работа
+допускается, только если её результат способен изменить текущее решение адресата
+и выполним в заявленных ограничениях.
+
+#### `engineering_change_cases`
+
+`id`, `revision_id`, `required_contribution`, `operating_conditions`,
+`asset_ref`, `eam_option_ref`, `constraints`, `investment_authority_ref`,
+`commissioning_result_ref`, `capability_result_ref`, `system_result_ref`,
+`status`, `created_at`.
+
+Решение о жизненном цикле актива принадлежит EAM. Ввод актива, способность
+организации использовать его и системный результат хранятся раздельно; мандат
+на трансформацию не считается инвестиционным полномочием.
+
 ### 9.9. Аудит
 
 #### `audit_events`
