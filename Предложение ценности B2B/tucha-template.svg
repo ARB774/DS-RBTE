@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200"
+     height="720"
+     viewBox="0 0 1200 720"
+     role="img"
+     aria-labelledby="svg-title svg-description">
+  <title id="svg-title">Канонический шаблон тучи для ИИ-наставника</title>
+  <desc id="svg-description">
+    Блок A расположен слева между рядами. B находится строго над C, D — строго
+    над D′. Стрелки направлены от D к B, от D′ к C, от B к A и от C к A.
+    Между D и D′ расположен красный двунаправленный конфликт в форме молнии.
+  </desc>
+  <metadata>
+    Канонические элементы: node-a, node-b, node-c, node-d, node-d-prime;
+    edge-d-b, edge-d-prime-c, edge-b-a, edge-c-a; conflict-d-d-prime.
+    Наставник меняет только заголовок, текст, статус и класс is-active.
+    Координаты, направления стрелок и набор связей являются инвариантами.
+  </metadata>
+
+  <defs>
+    <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#183b66" flood-opacity="0.10"/>
+    </filter>
+
+    <marker id="arrow-blue"
+            viewBox="0 0 12 12"
+            refX="10"
+            refY="6"
+            markerWidth="8"
+            markerHeight="8"
+            orient="auto"
+            markerUnits="strokeWidth">
+      <path d="M 1 1 L 11 6 L 1 11 Z" fill="#366ca8"/>
+    </marker>
+
+    <marker id="arrow-red"
+            viewBox="0 0 12 12"
+            refX="10"
+            refY="6"
+            markerWidth="8"
+            markerHeight="8"
+            orient="auto-start-reverse"
+            markerUnits="strokeWidth">
+      <path d="M 1 1 L 11 6 L 1 11 Z" fill="#d92d20"/>
+    </marker>
+
+    <style>
+      .canvas { fill: #f7f9fc; }
+      .title { font: 700 30px "Segoe UI", Arial, sans-serif; fill: #172b4d; }
+      .eyebrow { font: 700 14px "Segoe UI", Arial, sans-serif; letter-spacing: 0.08em; fill: #366ca8; }
+      .check { font: 650 15px "Segoe UI", Arial, sans-serif; fill: #6b778c; }
+      .node-card {
+        fill: #ffffff;
+        stroke: #366ca8;
+        stroke-width: 2.5;
+        filter: url(#card-shadow);
+      }
+      .node-label { font: 750 22px "Segoe UI", Arial, sans-serif; fill: #172b4d; }
+      .node-content { font: 400 18px "Segoe UI", Arial, sans-serif; fill: #5e6c84; }
+      .edge {
+        fill: none;
+        stroke: #366ca8;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        marker-end: url(#arrow-blue);
+      }
+      .conflict {
+        fill: none;
+        stroke: #d92d20;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        marker-start: url(#arrow-red);
+        marker-end: url(#arrow-red);
+      }
+      .node.is-active .node-card { stroke: #175cd3; stroke-width: 5; }
+      .edge.is-active { stroke: #175cd3; stroke-width: 5; }
+      .conflict.is-active { stroke-width: 5; }
+      .is-muted { opacity: 0.34; }
+    </style>
+  </defs>
+
+  <rect class="canvas" x="0" y="0" width="1200" height="720" rx="28"/>
+
+  <g id="header">
+    <text class="eyebrow" x="60" y="60">ТЕКУЩАЯ ТУЧА</text>
+    <text id="cloud-title" class="title" x="60" y="104">Туча клиента — текущая версия</text>
+    <text id="check-title" class="check" x="1140" y="62" text-anchor="end">ПРОВЕРКА —</text>
+  </g>
+
+  <!-- Связи рисуются под блоками. Подписи на стрелках запрещены. -->
+  <g id="edges" aria-label="Логические связи">
+    <path id="edge-d-b" class="edge" d="M 808 220 L 668 220"/>
+    <path id="edge-d-prime-c" class="edge" d="M 808 520 L 668 520"/>
+    <path id="edge-b-a" class="edge" d="M 360 220 L 288 335"/>
+    <path id="edge-c-a" class="edge" d="M 360 520 L 288 405"/>
+  </g>
+
+  <path id="conflict-d-d-prime"
+        class="conflict"
+        d="M 960 322 L 918 365 L 982 365 L 940 418"/>
+
+  <g id="node-a" class="node" data-slot="A">
+    <rect class="node-card" x="60" y="295" width="220" height="150" rx="24"/>
+    <text class="node-label" x="84" y="333">A</text>
+    <text id="content-a" class="node-content" x="84" y="373">
+      <tspan x="84" dy="0">Пока не</tspan>
+      <tspan x="84" dy="28">сформулировано</tspan>
+    </text>
+  </g>
+
+  <g id="node-b" class="node" data-slot="B">
+    <rect class="node-card" x="360" y="130" width="300" height="180" rx="28"/>
+    <text class="node-label" x="388" y="170">B</text>
+    <text id="content-b" class="node-content" x="388" y="214">
+      <tspan x="388" dy="0">Пока не</tspan>
+      <tspan x="388" dy="28">сформулировано</tspan>
+    </text>
+  </g>
+
+  <g id="node-c" class="node" data-slot="C">
+    <rect class="node-card" x="360" y="430" width="300" height="180" rx="28"/>
+    <text class="node-label" x="388" y="470">C</text>
+    <text id="content-c" class="node-content" x="388" y="514">
+      <tspan x="388" dy="0">Пока не</tspan>
+      <tspan x="388" dy="28">сформулировано</tspan>
+    </text>
+  </g>
+
+  <g id="node-d" class="node" data-slot="D">
+    <rect class="node-card" x="808" y="130" width="332" height="180" rx="28"/>
+    <text class="node-label" x="836" y="170">D</text>
+    <text id="content-d" class="node-content" x="836" y="214">
+      <tspan x="836" dy="0">Пока не</tspan>
+      <tspan x="836" dy="28">сформулировано</tspan>
+    </text>
+  </g>
+
+  <g id="node-d-prime" class="node" data-slot="D-prime">
+    <rect class="node-card" x="808" y="430" width="332" height="180" rx="28"/>
+    <text class="node-label" x="836" y="470">D′</text>
+    <text id="content-d-prime" class="node-content" x="836" y="514">
+      <tspan x="836" dy="0">Пока не</tspan>
+      <tspan x="836" dy="28">сформулировано</tspan>
+    </text>
+  </g>
+</svg>
