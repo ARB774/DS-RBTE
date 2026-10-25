@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="620" viewBox="0 0 1600 620" role="img" aria-labelledby="svg-title svg-description">
+  <title id="svg-title">Увеличенный фрагмент второй Тучи C1 — блок D</title>
+  <desc id="svg-description">Крупно показаны A, сформулированный B, активный незаполненный D и стрелки D к B и B к A.</desc>
+  <metadata>Источник: версия второй независимой Тучи C1 после блока B. Активный элемент: D.</metadata>
+  <defs>
+    <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#183b66" flood-opacity="0.10"/></filter>
+    <marker id="arrow-blue" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto" markerUnits="strokeWidth"><path d="M 1 1 L 11 6 L 1 11 Z" fill="#366ca8"/></marker>
+    <style>.canvas{fill:#f7f9fc}.title{font:700 46px "Segoe UI",Arial,sans-serif;fill:#172b4d}.eyebrow{font:700 24px "Segoe UI",Arial,sans-serif;letter-spacing:.07em;fill:#175cd3}.node-card{fill:#fff;stroke:#366ca8;stroke-width:4;filter:url(#card-shadow)}.node-label{font:750 44px "Segoe UI",Arial,sans-serif;fill:#172b4d}.node-content{font:400 42px "Segoe UI",Arial,sans-serif;fill:#5e6c84}.edge{fill:none;stroke:#366ca8;stroke-width:5;stroke-linecap:round;marker-end:url(#arrow-blue)}.node.is-active .node-card{stroke:#175cd3;stroke-width:9}.node.is-active .node-label{fill:#175cd3}</style>
+  </defs>
+  <rect class="canvas" x="0" y="0" width="1600" height="620" rx="28"/>
+  <text class="eyebrow" x="40" y="50">УВЕЛИЧЕННЫЙ ФРАГМЕНТ ТЕКУЩЕЙ ПРОВЕРКИ</text>
+  <text class="title" x="40" y="108">Шаг 2: формулируем действие D</text>
+  <path class="edge" d="M 1090 290 L 1015 290"/><path class="edge" d="M 520 310 L 445 355"/>
+  <g class="node" data-slot="A"><rect class="node-card" x="40" y="245" width="390" height="250" rx="30"/><text class="node-label" x="80" y="310">A</text><text class="node-content" x="80" y="375"><tspan x="80" dy="0">Пока не</tspan><tspan x="80" dy="52">сформулировано</tspan></text></g>
+  <g class="node" data-slot="B"><rect class="node-card" x="530" y="140" width="470" height="300" rx="34"/><text class="node-label" x="575" y="215">B</text><text class="node-content" x="575" y="290"><tspan x="575" dy="0">Необходимость</tspan><tspan x="575" dy="52">увеличения продаж</tspan></text></g>
+  <g class="node is-active" data-slot="D"><rect class="node-card" x="1100" y="140" width="460" height="300" rx="34"/><text class="node-label" x="1145" y="215">D — активный блок</text><text class="node-content" x="1145" y="300"><tspan x="1145" dy="0">Пока не</tspan><tspan x="1145" dy="52">сформулировано</tspan></text></g>
+</svg>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Вторая Туча клиента C1 — проверка 3 из 7</title><desc id="desc">НЖЯ — продолжающееся сокращение объёма продаж после обучения менеджеров. A — увеличение прибыли. B — увеличение доходов от продаж. D — приобрести помощь по разработке предложения ценности. C — контроль затрат. D′ — пока не приобретать помощь и продолжать поиск более дешёвого варианта. Проверяется связь C с A.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="32" markerHeight="32" viewBox="0 0 14 14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L14 7 L0 14z" fill="#34495e"/></marker>
+    <marker id="arrow-active" markerWidth="32" markerHeight="32" viewBox="0 0 14 14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L14 7 L0 14z" fill="#1261a0"/></marker>
+    <marker id="conflict-start" markerWidth="34" markerHeight="34" viewBox="0 0 14 14" refX="2" refY="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M14 0 L0 7 L14 14z" fill="#b42318"/></marker>
+    <marker id="conflict-end" markerWidth="34" markerHeight="34" viewBox="0 0 14 14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L14 7 L0 14z" fill="#b42318"/></marker>
+    <style>.check{font:700 30px "Arial Narrow","Segoe UI",Arial,sans-serif;fill:#1261a0}.title{font:700 34px "Arial Narrow","Segoe UI",Arial,sans-serif;fill:#111827}.label{font:800 80px "Arial Narrow","Segoe UI",Arial,sans-serif;fill:#111827}.body{font:600 60px "Arial Narrow","Segoe UI",Arial,sans-serif;fill:#17212f;text-anchor:middle}.dtext{font-size:52px}.compact{font-size:44px}.box{stroke:#34495e;stroke-width:7}.arrow{fill:none;stroke:#34495e;stroke-width:8;marker-end:url(#arrow)}.arrow-active{fill:none;stroke:#1261a0;stroke-width:14;marker-end:url(#arrow-active)}.conflict{fill:none;stroke:#b42318;stroke-width:10;marker-start:url(#conflict-start);marker-end:url(#conflict-end)}</style>
+  </defs>
+  <rect width="1600" height="1200" fill="#fff"/>
+  <text class="check" x="20" y="29">ПРОВЕРКА 3 ИЗ 7: связь C → A</text>
+  <text class="title" x="800" y="59" text-anchor="middle">НЖЯ: Продолжающееся сокращение объёма продаж</text>
+  <text class="title" x="800" y="89" text-anchor="middle">после обучения менеджеров по продажам</text>
+  <path class="arrow" d="M1070 325 L1025 325"/><path class="arrow" d="M1070 945 L1025 945"/><path class="arrow" d="M525 325 C510 325 508 430 495 470"/><path class="arrow-active" d="M525 945 C510 945 508 770 495 730"/><path class="conflict" d="M1320 555 L1320 700"/>
+  <rect class="box" x="15" y="380" width="480" height="440" rx="28" fill="#eaf4ff"/><text class="label" x="48" y="470">A</text><text class="body" x="255" y="575"><tspan x="255">Увеличение</tspan><tspan x="255" dy="78">прибыли</tspan></text>
+  <rect class="box" x="525" y="95" width="500" height="460" rx="28" fill="#eaf4ff"/><text class="label" x="560" y="190">B</text><text class="body" x="775" y="290"><tspan x="775">Увеличение</tspan><tspan x="775" dy="78">доходов</tspan><tspan x="775" dy="78">от продаж</tspan></text>
+  <rect class="box" x="525" y="715" width="500" height="460" rx="28" fill="#eaf4ff"/><text class="label" x="560" y="810">C</text><text class="body" x="775" y="930"><tspan x="775">Контроль</tspan><tspan x="775" dy="78">затрат</tspan></text>
+  <rect class="box" x="1070" y="95" width="515" height="460" rx="28" fill="#eaf4ff"/><text class="label" x="1105" y="190">D</text><text class="body dtext" x="1328" y="275"><tspan x="1328">Приобрести помощь</tspan><tspan x="1328" dy="68">по разработке</tspan><tspan x="1328" dy="68">предложения ценности</tspan></text>
+  <rect class="box" x="1070" y="715" width="515" height="460" rx="28" fill="#eaf4ff"/><text class="label" x="1105" y="810">D′</text><text class="body compact" x="1328" y="860"><tspan x="1328">Пока не приобретать</tspan><tspan x="1328" dy="54">помощь;</tspan><tspan x="1328" dy="54">продолжать поиск</tspan><tspan x="1328" dy="54">более дешёвого</tspan><tspan x="1328" dy="54">варианта</tspan></text>
+</svg>

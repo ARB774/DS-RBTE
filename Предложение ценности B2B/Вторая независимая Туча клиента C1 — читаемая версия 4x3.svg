@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="svg-title svg-description">
+  <title id="svg-title">Вторая независимая Туча C1 — читаемая версия 4 на 3</title>
+  <desc id="svg-description">Полная Туча в пропорции четыре к трём. Одновременно видны A, B, C, D и D′. Блок B выделен и содержит формулировку участника: Необходимость увеличения продаж. Остальные блоки пока не сформулированы.</desc>
+  <metadata>Версия интерфейса 4:3. Активный элемент: B. Содержание B дано участником.</metadata>
+  <defs>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#183b66" flood-opacity="0.10"/></filter>
+    <marker id="blue-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto" markerUnits="strokeWidth"><path d="M1 1 L11 6 L1 11 Z" fill="#366ca8"/></marker>
+    <marker id="red-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M1 1 L11 6 L1 11 Z" fill="#d92d20"/></marker>
+    <style>
+      .canvas{fill:#f7f9fc}.title{font:700 38px "Segoe UI",Arial,sans-serif;fill:#172b4d}.eyebrow{font:700 20px "Segoe UI",Arial,sans-serif;letter-spacing:.06em;fill:#366ca8}.step{font:700 20px "Segoe UI",Arial,sans-serif;fill:#175cd3}.card{fill:#fff;stroke:#366ca8;stroke-width:3.5;filter:url(#shadow)}.label{font:750 36px "Segoe UI",Arial,sans-serif;fill:#172b4d}.content{font:400 34px "Segoe UI",Arial,sans-serif;fill:#5e6c84}.compact{font-size:30px}.edge{fill:none;stroke:#366ca8;stroke-width:4;stroke-linecap:round;marker-end:url(#blue-arrow)}.conflict{fill:none;stroke:#d92d20;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;marker-start:url(#red-arrow);marker-end:url(#red-arrow)}.active .card{stroke:#175cd3;stroke-width:8}.active .label{fill:#175cd3}
+    </style>
+  </defs>
+  <rect class="canvas" x="0" y="0" width="1200" height="900" rx="24"/>
+  <text class="eyebrow" x="30" y="38">ВТОРАЯ НЕЗАВИСИМАЯ ТУЧА</text>
+  <text class="title" x="30" y="88">Туча клиента C1 — полная читаемая версия</text>
+  <text class="step" x="1170" y="38" text-anchor="end">ШАГ 1: УТОЧНЯЕМ B</text>
+
+  <path class="edge" d="M 770 280 L 725 280"/>
+  <path class="edge" d="M 770 700 L 725 700"/>
+  <path class="edge" d="M 350 295 L 318 390"/>
+  <path class="edge" d="M 350 705 L 318 530"/>
+  <path class="conflict" d="M 980 455 L 930 480 L 1015 480 L 965 520"/>
+
+  <g class="node" data-slot="A">
+    <rect class="card" x="30" y="320" width="280" height="280" rx="30"/>
+    <text class="label" x="65" y="380">A</text>
+    <text class="content compact" x="65" y="445"><tspan x="65" dy="0">Пока не</tspan><tspan x="65" dy="42">сформулировано</tspan></text>
+  </g>
+  <g class="node active" data-slot="B">
+    <rect class="card" x="350" y="130" width="360" height="300" rx="32"/>
+    <text class="label" x="390" y="195">B</text>
+    <text class="content" x="390" y="270"><tspan x="390" dy="0">Необходимость</tspan><tspan x="390" dy="46">увеличения продаж</tspan></text>
+  </g>
+  <g class="node" data-slot="C">
+    <rect class="card" x="350" y="550" width="360" height="300" rx="32"/>
+    <text class="label" x="390" y="615">C</text>
+    <text class="content" x="390" y="690"><tspan x="390" dy="0">Пока не</tspan><tspan x="390" dy="46">сформулировано</tspan></text>
+  </g>
+  <g class="node" data-slot="D">
+    <rect class="card" x="770" y="130" width="400" height="300" rx="32"/>
+    <text class="label" x="810" y="195">D</text>
+    <text class="content" x="810" y="270"><tspan x="810" dy="0">Пока не</tspan><tspan x="810" dy="46">сформулировано</tspan></text>
+  </g>
+  <g class="node" data-slot="D-prime">
+    <rect class="card" x="770" y="550" width="400" height="300" rx="32"/>
+    <text class="label" x="810" y="615">D′</text>
+    <text class="content" x="810" y="690"><tspan x="810" dy="0">Пока не</tspan><tspan x="810" dy="46">сформулировано</tspan></text>
+  </g>
+</svg>
