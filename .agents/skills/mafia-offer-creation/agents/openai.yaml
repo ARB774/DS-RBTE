@@ -1,0 +1,7 @@
+interface:
+  display_name: "Mafia Offer Creation"
+  short_description: "Проверяемое B2B-предложение ценности"
+  default_prompt: "Используй $mafia-offer-creation, чтобы провести меня по разработке проверяемого B2B-предложения ценности."
+
+policy:
+  allow_implicit_invocation: true
