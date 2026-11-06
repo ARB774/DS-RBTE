@@ -9,11 +9,13 @@ import {
   type SituationProfile,
   type SituationVisibility,
   revisions,
+  stepDrafts,
   type RevisionKind,
   type SensitivityLevel,
   type SupportLevel,
 } from "@/db/schema";
 import { requireUser } from "@/lib/session";
+import { persistSituation } from "@/lib/create-situation";
 import { UUID } from "@/lib/rbte";
 
 const newSituationSchema = z.object({
@@ -42,37 +44,8 @@ export async function createSituationAction(formData: FormData = {} as any) {
   const situationId = UUID();
   const revisionId = UUID();
 
-  await db.insert(situations).values({
-    id: situationId,
-    creatorId: me.id,
-    title: data.title,
-    profile: data.profile as SituationProfile,
-    signal: data.signal,
-    sensitivity: data.sensitivity as SensitivityLevel,
-    task: data.task ?? null,
-    desiredChange: data.desiredChange ?? null,
-    experience: data.experience ?? null,
-    authority: data.authority ?? null,
-    supportLevel: data.supportLevel as SupportLevel,
-    visibility: "PRIVATE" as SituationVisibility,
-    aiAttemptBaseline: data.baselineAttempt ?? null,
-    baselineReason: data.baselineReason ?? null,
-    currentRevisionId: revisionId,
-    locked: false,
-  });
-
-  await db.insert(revisions).values({
-    id: revisionId,
-    situationId,
-    number: 1,
-    parentId: null,
-    kind: "STEP_41" as RevisionKind,
-    snapshot: JSON.stringify({ step: "4.1", fields: data }),
-    createdBy: me.id,
-    comment: "Создание ситуации. Исходная самостоятельная попытка зафиксирована до содержательной помощи ИИ.",
-  });
-
-  redirect(`/situations/${situationId}/explore`);
+  await persistSituation(db, me, data, situationId, revisionId);
+  redirect(`/situations/${situationId}/${data.profile==='DILEMMA'?'actions':'cloud'}`);
 }
 
 export async function listMySituationsAction() {
@@ -82,7 +55,14 @@ export async function listMySituationsAction() {
     .from(situations)
     .where(eq(situations.creatorId, me.id))
     .orderBy(desc(situations.updatedAt));
-  return rows;
+  const { dilemmaResume }=await import('@/lib/dilemma-navigation');
+  const { hashBasis,contextOf }=await import('@/lib/workflow-store');
+  return Promise.all(rows.map(async row=>{
+    if(row.profile!=='DILEMMA')return row;
+    const drafts=await db.select().from(stepDrafts).where(eq(stepDrafts.situationId,row.id));
+    const resumeStep=dilemmaResume(drafts.map(d=>({...d,fresh:d.fields.__basis===hashBasis(d.step,row.profile,contextOf(row),drafts)})));
+    return {...row,resumeStep};
+  }));
 }
 
 export async function getSituationAction(id: string) {

@@ -1,0 +1,26 @@
+{
+  "version": "al-local-20261014",
+  "note": "Локальная копия; правила Pilot являются адаптацией, а не автоматической сертификацией DPF.",
+  "files": [
+    {
+      "file": "AL.P.002 — Помощь без подмены действия обучающегося.md",
+      "sha256": "a667c0da5a5117d843bb6afe94ef7b6cac798377e637b4f393de52a11418812e",
+      "source": "C:\\Users\\editor\\Documents\\RBTE\\Pack\\pack-al\\AL.P.002 — Помощь без подмены действия обучающегося.md"
+    },
+    {
+      "file": "AL.P.003 — Обратная связь для изменения следующей пробы.md",
+      "sha256": "62d72b977b0f3cc389633877bfbee82a229682637b5ac3ef41cd535f1b5f89d1",
+      "source": "C:\\Users\\editor\\Documents\\RBTE\\Pack\\pack-al\\AL.P.003 — Обратная связь для изменения следующей пробы.md"
+    },
+    {
+      "file": "AL.P.008 — Проверка утверждения об эффекте обучения.md",
+      "sha256": "4a91a52aa8d414e8f27756eacd4f00d99580eca4be33230c1e03e33ab58f1a97",
+      "source": "C:\\Users\\editor\\Documents\\RBTE\\Pack\\pack-al\\AL.P.008 — Проверка утверждения об эффекте обучения.md"
+    },
+    {
+      "file": "work-products.md",
+      "sha256": "8b541a25090181f782655cddd9c78b4c82698c88db069ab2a15dea6571103860",
+      "source": "C:\\Users\\editor\\Documents\\RBTE\\Pack\\pack-al\\04-work-products\\work-products.md"
+    }
+  ]
+}

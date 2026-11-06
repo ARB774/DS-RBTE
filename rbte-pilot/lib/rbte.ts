@@ -7,7 +7,7 @@ export const nowIso = () => new Date().toISOString();
 export const profileLabels = {
   DILEMMA: "Личная дилемма",
   CONFLICT: "Конфликт сторон",
-  LT_CLOUD: "Туча лейтенанта",
+  LT_CLOUD: "Тушение пожара",
   IMMUNITY: "Иммунитет к изменениям",
 } as const;
 
