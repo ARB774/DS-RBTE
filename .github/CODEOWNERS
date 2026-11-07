@@ -1,0 +1,14 @@
+# TOC subject-matter ownership
+#
+# @Victor57618 makes the final subject-matter decision for changes that alter
+# TOC methods, logical rules, mentor behavior, or TOC-derived work products.
+# A path not listed here can still require TOC review when a technical change
+# alters that behavior.
+
+/.github/CODEOWNERS @Victor57618
+/Предложение\ ценности\ B2B/ @Victor57618
+/WP-45/ @Victor57618
+/.agents/skills/mafia-offer-creation/ @Victor57618
+/.agents/skills/toc-cloud-display/ @Victor57618
+/.codex/mcp/toc-cloud-display/ @Victor57618
+/rbte-pilot/src/knowledge/ @Victor57618
