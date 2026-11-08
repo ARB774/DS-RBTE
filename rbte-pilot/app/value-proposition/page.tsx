@@ -10,7 +10,7 @@ export default async function ValuePropositionPage() {
       <div>
         <div className="badge mb-2">Pack-TOC · DS-RBTE</div>
         <h1 className="text-2xl font-bold">Предложение ценности</h1>
-        <p className="text-sm text-[#6b7280] mt-1 max-w-2xl">Наставнический маршрут S0–S10: от профиля клиента и НЖЯ до проверенной границы обещания.</p>
+        <p className="text-sm text-[#6b7280] mt-1 max-w-2xl">Наставнический маршрут S0–S11: диалог, учебная обратная связь и актуальная логическая схема находятся в одном рабочем пространстве — от профиля клиента до итогового отчёта.</p>
       </div>
       <Link href="/value-proposition/new" className="btn btn-primary">+ Новый проект</Link>
     </div>
