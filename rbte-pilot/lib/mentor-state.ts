@@ -14,7 +14,7 @@ export const admissionQuestions: Record<AdmissionKey, string> = {
   privacy: 'Можно ли работать с обезличенными описаниями случаев, без имён, контактов и закрытых документов?',
   result: 'Какой результат разработки предложения ценности вы хотите научиться получать самостоятельно?',
 };
-const factSchema = z.object({ key: z.enum(admissionKeys), value: z.string().min(1).max(2000), quote: z.string().min(1).max(2000), usable: z.boolean().optional() });
+const factSchema = z.object({ key: z.enum(admissionKeys), value: z.string().min(1).max(2000), quote: z.string().min(1).max(30000), supportingQuotes: z.array(z.string()).optional(), usable: z.boolean().optional() });
 export const admissionUpdateSchema = z.array(factSchema).max(5);
 const productSchema = z.object({ stage: valuePropositionStageSchema, version: z.number().int().positive(), text: z.string(),
   status: z.enum(['draft', 'confirmed']), ready: z.boolean().default(false), unknowns: z.array(z.string()), sourceIds: z.array(z.string()), visualization: z.unknown().optional() });
@@ -38,6 +38,7 @@ export function mergeAdmission(state: MentorState, updates: z.infer<typeof admis
   for (const update of updates) {
     // Mentor prose is never accepted as evidence of a participant decision.
     if (!learnerTexts.some(text => text.includes(update.quote))) throw new Error('Источник принятого пункта не найден в словах участника.');
+    if (update.supportingQuotes?.some(quote => !learnerTexts.includes(quote))) throw new Error('Неверная ссылка на материал участника.');
     next.set(update.key, update);
   }
   return { ...state, admission: [...next.values()] };

@@ -1,7 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateValuePropositionMentorTurn } from '../lib/value-proposition-mentor';
+import { generateValuePropositionMentorTurn, admissionFromIndexedSources } from '../lib/value-proposition-mentor';
 import { valuePropositionEvidence } from '../lib/value-proposition-evidence';
+
+test('admission quotes are copied from indexed originals and invalid indexes fail', () => {
+  const texts = ['Я веду переговоры.', 'Предложение утверждает директор.'];
+  const result = admissionFromIndexedSources([{ key: 'role', value: 'Переговоры; утверждение директором', usable: true, sourceIndexes: [0, 1] }], texts);
+  assert.equal(result[0].quote, texts[0]);
+  assert.deepEqual(result[0].supportingQuotes, texts);
+  assert.throws(() => admissionFromIndexedSources([{ key: 'role', value: 'test', usable: true, sourceIndexes: [9] }], texts));
+});
 
 test('mentor request contains stage sources and accepted project context, not only a method name', async () => {
   const originalFetch = globalThis.fetch;
