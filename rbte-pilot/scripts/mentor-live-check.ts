@@ -1,6 +1,7 @@
 // A synthetic regression, no production learner records or database writes.
 import assert from 'node:assert/strict';
 import { runMentorTurn, type MentorServiceInput } from '../lib/mentor-service';
+let checkpoint = 'sources';
 
 async function main() {
   const input: MentorServiceInput = {
@@ -18,21 +19,26 @@ async function main() {
   const sources = await runMentorTurn({ ...input, answer: 'Какие документы тебе доступны?' });
   assert.match(sources.content, /через MCP/);
   assert.ok(sources.sources.every(s => ['github', 'verified-cache'].includes(s.origin)));
+  checkpoint = 'explanation';
   const explanation = await runMentorTurn({ ...input, answer: 'Что входит в границы проекта?' });
   assert.match(explanation.content, /Граница проекта — это/);
+  checkpoint = 'admission';
   const admission = await runMentorTurn(input);
   assert.equal(admission.stage, 'S0');
   assert.ok(admission.state.admission.some(f => f.key === 'role'));
   assert.ok(admission.state.admission.some(f => f.key === 'data'));
   assert.ok(!admission.state.admission.some(f => f.key === 'privacy' && f.usable !== false), 'access to secrets is not permission to upload them');
   assert.match(admission.nextStep, /обезличенными/);
+  checkpoint = 'privacy';
   const ready = await runMentorTurn({ ...input, evidence: admission.state, history: [], answer: 'Да, работаем только с обезличенными случаями без имён, контактов и закрытых документов.' });
   assert.equal(ready.state.pending?.ready, true);
+  checkpoint = 'confirmation';
   const next = await runMentorTurn({ ...input, evidence: ready.state, answer: 'Подтверждаю показанную версию', intent: 'confirm' });
   assert.equal(next.stage, 'S1');
   assert.equal(next.state.products[0].status, 'confirmed');
   assert.equal(next.state.packets[0].to, 'S1');
   assert.doesNotMatch(next.content, /как используете данные, если утверждает директор/i);
+  checkpoint = 'S1 attempt';
   const attempt = await runMentorTurn({ ...input, stage: 'S1', evidence: next.state, history: [], project: { ...input.project, openGap: next.openGap, nextStep: next.nextStep },
     answer: 'Наша компания — агентство интернет-маркетинга. Клиент — производственная B2B-компания, которой не хватает обращений потенциальных покупателей. Руководитель ищет услугу привлечения обращений. Это пока моё исходное представление из разговоров с клиентами.' });
   assert.equal(attempt.stage, 'S1');
@@ -40,4 +46,4 @@ async function main() {
   assert.ok(attempt.sources.some(s => s.id === 'DS-RBTE.S1'));
   console.log('LIVE REGRESSION PASSED: MCP sources, explanation, admission from legacy dialogue, confidentiality, confirmation, S1 transition. No learner data or DB writes.');
 }
-main().catch(() => { console.error('LIVE REGRESSION FAILED: deployment must stop. No secrets or learner data printed.'); process.exitCode = 1; });
+main().catch(error => { console.error('LIVE REGRESSION FAILED:', checkpoint, String(error.message).slice(0, 2000)); process.exitCode = 1; });
