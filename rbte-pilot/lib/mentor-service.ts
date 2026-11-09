@@ -1,13 +1,13 @@
 import { retrieveMentorMethods, type MentorMethodSource } from './mentor-method-client';
 import { extractProjectAdmission, generateValuePropositionMentorTurn } from './value-proposition-mentor';
-import { activeProduct, admissionProduct, admissionLabels, admissionQuestions, mergeAdmission, mentorIntent, missingAdmission, normalizeQuestion, readMentorState, type MentorState } from './mentor-state';
+import { activeProduct, admissionProduct, admissionLabels, admissionQuestions, mergeAdmission, mentorIntent, missingAdmission, normalizeQuestion, readMentorState, explicitAnonymizedConsent, type MentorState } from './mentor-state';
 import { nextValuePropositionStage, valuePropositionRoute, type ValuePropositionStage } from './value-proposition-route';
 import type { ValuePropositionDiagram } from './value-proposition-visualization';
 
 export type MentorServiceInput = {
   stage: ValuePropositionStage; project: { name: string; ownerRole: string; confidentiality: string; systemBoundary: string; trainingResult: string; openGap: string; nextStep: string };
   history: Array<{ authorRole: string; stage: string; content: string }>;
-  answer: string; intent?: string; evidence: unknown; currentDiagram: ValuePropositionDiagram | null;
+  answer: string; intent?: string; dataMode?: string; evidence: unknown; currentDiagram: ValuePropositionDiagram | null;
 };
 type Dependencies = { retrieve: typeof retrieveMentorMethods; extract: typeof extractProjectAdmission; generate: typeof generateValuePropositionMentorTurn };
 const defaultDependencies: Dependencies = { retrieve: retrieveMentorMethods, extract: extractProjectAdmission, generate: generateValuePropositionMentorTurn };
@@ -71,7 +71,13 @@ export async function runMentorTurn(input: MentorServiceInput, deps: Dependencie
     const isLegacy = !state.admission.length;
     const texts = [input.project.name, input.project.ownerRole, input.project.systemBoundary, input.project.trainingResult, input.project.confidentiality,
       ...(isLegacy ? input.history.filter(t => ['PARTICIPANT', 'CONTEXT'].includes(t.authorRole)).map(t => t.content) : []), input.answer].filter(Boolean);
-    const updates = await deps.extract({ texts, current: state.admission, sources });
+    if (input.dataMode === 'anonymized') texts.push('Согласен: работаем только с обезличенными случаями без имён, контактов и закрытых документов.');
+    let updates = await deps.extract({ texts, current: state.admission, sources });
+    // Access to confidential material is never permission to submit it.
+    // Only a separate explicit choice or a clear affirmative statement qualifies.
+    const consent = texts.find(explicitAnonymizedConsent);
+    updates = updates.filter(f => f.key !== 'privacy');
+    if (consent) updates.push({ key: 'privacy', value: 'Работаем только с обезличенными случаями без имён, контактов и закрытых документов.', quote: consent, usable: true });
     state = mergeAdmission(state, updates, texts);
     const missing = missingAdmission(state);
     const text = admissionProduct(state);

@@ -120,6 +120,7 @@ export async function addValuePropositionTurnAction(id: string, formData: FormDa
     history: previousTurns,
     answer: parsed.data.content,
     intent: String(formData.get('intent') || ''),
+    dataMode: String(formData.get('dataMode') || ''),
     evidence: project[0].evidence,
   });
   const resolvedStage = mentorTurn.stage;

@@ -66,7 +66,8 @@ test('a confirmation cannot skip an unfinished module; fabricated participant ev
 });
 
 test('missing privacy asks only about permitted data, not ability to develop value proposition', async () => {
-  const result = await runMentorTurn(input(), { retrieve, extract: async () => updates.filter(s => s.key !== 'privacy'), generate: noGenerate });
+  const data = input(); data.project.confidentiality = 'Имею доступ к конфиденциальным данным';
+  const result = await runMentorTurn(data, { retrieve, extract: async () => [...updates.filter(s => s.key !== 'privacy'), { key: 'privacy', value: 'Разрешено', quote: data.project.confidentiality, usable: true }], generate: noGenerate });
   assert.match(result.nextStep, /обезличенными/);
   assert.equal(result.state.pending, null);
   assert.doesNotMatch(result.content, /как используете данные|все заинтересованные/);

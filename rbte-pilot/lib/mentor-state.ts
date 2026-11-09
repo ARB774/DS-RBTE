@@ -45,6 +45,10 @@ export function mergeAdmission(state: MentorState, updates: z.infer<typeof admis
 }
 export function missingAdmission(state: MentorState) { return admissionKeys.filter(key => !state.admission.some(f => f.key === key && f.usable !== false)); }
 export function admissionProduct(state: MentorState) { return state.admission.map(f => `${admissionLabels[f.key]}: ${f.value}`).join('\n'); }
+export function explicitAnonymizedConsent(text: string) {
+  if (/[?]|не соглас|не разреш|запрещ|нельзя|можно ли/iu.test(text)) return false;
+  return /обезлич|аноним|без им[её]н/iu.test(text) && /работаем|соглас|разрешаю|используем|только/iu.test(text);
+}
 export function normalizeQuestion(text: string) { return text.toLocaleLowerCase('ru').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); }
 export type MentorIntent = 'answer' | 'sources' | 'explanation' | 'confirm';
 export function mentorIntent(text: string, explicit?: string): MentorIntent {

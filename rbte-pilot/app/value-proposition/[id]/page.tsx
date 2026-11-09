@@ -73,6 +73,7 @@ export default async function ValuePropositionProjectPage({ params }: { params: 
             <option value="sources">Спросить об источниках</option>
           </select>
           <textarea id="content" name="content" required rows={6} maxLength={8000} placeholder="Можно ответить на вопрос, попросить объяснение или исправить принятое содержание." className="w-full rounded-xl border border-[#d6dbe5] p-3" />
+          {stage === 'S0' && <label className="flex gap-2 text-sm"><input type="checkbox" name="dataMode" value="anonymized" />Согласен работать только с обезличенными случаями, без имён, контактов и закрытых документов.</label>}
           <button className="btn btn-primary" type="submit">Передать наставнику</button>
         </form>
       </section>
