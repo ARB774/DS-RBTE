@@ -11,7 +11,8 @@
 `scripts/mentor-method-mcp.mjs` предоставляет read-only инструменты
 `search_mentor_methods` и `get_mentor_method`. Клиент выполняет настоящий stdio
 MCP-вызов на каждом ходе. Документы DS-RBTE читаются из GitHub, приватный
-Pack-TOC — через Contents API с уже настроенным `GITHUB_READ_TOKEN`. Процесс
+Pack-TOC — через Contents API с `GITHUB_READ_TOKEN` либо существующим
+`PILOT_GITHUB_MCP_TOKEN` (первое имя имеет приоритет). Процесс
 не получает сообщения участника, ключ модели или доступ к БД.
 
 Полный текст после CRLF → LF сверяется по SHA-256 из

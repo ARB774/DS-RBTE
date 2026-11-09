@@ -14,7 +14,7 @@ export async function retrieveMentorMethods(stage: ValuePropositionStage): Promi
   const root = existsSync(join(process.cwd(), 'scripts/mentor-method-mcp.mjs')) ? process.cwd() : resolve(process.cwd(), '../..');
   const client = new Client({ name: 'pilot-value-proposition', version: '2.0.0' });
   const transport = new StdioClientTransport({ command: process.execPath, args: [join(root, 'scripts/mentor-method-mcp.mjs')], cwd: root,
-    env: { NODE_ENV: 'production', ...(process.env.GITHUB_READ_TOKEN ? { GITHUB_READ_TOKEN: process.env.GITHUB_READ_TOKEN } : {}), ...(process.env.MENTOR_KNOWLEDGE_CACHE ? { MENTOR_KNOWLEDGE_CACHE: process.env.MENTOR_KNOWLEDGE_CACHE } : {}) }, stderr: 'pipe' });
+    env: { NODE_ENV: 'production', ...((process.env.GITHUB_READ_TOKEN || process.env.PILOT_GITHUB_MCP_TOKEN) ? { GITHUB_READ_TOKEN: process.env.GITHUB_READ_TOKEN || process.env.PILOT_GITHUB_MCP_TOKEN! } : {}), ...(process.env.MENTOR_KNOWLEDGE_CACHE ? { MENTOR_KNOWLEDGE_CACHE: process.env.MENTOR_KNOWLEDGE_CACHE } : {}) }, stderr: 'pipe' });
   transport.stderr?.on('data', () => {});
   async function call(name: string, args: Record<string, string>) {
     const response = await client.callTool({ name, arguments: args }, { timeout: 20000 });
