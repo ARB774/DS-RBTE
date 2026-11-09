@@ -1,0 +1,37 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { generateValuePropositionMentorTurn } from '../lib/value-proposition-mentor';
+
+test('mentor request contains stage sources and accepted project context, not only a method name', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.PILOT_OPENAI_API_KEY;
+  process.env.PILOT_OPENAI_API_KEY = 'test-key-not-a-real-secret-0000';
+  let payload: any;
+  globalThis.fetch = async (_url, init) => {
+    payload = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{
+      type: 'output_text', text: JSON.stringify({
+        reflection: 'Допуск согласован.', acceptedUpdate: 'Используем обезличенные данные.',
+        observations: ['Роль названа'], criterion: 'Допуск проекта (DS-RBTE.S0)', priorityGap: 'Исходная модель',
+        learningAction: 'Описать исходное представление', helpLevel: 'question', question: 'Кто ваш клиент?',
+        proposedStage: 'S1', readyForNextStage: true, nextStep: 'Исходная модель', diagram: null,
+      }),
+    }] }] }));
+  };
+  try {
+    const result = await generateValuePropositionMentorTurn({ stage: 'S0', project: {
+      name: 'Учебный проект', ownerRole: 'Руководитель', systemBoundary: 'Один B2B-контур',
+      trainingResult: 'Профиль клиента', openGap: 'Допуск', nextStep: 'Исходная модель',
+    }, currentDiagram: null, history: [{ authorRole: 'PARTICIPANT', stage: 'S0', content: 'Доступны обезличенные случаи' }], answer: 'Режим данных согласован' });
+    const input = JSON.parse(payload.input);
+    assert.ok(input.methodEvidence.some((s: any) => s.id === 'DS-RBTE.S0' && s.text.includes('реалистичного')));
+    assert.equal(input.project.systemBoundary, 'Один B2B-контур');
+    assert.equal(input.history[0].content, 'Доступны обезличенные случаи');
+    assert.match(payload.instructions, /Не требуй заново согласованные пункты/);
+    assert.equal(result.proposedStage, 'S1');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.PILOT_OPENAI_API_KEY;
+    else process.env.PILOT_OPENAI_API_KEY = originalKey;
+  }
+});
