@@ -123,6 +123,9 @@ export async function addValuePropositionTurnAction(id: string, formData: FormDa
     evidence: project[0].evidence,
   });
   const resolvedStage = mentorTurn.stage;
+  const mentorMessageId = UUID();
+  const turnCreatedAt = new Date(Math.max(Date.now(), project[0].updatedAt.getTime() + 1));
+  if (mentorTurn.diagram) mentorTurn.state.artifacts.push({ turnId: mentorMessageId, diagram: mentorTurn.diagram });
   await db.transaction(async tx => {
   const locked = await tx.select({ updatedAt: valuePropositionProjects.updatedAt }).from(valuePropositionProjects)
     .where(and(eq(valuePropositionProjects.id, id), eq(valuePropositionProjects.ownerId, me.id))).for('update');
@@ -139,7 +142,7 @@ export async function addValuePropositionTurnAction(id: string, formData: FormDa
     stopOrReturnCondition: resolvedStage === currentStage
       ? project[0].stopOrReturnCondition
       : `Вернуться к ${currentStage}, если вход этапа ${resolvedStage} противоречит принятому продукту «${valuePropositionRoute[currentStage].workProduct}».`,
-    updatedAt: new Date(Math.max(Date.now(), project[0].updatedAt.getTime() + 1)),
+    updatedAt: new Date(turnCreatedAt.getTime() + 1),
   }).where(and(eq(valuePropositionProjects.id, id), eq(valuePropositionProjects.ownerId, me.id))).returning({ id: valuePropositionProjects.id });
   if (!updated.length) throw new Error('Проект изменился в другом окне. Обновите страницу перед отправкой.');
   await tx.insert(valuePropositionTurns).values({
@@ -148,13 +151,15 @@ export async function addValuePropositionTurnAction(id: string, formData: FormDa
     authorRole: "PARTICIPANT",
     stage: currentStage,
     content: parsed.data.content,
+    createdAt: turnCreatedAt,
   });
   await tx.insert(valuePropositionTurns).values({
-    id: UUID(),
+    id: mentorMessageId,
     projectId: id,
     authorRole: "MENTOR",
     stage: resolvedStage,
     content: mentorTurn.content,
+    createdAt: new Date(turnCreatedAt.getTime() + 1),
   });
   });
   redirect(`/value-proposition/${id}`);

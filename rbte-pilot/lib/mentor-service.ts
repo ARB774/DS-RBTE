@@ -65,6 +65,8 @@ export async function runMentorTurn(input: MentorServiceInput, deps: Dependencie
     return base(`Принятая версия «${definition.workProduct}»:\n${confirmed.text}\n\nНеизвестное, которое сохраняем: ${confirmed.unknowns.join('; ') || 'не указано'}.\n\nТеперь работаем над «${valuePropositionRoute[next].workProduct}». ${valuePropositionRoute[next].goal}\n\n${openingQuestions[next]}`, valuePropositionRoute[next].workProduct, openingQuestions[next]);
   }
   if (intent === 'confirm') return base('Готовая версия для подтверждения ещё не предъявлена. Сначала соберём и покажем рабочий продукт; согласие само по себе не заменяет его содержание.');
+  // A new correction invalidates the old closure offer until it is checked.
+  if (state.pending) state.pending = { ...state.pending, ready: false };
   if (stage === 'S0') {
     const isLegacy = !state.admission.length;
     const texts = [input.project.name, input.project.ownerRole, input.project.systemBoundary, input.project.trainingResult, input.project.confidentiality,

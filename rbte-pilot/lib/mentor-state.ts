@@ -24,13 +24,14 @@ export const mentorStateSchema = z.object({
   version: z.literal(2), admission: z.array(factSchema).default([]), products: z.array(productSchema).default([]),
   packets: z.array(packetSchema).default([]), pending: productSchema.nullable().default(null),
   lastQuestion: z.string().default(''), lastGapKey: z.string().default(''), repeats: z.number().default(0),
+  artifacts: z.array(z.object({ turnId: z.string(), diagram: z.unknown() })).default([]),
   legacyEvidence: z.unknown().optional(),
 });
 export type MentorState = z.infer<typeof mentorStateSchema>;
 export function readMentorState(value: unknown): MentorState {
   const parsed = mentorStateSchema.safeParse(value);
   return parsed.success ? parsed.data : { version: 2, admission: [], products: [], packets: [], pending: null,
-    lastQuestion: '', lastGapKey: '', repeats: 0, legacyEvidence: value ?? [] };
+    lastQuestion: '', lastGapKey: '', repeats: 0, artifacts: [], legacyEvidence: value ?? [] };
 }
 export function mergeAdmission(state: MentorState, updates: z.infer<typeof admissionUpdateSchema>, learnerTexts: string[]) {
   const next = new Map(state.admission.map(f => [f.key, f]));

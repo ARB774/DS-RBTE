@@ -91,6 +91,7 @@ export async function generateValuePropositionMentorTurn(input: {
   const stage = valuePropositionRoute[input.stage];
   const methodEvidence = input.methodEvidence ?? await retrieveMentorMethods(input.stage);
   const activeModule = activeMentorModule(input.stage, input.stateCard ?? readMentorState([]), methodEvidence);
+  const stateCard = input.stateCard ? { ...input.stateCard, artifacts: undefined, legacyEvidence: undefined } : undefined;
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     redirect: "error",
@@ -153,7 +154,7 @@ readyForNextStage — рекомендация предъявить продук
 - question: новая самостоятельная проба одним вопросом.
 - diagram: полная актуальная схема, не патч. Если текущей схемы нет, создай только из данных участника и обозначь неизвестные разрывы.
 `,
-      input: JSON.stringify({ ...input, methodEvidence, activeModule,
+      input: JSON.stringify({ ...input, stateCard, methodEvidence, activeModule,
         history: input.stateCard && (input.stateCard.products.length || input.stateCard.pending) ? input.history.slice(-36) : input.history }),
       text: {
         format: {

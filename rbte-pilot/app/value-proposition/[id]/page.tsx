@@ -20,6 +20,7 @@ export default async function ValuePropositionProjectPage({ params }: { params: 
   const memory = readMentorState(project.evidence);
   const product = memory.pending ?? memory.products.at(-1);
   const sources = Array.isArray(project.sources) ? project.sources as Array<Record<string, unknown>> : [];
+  const turnDiagrams = new Map(memory.artifacts.map(item => [item.turnId, parseValuePropositionDiagram(item.diagram)]));
 
   return <div className="container-x py-8">
     <header className="flex justify-between gap-5 flex-wrap">
@@ -60,6 +61,7 @@ export default async function ValuePropositionProjectPage({ params }: { params: 
           ? <details key={turn.id} className="rounded-xl border border-[#d9dfeb] p-4 text-sm"><summary className="font-semibold cursor-pointer">Контекст продолжения проекта</summary><p className="whitespace-pre-wrap leading-6 mt-3">{turn.content}</p></details>
           : <article key={turn.id} className={turn.authorRole === "MENTOR" ? "rounded-xl bg-[#f4f7fb] p-4" : "rounded-xl border border-[#e5e7eb] p-4"}>
             <div className="text-xs font-semibold text-[#6b7280] mb-1">{turn.authorRole === "MENTOR" ? "Наставник" : "Ваше сообщение"}</div>
+            {turnDiagrams.get(turn.id) && <ValuePropositionDiagramView diagram={turnDiagrams.get(turn.id)!} />}
             <p className="whitespace-pre-wrap text-sm leading-6">{turn.content}</p>
           </article>)}
         <form action={submit} className="pt-2 space-y-3">
