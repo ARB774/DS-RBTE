@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateValuePropositionMentorTurn } from '../lib/value-proposition-mentor';
+import { valuePropositionEvidence } from '../lib/value-proposition-evidence';
 
 test('mentor request contains stage sources and accepted project context, not only a method name', async () => {
   const originalFetch = globalThis.fetch;
@@ -15,6 +16,8 @@ test('mentor request contains stage sources and accepted project context, not on
         observations: ['Роль названа'], criterion: 'Допуск проекта (DS-RBTE.S0)', priorityGap: 'Исходная модель',
         learningAction: 'Описать исходное представление', helpLevel: 'question', question: 'Кто ваш клиент?',
         proposedStage: 'S1', readyForNextStage: true, nextStep: 'Исходная модель', diagram: null,
+        workingProduct: 'Обезличенный учебный проект', unknowns: [], sourceIds: ['DS-RBTE.S0'],
+        criterionEvidence: { sourceId: 'DS-RBTE.S0', quote: 'Проверить допуск реального проекта' },
       }),
     }] }] }));
   };
@@ -22,7 +25,8 @@ test('mentor request contains stage sources and accepted project context, not on
     const result = await generateValuePropositionMentorTurn({ stage: 'S0', project: {
       name: 'Учебный проект', ownerRole: 'Руководитель', systemBoundary: 'Один B2B-контур',
       trainingResult: 'Профиль клиента', openGap: 'Допуск', nextStep: 'Исходная модель',
-    }, currentDiagram: null, history: [{ authorRole: 'PARTICIPANT', stage: 'S0', content: 'Доступны обезличенные случаи' }], answer: 'Режим данных согласован' });
+    }, currentDiagram: null, history: [{ authorRole: 'PARTICIPANT', stage: 'S0', content: 'Доступны обезличенные случаи' }], answer: 'Режим данных согласован',
+      methodEvidence: valuePropositionEvidence('S0').map(s => ({ ...s, origin: 'verified-cache', fetchedAt: '2026-11-09', excerptSha256: 'test' })) });
     const input = JSON.parse(payload.input);
     assert.ok(input.methodEvidence.some((s: any) => s.id === 'DS-RBTE.S0' && s.text.includes('реалистичного')));
     assert.equal(input.project.systemBoundary, 'Один B2B-контур');

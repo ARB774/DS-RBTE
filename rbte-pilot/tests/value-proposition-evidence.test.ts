@@ -21,7 +21,7 @@ test('each mentor stage receives substantive pinned DS-RBTE evidence', () => {
   for (const stage of valuePropositionStages) {
     const evidence = valuePropositionEvidence(stage);
     assert.ok(evidence.some(s => s.id === 'DS-RBTE.CORE'));
-    assert.ok(evidence.some(s => s.id === `DS-RBTE.${stage.startsWith('S6.') ? 'S6' : stage}`));
+    assert.ok(evidence.some(s => s.id === `DS-RBTE.${stage}`));
     for (const source of evidence) {
       assert.match(source.commit, /^[a-f0-9]{40}$/);
       assert.match(source.sha256, /^[a-f0-9]{64}$/);

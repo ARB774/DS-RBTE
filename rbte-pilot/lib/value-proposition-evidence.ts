@@ -5,7 +5,7 @@ import type { ValuePropositionStage } from './value-proposition-route';
 // runtime GitHub credentials, network access, or working-directory assumptions.
 export function valuePropositionEvidence(stage: ValuePropositionStage) {
   const evidence = sources.filter(source => source.stages.includes('*') || source.stages.includes(stage));
-  if (!evidence.some(source => source.id === `DS-RBTE.${stage.startsWith('S6.') ? 'S6' : stage}`)) {
+  if (!evidence.some(source => source.id === `DS-RBTE.${stage}`)) {
     throw new Error('Методические материалы текущего этапа недоступны.');
   }
   return evidence.map(({ stages: _stages, ...source }) => ({
