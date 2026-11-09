@@ -201,8 +201,8 @@ export async function extractProjectAdmission(input: { texts: string[]; current:
 Верни updates: scope — какое B2B-поле/услуга; role — роль и граница полномочий; data — случаи, беседы, опыт или путь проверки; privacy — согласованный режим данных (доступ к секретам НЕ означает разрешение загружать их); result — чему участник хочет научиться. Для каждого value укажи quote — точную непрерывную цитату из одного texts. Не добавляй отсутствующее. Если пункт уже согласован в current, не удаляй и не спрашивай заново. Исправление участника заменяет прежнюю формулировку. Используй приложенный DS-RBTE.S0.`,
       input: JSON.stringify(input), text: { format: { type: 'json_schema', name: 'project_admission', strict: true,
         schema: { type: 'object', additionalProperties: false, required: ['updates'], properties: { updates: { type: 'array', items: {
-          type: 'object', additionalProperties: false, required: ['key', 'value', 'quote'], properties: {
-            key: { type: 'string', enum: ['scope', 'role', 'data', 'privacy', 'result'] }, value: { type: 'string' }, quote: { type: 'string' },
+          type: 'object', additionalProperties: false, required: ['key', 'value', 'quote', 'usable'], properties: {
+            key: { type: 'string', enum: ['scope', 'role', 'data', 'privacy', 'result'] }, value: { type: 'string' }, quote: { type: 'string' }, usable: { type: 'boolean', description: 'Пункт достаточен для допуска учебного проекта. Отрицательный ответ без пути проверки, запрет на использование данных или отсутствие учебного результата не закрывают пункт. Экспертная гипотеза с путём проверки допустима; утверждение ПЦ директором не мешает участию.' },
           },
         } } } } } },
     }),

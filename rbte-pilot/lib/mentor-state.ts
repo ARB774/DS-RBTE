@@ -14,7 +14,7 @@ export const admissionQuestions: Record<AdmissionKey, string> = {
   privacy: 'Можно ли работать с обезличенными описаниями случаев, без имён, контактов и закрытых документов?',
   result: 'Какой результат разработки предложения ценности вы хотите научиться получать самостоятельно?',
 };
-const factSchema = z.object({ key: z.enum(admissionKeys), value: z.string().min(1).max(2000), quote: z.string().min(1).max(2000) });
+const factSchema = z.object({ key: z.enum(admissionKeys), value: z.string().min(1).max(2000), quote: z.string().min(1).max(2000), usable: z.boolean().optional() });
 export const admissionUpdateSchema = z.array(factSchema).max(5);
 const productSchema = z.object({ stage: valuePropositionStageSchema, version: z.number().int().positive(), text: z.string(),
   status: z.enum(['draft', 'confirmed']), ready: z.boolean().default(false), unknowns: z.array(z.string()), sourceIds: z.array(z.string()), visualization: z.unknown().optional() });
@@ -42,7 +42,7 @@ export function mergeAdmission(state: MentorState, updates: z.infer<typeof admis
   }
   return { ...state, admission: [...next.values()] };
 }
-export function missingAdmission(state: MentorState) { return admissionKeys.filter(key => !state.admission.some(f => f.key === key)); }
+export function missingAdmission(state: MentorState) { return admissionKeys.filter(key => !state.admission.some(f => f.key === key && f.usable !== false)); }
 export function admissionProduct(state: MentorState) { return state.admission.map(f => `${admissionLabels[f.key]}: ${f.value}`).join('\n'); }
 export function normalizeQuestion(text: string) { return text.toLocaleLowerCase('ru').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); }
 export type MentorIntent = 'answer' | 'sources' | 'explanation' | 'confirm';

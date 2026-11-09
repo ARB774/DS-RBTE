@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runMentorTurn, type MentorServiceInput } from '../lib/mentor-service';
-import { readMentorState, mergeAdmission, admissionKeys, mentorIntent } from '../lib/mentor-state';
+import { readMentorState, mergeAdmission, admissionKeys, mentorIntent, missingAdmission } from '../lib/mentor-state';
 import { valuePropositionEvidence } from '../lib/value-proposition-evidence';
 import type { ValuePropositionStage } from '../lib/value-proposition-route';
 
@@ -78,4 +78,9 @@ test('explicit message intent takes precedence and persisted facts survive a sho
   const result = await runMentorTurn({ ...input(), evidence: state, history: [], answer: 'Продолжим' }, { retrieve, extract: async () => [], generate: noGenerate });
   assert.equal(result.state.admission.length, 5);
   assert.deepEqual(result.state.legacyEvidence, ['legacy']);
+});
+
+test('knowing a forbidden data regime does not satisfy admission', () => {
+  const state = mergeAdmission(readMentorState([]), [{ key: 'privacy', value: 'Использование запрещено', quote: 'Использование запрещено', usable: false }], ['Использование запрещено']);
+  assert.ok(missingAdmission(state).includes('privacy'));
 });

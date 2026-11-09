@@ -24,7 +24,7 @@ async function main() {
   assert.equal(admission.stage, 'S0');
   assert.ok(admission.state.admission.some(f => f.key === 'role'));
   assert.ok(admission.state.admission.some(f => f.key === 'data'));
-  assert.ok(!admission.state.admission.some(f => f.key === 'privacy'), 'access to secrets is not permission to upload them');
+  assert.ok(!admission.state.admission.some(f => f.key === 'privacy' && f.usable !== false), 'access to secrets is not permission to upload them');
   assert.match(admission.nextStep, /обезличенными/);
   const ready = await runMentorTurn({ ...input, evidence: admission.state, history: [], answer: 'Да, работаем только с обезличенными случаями без имён, контактов и закрытых документов.' });
   assert.equal(ready.state.pending?.ready, true);
