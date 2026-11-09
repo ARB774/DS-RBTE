@@ -106,5 +106,5 @@ export async function runMentorTurn(input: MentorServiceInput, deps: Dependencie
   // Only a complete product may be offered for closure; ordinary drafts stay editable.
   if (state.pending && !turn.readyForNextStage) state.pending = { ...state.pending, sourceIds: turn.sourceIds };
   const result = base(`${turn.reflection}\n\nТекущий рабочий продукт:\n${turn.workingProduct || 'Пока не собран'}\n\nКритерий: ${turn.criterion}\nОснования: ${turn.sourceIds.join(', ')}\n\n${turn.readyForNextStage && turn.workingProduct ? 'Версия готова к подтверждению. Подтвердите её кнопкой ниже или внесите исправление.' : `Главное затруднение: ${turn.priorityGap}\n\n${turn.question}`}`, turn.priorityGap, turn.nextStep);
-  return { ...result, learningAction: turn.learningAction, diagram: turn.diagram ?? input.currentDiagram };
+  return { ...result, criterion: `${turn.criterion}\nИсточник: ${turn.criterionEvidence.sourceId}, фрагмент ${turn.criterionEvidence.passageIndex + 1}\n${turn.criterionQuote.slice(0, 1200)}`, learningAction: turn.learningAction, diagram: turn.diagram ?? input.currentDiagram };
 }
