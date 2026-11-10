@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mentorResponseSchema } from '../lib/value-proposition-mentor';
-import { valuePropositionDiagramSchema } from '../lib/value-proposition-visualization';
+import { valuePropositionDiagramSchema,initialUndesirableEffectDraft } from '../lib/value-proposition-visualization';
 import { visibleMentorTurns } from '../lib/mentor-history';
 
 test('required diagram stages cannot request a nullable provider response', () => {
@@ -20,6 +20,11 @@ test('a single raw undesirable-effect candidate is a valid map without invented 
     nodes:[{id:'ude1',label:'мало заявок через интернет',type:'ude',status:'candidate',rank:0,order:0}],edges:[] });
   assert.equal(diagram.nodes[0].label, 'мало заявок через интернет');
   assert.equal(diagram.edges.length, 0);
+  const draft=initialUndesirableEffectDraft('мало заявок через интернет',null)!;
+  assert.equal(draft.nodes[0].label,'мало заявок через интернет');
+  assert.equal(draft.nodes[0].status,'candidate');
+  assert.deepEqual(draft.edges,[]);
+  assert.equal(initialUndesirableEffectDraft('ещё один ответ',draft),null);
 });
 
 test('repeated notices are collapsed without removing learner answers or changing stored history', () => {

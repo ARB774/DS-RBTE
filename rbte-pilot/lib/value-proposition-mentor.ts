@@ -14,6 +14,7 @@ import {
   valuePropositionDiagramJsonSchema,
   valuePropositionDiagramSchema,
   type ValuePropositionDiagram,
+  initialUndesirableEffectDraft,
 } from "@/lib/value-proposition-visualization";
 
 const mentorOutput = z.object({
@@ -93,6 +94,7 @@ export async function generateValuePropositionMentorTurn(input: {
   const activeModule = activeMentorModule(input.stage, input.stateCard ?? readMentorState([]), methodEvidence);
   const stateCard = input.stateCard ? { ...input.stateCard, artifacts: undefined, legacyEvidence: undefined } : undefined;
   const responseSchema = mentorResponseSchema(input.stage, input.intent);
+  const firstCandidate = input.stage === 'S4' && input.intent !== 'explanation' ? initialUndesirableEffectDraft(input.answer,input.currentDiagram) : null;
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     redirect: "error",
@@ -137,6 +139,7 @@ readyForNextStage — рекомендация предъявить продук
 ЛОГИЧЕСКИЕ СХЕМЫ В ПРИЛОЖЕНИИ
 1. Диаграмма — часть рабочего продукта. На S4–S10 всегда верни diagram: обновлённую полную текущую схему либо неизменённую текущую схему. Не заменяй её текстовым описанием. На других стадиях diagram допустима, если она помогает видеть продукт.
 На S4 верни карту undesirable-effects. Даже одного сообщения «мало заявок через интернет» достаточно для одного узла-кандидата НЖЯ исходными словами участника. Не придумывай число заявок, период, норму, причину или последствия. Недостающую конкретность выясняй одним вопросом; не требуй уже готового доказательства для показа кандидата. Если существенных данных ещё нет, явно обозначь неизвестное, а не возвращай null. На этом этапе причинные стрелки не добавляются без основания.
+Если на входе первая карта с узлом-кандидатом, не объявляй его принятым и не предлагай закрыть весь этап по одной краткой фразе. Задай один вопрос о существенном недостающем признаке наблюдения, не спрашивая то, что участник уже сообщил.
 2. Сохраняй устойчивые id принятых узлов и стрелок. Не удаляй принятый элемент без явного решения участника. accepted — принято участником; candidate — предложено участником, но ещё не принято; checking — сейчас проверяется; hypothesis — причинная связь или будущий прогноз без подтверждения; unknown — явный разрыв; rejected — явно исключено.
 3. rank=0 — нижний уровень, следствия получают больший rank. Причинные и необходимые стрелки идут from причины/обеспечивающего элемента to следствия/условия. order задаёт положение слева направо.
 4. Туча: A, B, C, D, D′ и четыре стрелки необходимости; конфликт — симметричная двусторонняя стрелка между D и D′. Несовместимость объясняется условиями, а не формальным «можно/нельзя одновременно».
@@ -156,7 +159,7 @@ readyForNextStage — рекомендация предъявить продук
 - question: новая самостоятельная проба одним вопросом.
 - diagram: полная актуальная схема, не патч. Если текущей схемы нет, создай только из данных участника и обозначь неизвестные разрывы.
 `,
-      input: JSON.stringify({ ...input, stateCard, methodEvidence: methodEvidence.map(source => ({ ...source, passages: methodPassages(source.text).map((text, index) => ({ index, text })) })), activeModule,
+      input: JSON.stringify({ ...input, currentDiagram:firstCandidate??input.currentDiagram, stateCard, methodEvidence: methodEvidence.map(source => ({ ...source, passages: methodPassages(source.text).map((text, index) => ({ index, text })) })), activeModule,
         history: input.stateCard && (input.stateCard.products.length || input.stateCard.pending) ? input.history.slice(-36) : input.history }),
       text: {
         format: {
@@ -185,6 +188,14 @@ readyForNextStage — рекомендация предъявить продук
     .join("");
   if (text.length > 128000) throw new Error('Ответ наставника превышает общий допустимый размер.');
   const turn = mentorOutput.parse(JSON.parse(text));
+  if (firstCandidate) {
+    turn.diagram=firstCandidate;
+    turn.proposedStage=input.stage;
+    turn.readyForNextStage=false;
+    turn.workingProduct=`Кандидат НЖЯ (ещё не принят): ${input.answer.trim()}`;
+    turn.acceptedUpdate='Сохранена самостоятельная формулировка как кандидат, не как проверенное НЖЯ.';
+    turn.reflection='Ваша исходная формулировка сохранена на карте как кандидат НЖЯ. Это ещё не подтверждение её конкретности или принятие в итоговый набор.';
+  }
   if (turn.sourceIds.some(id => !methodEvidence.some(source => source.id === id))) throw new Error('Наставник сослался на непрочитанный источник. Ход не сохранён.');
   const criterionQuote = resolveCriterionEvidence(turn.criterionEvidence, methodEvidence).quote;
   if (input.intent !== 'explanation' && valuePropositionStageRequiresDiagram(input.stage) && !turn.diagram) {
