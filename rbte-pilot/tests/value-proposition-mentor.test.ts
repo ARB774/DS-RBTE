@@ -23,7 +23,7 @@ test('mentor request contains stage sources and accepted project context, not on
         reflection: 'Допуск согласован.', acceptedUpdate: 'Принятое содержание '.repeat(90),
         observations: ['Наблюдение участника '.repeat(40)], criterion: 'Допуск проекта (DS-RBTE.S0)', priorityGap: 'Исходная модель',
         learningAction: 'Описать исходное представление', helpLevel: 'question', question: 'Кто ваш клиент?',
-        proposedStage: 'S1', readyForNextStage: true, nextStep: 'Исходная модель', diagram: null,
+        proposedStage: 'S1', readyForNextStage: true, nextStep: 'Исходная модель', diagram: null, activeS5Block: null,
         workingProduct: 'Обезличенный учебный проект', unknowns: [], sourceIds: ['DS-RBTE.S0'],
         criterionEvidence: { sourceId: 'DS-RBTE.S0', passageIndex: 0 },
       }),

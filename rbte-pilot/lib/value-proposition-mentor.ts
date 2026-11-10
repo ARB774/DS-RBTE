@@ -7,9 +7,13 @@ import { activeMentorModule } from './mentor-module';
 import {
   valuePropositionFormulationRepairProtocol,
   valuePropositionRoute,
+  valuePropositionS5ActiveBlockSchema,
+  valuePropositionS5ExpectedBlock,
+  valuePropositionS5Prompt,
   valuePropositionStageFormulationGuidance,
   valuePropositionStageRequiresDiagram,
   valuePropositionStageSchema,
+  validateValuePropositionS5Progress,
   type ValuePropositionStage,
 } from "@/lib/value-proposition-route";
 import {
@@ -31,6 +35,7 @@ const mentorOutput = z.object({
   proposedStage: valuePropositionStageSchema,
   readyForNextStage: z.boolean(),
   nextStep: z.string().min(1),
+  activeS5Block: valuePropositionS5ActiveBlockSchema.nullable(),
   diagram: valuePropositionDiagramSchema.nullable(),
   workingProduct: z.string(),
   unknowns: z.array(z.string()).max(12),
@@ -46,7 +51,7 @@ const mentorJsonSchema = {
   required: [
     "reflection", "acceptedUpdate", "observations", "criterion", "priorityGap",
     "learningAction", "helpLevel", "question", "proposedStage", "readyForNextStage",
-    "nextStep", "diagram", "workingProduct", "unknowns", "sourceIds", "criterionEvidence",
+    "nextStep", "diagram", "workingProduct", "unknowns", "sourceIds", "criterionEvidence", "activeS5Block",
   ],
   properties: {
     reflection: { type: "string" },
@@ -60,6 +65,12 @@ const mentorJsonSchema = {
     proposedStage: { type: "string", enum: valuePropositionStageSchema.options },
     readyForNextStage: { type: "boolean" },
     nextStep: { type: "string" },
+    activeS5Block: {
+      anyOf: [
+        { type: "string", enum: valuePropositionS5ActiveBlockSchema.options },
+        { type: "null" },
+      ],
+    },
     diagram: { anyOf: [valuePropositionDiagramJsonSchema, { type: "null" }] },
     workingProduct: { type: 'string' },
     unknowns: { type: 'array', maxItems: 12, items: { type: 'string' } },
@@ -97,6 +108,11 @@ export async function generateValuePropositionMentorTurn(input: {
   const stateCard = input.stateCard ? { ...input.stateCard, artifacts: undefined, legacyEvidence: undefined } : undefined;
   const responseSchema = mentorResponseSchema(input.stage, input.intent);
   const firstCandidate = input.stage === 'S4' && input.intent !== 'explanation' ? initialUndesirableEffectDraft(input.answer,input.currentDiagram) : null;
+  const s5Prompt = input.stage === "S5"
+    ? valuePropositionS5Prompt(input.currentDiagram, false)
+    : input.stage === "S4"
+      ? `Если этот ход завершает S4 и переводит проект в S5, выполни следующие правила входа:\n${valuePropositionS5Prompt(null, true)}`
+      : "Этот ход не относится к S5: верни activeS5Block=null.";
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     redirect: "error",
@@ -144,6 +160,9 @@ ${valuePropositionFormulationRepairProtocol}
 ПРАВИЛА ФОРМУЛИРОВКИ ТЕКУЩЕГО ЭТАПА ${input.stage}
 ${valuePropositionStageFormulationGuidance[input.stage]}
 
+ДЕТЕРМИНИРОВАННЫЙ МАРШРУТ S5
+${s5Prompt}
+
 ЛОГИЧЕСКИЕ СХЕМЫ В ПРИЛОЖЕНИИ
 1. Диаграмма — часть рабочего продукта. На S4–S10 всегда верни diagram: обновлённую полную текущую схему либо неизменённую текущую схему. Не заменяй её текстовым описанием. На других стадиях diagram допустима, если она помогает видеть продукт.
 На S4 верни карту undesirable-effects. Даже одного сообщения «мало заявок через интернет» достаточно для одного узла-кандидата НЖЯ исходными словами участника. Не придумывай число заявок, период, норму, причину или последствия. Недостающую конкретность выясняй одним вопросом; не требуй уже готового доказательства для показа кандидата. Если существенных данных ещё нет, явно обозначь неизвестное, а не возвращай null. На этом этапе причинные стрелки не добавляются без основания.
@@ -165,6 +184,7 @@ ${valuePropositionStageFormulationGuidance[input.stage]}
 - priorityGap: один разрыв.
 - learningAction: действие, которое должен выполнить участник.
 - question: новая самостоятельная проба одним вопросом.
+- activeS5Block: следующий блок S5, о котором задан question; на других этапах null.
 - diagram: полная актуальная схема, не патч. Если текущей схемы нет, создай только из данных участника и обозначь неизвестные разрывы.
 `,
       input: JSON.stringify({ ...input, currentDiagram:firstCandidate??input.currentDiagram, stateCard, methodEvidence: methodEvidence.map(source => ({ ...source, passages: methodPassages(source.text).map((text, index) => ({ index, text })) })), activeModule,
@@ -206,6 +226,35 @@ ${valuePropositionStageFormulationGuidance[input.stage]}
   }
   if (turn.sourceIds.some(id => !methodEvidence.some(source => source.id === id))) throw new Error('Наставник сослался на непрочитанный источник. Ход не сохранён.');
   const criterionQuote = resolveCriterionEvidence(turn.criterionEvidence, methodEvidence).quote;
+  const enteringS5 = input.stage === "S4"
+    && turn.proposedStage === "S5"
+    && turn.readyForNextStage;
+  const currentS5Block = input.stage === "S5"
+    ? valuePropositionS5ExpectedBlock(input.currentDiagram)
+    : null;
+  const leavingCompletedS5 = input.stage === "S5"
+    && currentS5Block === "verification"
+    && turn.proposedStage === "S6.1"
+    && turn.readyForNextStage;
+
+  if ((input.stage === "S5" || enteringS5) && !leavingCompletedS5) {
+    if (input.stage === "S5" && currentS5Block !== "verification"
+      && turn.proposedStage === "S6.1" && turn.readyForNextStage) {
+      throw new Error("Наставник попытался завершить S5 до построения и проверки Тучи. Ход не сохранён.");
+    }
+    const s5Errors = validateValuePropositionS5Progress({
+      currentDiagram: input.currentDiagram,
+      nextDiagram: turn.diagram,
+      activeBlock: turn.activeS5Block,
+      question: turn.question,
+      enteringS5,
+    });
+    if (s5Errors.length) {
+      throw new Error(`Наставник нарушил порядок S5: ${s5Errors.join("; ")}. Ход не сохранён.`);
+    }
+  } else if (!leavingCompletedS5 && turn.activeS5Block !== null) {
+    throw new Error("Наставник указал блок S5 вне этапа построения Тучи. Ход не сохранён.");
+  }
   if (input.intent !== 'explanation' && valuePropositionStageRequiresDiagram(input.stage) && !turn.diagram) {
     throw new Error("Наставник не обновил обязательную логическую схему. Ход не сохранён.");
   }

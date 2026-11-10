@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import {
   nextValuePropositionStage,
   resolveValuePropositionStage,
+  validateValuePropositionS5Progress,
   valuePropositionFormulationRepairProtocol,
   valuePropositionRoute,
+  valuePropositionS5ExpectedBlock,
   valuePropositionS2Guidance,
   valuePropositionStageFormulationGuidance,
   valuePropositionStageRequiresDiagram,
@@ -51,17 +53,108 @@ test("каждый этап имеет собственную помощь пр�
     ["S2", /продукт поставщика от поля разработки/],
     ["S3", /правила включения, исключения/],
     ["S4", /одно наблюдаемое текущее состояние/],
-    ["S5", /D и D′ — реально выполняемые действия/],
+    ["S5", /B → D → C → D′ → A/],
     ["S6.1", /X \+ P → Y/],
     ["S6.2", /область применимости/],
     ["S6.3", /не самое сомнительное/],
     ["S7", /кто и что будет делать\s+иначе/],
     ["S8", /Отрицательное последствие является следствием/],
     ["S9", /Похвала, общее согласие/],
-    ["S10", /контролируемое действие поставщика/],
+    ["S10", /контролируемое действие\s+поставщика/],
     ["S11", /не стенограмма/],
   ];
   for (const [stage, pattern] of expected) assert.match(valuePropositionStageFormulationGuidance[stage].replace(/\s+/g, ' '), pattern);
+});
+
+const s5Nodes = [
+  { id: "B", label: "Необходимое условие B", type: "need", rank: 2, order: 1 },
+  { id: "D", label: "Действие D", type: "action", rank: 1, order: 1 },
+  { id: "C", label: "Необходимое условие C", type: "need", rank: 2, order: 2 },
+  { id: "Dprime", label: "Действие D′", type: "action", rank: 1, order: 2 },
+  { id: "A", label: "Общая цель A", type: "goal", rank: 3, order: 1 },
+] as const;
+
+function s5Cloud(accepted: string[], activeElementId: string | null) {
+  return valuePropositionDiagramSchema.parse({
+    version: 1,
+    kind: "cloud",
+    title: "Туча клиента",
+    purpose: "Восстановить конфликт клиента.",
+    activeElementId,
+    nodes: s5Nodes.map((node) => ({
+      ...node,
+      status: accepted.includes(node.id) ? "accepted" : "unknown",
+    })),
+    edges: [],
+  });
+}
+
+test("S5 определяет очередной блок только в порядке B → D → C → D′ → A", () => {
+  assert.equal(valuePropositionS5ExpectedBlock(null), "B");
+  assert.equal(valuePropositionS5ExpectedBlock(s5Cloud([], "B")), "B");
+  assert.equal(valuePropositionS5ExpectedBlock(s5Cloud(["B"], "D")), "D");
+  assert.equal(valuePropositionS5ExpectedBlock(s5Cloud(["B", "D"], "C")), "C");
+  assert.equal(valuePropositionS5ExpectedBlock(s5Cloud(["B", "D", "C"], "Dprime")), "Dprime");
+  assert.equal(valuePropositionS5ExpectedBlock(s5Cloud(["B", "D", "C", "Dprime"], "A")), "A");
+  assert.equal(valuePropositionS5ExpectedBlock(s5Cloud(["B", "D", "C", "Dprime", "A"], null)), "verification");
+});
+
+test("S5 запрещает начинать с действий и принимать несколько блоков за ход", () => {
+  const initial = s5Cloud([], "B");
+  const validB = validateValuePropositionS5Progress({
+    currentDiagram: initial,
+    nextDiagram: s5Cloud(["B"], "D"),
+    activeBlock: "D",
+    question: "Что клиентская организация обычно делает, чтобы обеспечить B?",
+    enteringS5: false,
+  });
+  assert.deepEqual(validB, []);
+
+  const actionBeforeNeed = validateValuePropositionS5Progress({
+    currentDiagram: initial,
+    nextDiagram: s5Cloud(["D"], "B"),
+    activeBlock: "B",
+    question: "Какое необходимое условие ставит под угрозу выбранное НЖЯ?",
+    enteringS5: false,
+  });
+  assert.ok(actionBeforeNeed.some((error) => /D принят раньше/.test(error)));
+
+  const skippedBlock = validateValuePropositionS5Progress({
+    currentDiagram: initial,
+    nextDiagram: s5Cloud(["B", "D"], "C"),
+    activeBlock: "C",
+    question: "Какое другое необходимое условие организация должна обеспечить?",
+    enteringS5: false,
+  });
+  assert.ok(skippedBlock.some((error) => /больше одного блока/.test(error)));
+
+  const repairedLegacyOrder = validateValuePropositionS5Progress({
+    currentDiagram: s5Cloud(["D"], "B"),
+    nextDiagram: initial,
+    activeBlock: "B",
+    question: "Какое необходимое условие ставит под угрозу выбранное НЖЯ?",
+    enteringS5: false,
+  });
+  assert.deepEqual(repairedLegacyOrder, []);
+});
+
+test("вход в S5 открывает B и не принимает его из ответа на S4", () => {
+  assert.deepEqual(validateValuePropositionS5Progress({
+    currentDiagram: null,
+    nextDiagram: s5Cloud([], "B"),
+    activeBlock: "B",
+    question: "Какое необходимое условие для важного результата ставит под угрозу выбранное НЖЯ?",
+    enteringS5: true,
+  }), []);
+
+  const prematureAcceptance = validateValuePropositionS5Progress({
+    currentDiagram: null,
+    nextDiagram: s5Cloud(["B"], "D"),
+    activeBlock: "D",
+    question: "Что клиентская организация обычно делает, чтобы обеспечить B?",
+    enteringS5: true,
+  });
+  assert.ok(prematureAcceptance.some((error) => /ответа на предыдущий этап/.test(error)));
 });
 
 const negativeBranch = {
