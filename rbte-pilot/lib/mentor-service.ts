@@ -3,6 +3,7 @@ import { extractProjectAdmission, generateValuePropositionMentorTurn } from './v
 import { activeProduct, admissionProduct, admissionLabels, admissionQuestions, mergeAdmission, mentorIntent, missingAdmission, normalizeQuestion, readMentorState, explicitAnonymizedConsent, type MentorState } from './mentor-state';
 import { nextValuePropositionStage, valuePropositionRoute, type ValuePropositionStage } from './value-proposition-route';
 import type { ValuePropositionDiagram } from './value-proposition-visualization';
+import { restoreMentorCloud, mentorCloudQuestion } from './mentor-cloud';
 
 export type MentorServiceInput = {
   stage: ValuePropositionStage; project: { name: string; ownerRole: string; confidentiality: string; systemBoundary: string; trainingResult: string; openGap: string; nextStep: string };
@@ -37,6 +38,10 @@ function sourceAnswer(sources: MentorMethodSource[]) {
 }
 export async function runMentorTurn(input: MentorServiceInput, deps: Dependencies = defaultDependencies): Promise<MentorServiceResult> {
   let state = readMentorState(input.evidence);
+  if (input.stage === 'S5') input = { ...input, currentDiagram: restoreMentorCloud([
+    input.currentDiagram, state.pending?.stage === 'S5' ? state.pending.visualization : null,
+    ...state.products.filter(p => p.stage === 'S5').reverse().map(p => p.visualization),
+  ]) };
   let stage = input.stage;
   let sources = await deps.retrieve(stage);
   const intent = mentorIntent(input.answer, input.intent);
@@ -61,6 +66,11 @@ export async function runMentorTurn(input: MentorServiceInput, deps: Dependencie
     // Load the next module only after closing and accepting the previous one.
     sources = await deps.retrieve(next);
     stage = next;
+    if (next === 'S5') {
+      input = { ...input, currentDiagram: restoreMentorCloud([]) };
+      state.lastQuestion = mentorCloudQuestion(input.currentDiagram!);
+      return base(`Принятая версия:\n${confirmed.text}\n\nНачинаем Тучу с необходимого условия B.\n\n${state.lastQuestion}`, 'Необходимое условие B', state.lastQuestion);
+    }
     state.lastQuestion = openingQuestions[next];
     return base(`Принятая версия «${definition.workProduct}»:\n${confirmed.text}\n\nНеизвестное, которое сохраняем: ${confirmed.unknowns.join('; ') || 'не указано'}.\n\nТеперь работаем над «${valuePropositionRoute[next].workProduct}». ${valuePropositionRoute[next].goal}\n\n${openingQuestions[next]}`, valuePropositionRoute[next].workProduct, openingQuestions[next]);
   }

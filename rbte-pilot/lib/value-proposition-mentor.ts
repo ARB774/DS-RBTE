@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { restoreMentorCloud, mentorCloudQuestion } from './mentor-cloud';
 import { reviewConfig } from "@/lib/review-openai";
 import { retrieveMentorMethods, type MentorMethodSource } from "./mentor-method-client";
 import { admissionUpdateSchema, type MentorState } from './mentor-state';
@@ -101,6 +102,7 @@ export async function generateValuePropositionMentorTurn(input: {
   methodEvidence?: MentorMethodSource[];
   intent?: string;
 }): Promise<ValuePropositionMentorTurn> {
+  if (input.stage === 'S5') input = { ...input, currentDiagram: restoreMentorCloud([input.currentDiagram]) };
   const config = reviewConfig();
   const stage = valuePropositionRoute[input.stage];
   const methodEvidence = input.methodEvidence ?? await retrieveMentorMethods(input.stage);
@@ -238,10 +240,7 @@ ${s5Prompt}
     && turn.readyForNextStage;
 
   if ((input.stage === "S5" || enteringS5) && !leavingCompletedS5) {
-    if (input.stage === "S5" && currentS5Block !== "verification"
-      && turn.proposedStage === "S6.1" && turn.readyForNextStage) {
-      throw new Error("Наставник попытался завершить S5 до построения и проверки Тучи. Ход не сохранён.");
-    }
+    if (turn.diagram?.kind === 'cloud') turn.diagram = restoreMentorCloud([turn.diagram, input.currentDiagram]);
     const s5Errors = validateValuePropositionS5Progress({
       currentDiagram: input.currentDiagram,
       nextDiagram: turn.diagram,
@@ -249,8 +248,20 @@ ${s5Prompt}
       question: turn.question,
       enteringS5,
     });
+    if (input.stage === 'S5' && currentS5Block !== 'verification' && turn.proposedStage === 'S6.1' && turn.readyForNextStage) s5Errors.push('premature-stage-transition');
     if (s5Errors.length) {
-      throw new Error(`Наставник нарушил порядок S5: ${s5Errors.join("; ")}. Ход не сохранён.`);
+      const restored = restoreMentorCloud([input.currentDiagram]);
+      turn.diagram = restored;
+      turn.activeS5Block = valuePropositionS5ExpectedBlock(restored);
+      turn.proposedStage = 'S5';
+      turn.readyForNextStage = false;
+      turn.acceptedUpdate = 'Сохранённые формулировки и статусы Тучи восстановлены без принятия новых блоков.';
+      turn.reflection = 'Ваше сообщение сохранено. Ответ наставника не содержал согласованного обновления Тучи; сохранённые блоки восстановлены. Продолжаем с первого незавершённого блока.';
+      turn.question = mentorCloudQuestion(restored);
+      turn.nextStep = turn.question;
+      turn.priorityGap = `Туча: ${turn.activeS5Block}`;
+      turn.workingProduct = restored.nodes.map(n => `${n.id}: ${n.label} [${n.status}]`).join('\n');
+      turn.unknowns = restored.nodes.filter(n => n.status === 'unknown').map(n => n.id);
     }
   } else if (!leavingCompletedS5 && turn.activeS5Block !== null) {
     throw new Error("Наставник указал блок S5 вне этапа построения Тучи. Ход не сохранён.");
