@@ -92,6 +92,7 @@ export async function generateValuePropositionMentorTurn(input: {
   const methodEvidence = input.methodEvidence ?? await retrieveMentorMethods(input.stage);
   const activeModule = activeMentorModule(input.stage, input.stateCard ?? readMentorState([]), methodEvidence);
   const stateCard = input.stateCard ? { ...input.stateCard, artifacts: undefined, legacyEvidence: undefined } : undefined;
+  const responseSchema = mentorResponseSchema(input.stage, input.intent);
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     redirect: "error",
@@ -135,6 +136,7 @@ readyForNextStage — рекомендация предъявить продук
 
 ЛОГИЧЕСКИЕ СХЕМЫ В ПРИЛОЖЕНИИ
 1. Диаграмма — часть рабочего продукта. На S4–S10 всегда верни diagram: обновлённую полную текущую схему либо неизменённую текущую схему. Не заменяй её текстовым описанием. На других стадиях diagram допустима, если она помогает видеть продукт.
+На S4 верни карту undesirable-effects. Даже одного сообщения «мало заявок через интернет» достаточно для одного узла-кандидата НЖЯ исходными словами участника. Не придумывай число заявок, период, норму, причину или последствия. Недостающую конкретность выясняй одним вопросом; не требуй уже готового доказательства для показа кандидата. Если существенных данных ещё нет, явно обозначь неизвестное, а не возвращай null. На этом этапе причинные стрелки не добавляются без основания.
 2. Сохраняй устойчивые id принятых узлов и стрелок. Не удаляй принятый элемент без явного решения участника. accepted — принято участником; candidate — предложено участником, но ещё не принято; checking — сейчас проверяется; hypothesis — причинная связь или будущий прогноз без подтверждения; unknown — явный разрыв; rejected — явно исключено.
 3. rank=0 — нижний уровень, следствия получают больший rank. Причинные и необходимые стрелки идут from причины/обеспечивающего элемента to следствия/условия. order задаёт положение слева направо.
 4. Туча: A, B, C, D, D′ и четыре стрелки необходимости; конфликт — симметричная двусторонняя стрелка между D и D′. Несовместимость объясняется условиями, а не формальным «можно/нельзя одновременно».
@@ -161,7 +163,7 @@ readyForNextStage — рекомендация предъявить продук
           type: "json_schema",
           name: "value_proposition_mentor_turn",
           strict: true,
-          schema: mentorJsonSchema,
+          schema: responseSchema,
         },
       },
     }),
@@ -225,6 +227,19 @@ export function admissionFromIndexedSources(value: unknown, texts: string[]) {
 }
 
 export function methodPassages(text: string) { return text.split(/\n\s*\n/).filter(part => part.trim().length > 0); }
+export function mentorResponseSchema(stage: ValuePropositionStage, intent?: string) {
+  const required = intent !== 'explanation' && valuePropositionStageRequiresDiagram(stage);
+  const diagram = stage === 'S4' && required ? {
+    ...valuePropositionDiagramJsonSchema,
+    properties: { ...valuePropositionDiagramJsonSchema.properties,
+      kind: { type: 'string', enum: ['undesirable-effects'] },
+      nodes: { ...valuePropositionDiagramJsonSchema.properties.nodes, minItems: 1 },
+    },
+  } : valuePropositionDiagramJsonSchema;
+  return { ...mentorJsonSchema, properties: { ...mentorJsonSchema.properties,
+    diagram: required ? diagram : { anyOf: [diagram, { type: 'null' }] },
+  } };
+}
 export function resolveCriterionEvidence(reference: { sourceId: string; passageIndex: number }, sources: Array<{ id: string; text: string }>) {
   const source = sources.find(s => s.id === reference.sourceId);
   const quote = source && methodPassages(source.text)[reference.passageIndex];

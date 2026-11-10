@@ -9,6 +9,7 @@ import { readMentorState } from '@/lib/mentor-state';
 import { readMentorNotice } from '@/lib/mentor-delivery';
 import { MentorMessageInput } from '@/app/components/mentor-message-input';
 import { UUID } from '@/lib/rbte';
+import { visibleMentorTurns } from '@/lib/mentor-history';
 
 export default async function ValuePropositionProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ notice?: string }> }) {
   const { id } = await params;
@@ -63,7 +64,7 @@ export default async function ValuePropositionProjectPage({ params, searchParams
     <div className="grid xl:grid-cols-[minmax(0,1fr)_360px] gap-6 mt-6">
       <section className="card p-5 space-y-4">
         <h2 className="font-bold text-lg">Диалог с наставником</h2>
-        {turns.map((turn) => turn.authorRole === 'SERVICE'
+        {visibleMentorTurns(turns).map((turn) => turn.authorRole === 'SERVICE'
           ? <article key={turn.id} className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
               <p>{readMentorNotice(turn.content)?.message || 'Ответ участника сохранён. Наставник временно недоступен.'}</p>
               {turn.id === turns.at(-1)?.id && turn.stage === stage && readMentorNotice(turn.content) && <form action={submit} className="mt-3">

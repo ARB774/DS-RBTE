@@ -1,6 +1,7 @@
 // A synthetic regression, no production learner records or database writes.
 import assert from 'node:assert/strict';
 import { runMentorTurn, type MentorServiceInput } from '../lib/mentor-service';
+import { readMentorState } from '../lib/mentor-state';
 let checkpoint = 'sources';
 
 async function main() {
@@ -44,6 +45,14 @@ async function main() {
   assert.equal(attempt.stage, 'S1');
   assert.ok(attempt.state.pending?.text);
   assert.ok(attempt.sources.some(s => s.id === 'DS-RBTE.S1'));
-  console.log('LIVE REGRESSION PASSED: MCP sources, explanation, admission from legacy dialogue, confidentiality, confirmation, S1 transition. No learner data or DB writes.');
+  checkpoint = 'S4 first undesirable effect';
+  const s4State=readMentorState(next.state);
+  s4State.products.push({stage:'S3',version:1,status:'confirmed',ready:true,text:'Производственные B2B-компании, которым не хватает обращений покупателей через интернет.',unknowns:[],sourceIds:['DS-RBTE.S3']});
+  const s4 = await runMentorTurn({ ...input, stage:'S4', evidence:s4State, history:[],currentDiagram:null,
+    project:{...input.project,openGap:'Согласованный набор НЖЯ',nextStep:'Какой нежелательный результат вы наблюдали?'}, answer:'мало заявок через интернет' });
+  assert.equal(s4.diagram?.kind,'undesirable-effects');
+  assert.ok(s4.diagram?.nodes.some(node=>node.label.includes('заявок') && node.status==='candidate'));
+  assert.ok(!s4.diagram?.edges.some(edge=>edge.kind==='cause'||edge.kind==='necessity'));
+  console.log('LIVE REGRESSION PASSED: MCP sources, explanation, admission, confidentiality, confirmation, S1 transition, S4 single candidate map. No learner data or DB writes.');
 }
 main().catch(error => { console.error('LIVE REGRESSION FAILED:', checkpoint, String(error.message).slice(0, 2000)); process.exitCode = 1; });
