@@ -29,7 +29,7 @@ const projectSchema = z.object({
 const turnSchema = z.object({ content: z.string().trim().min(1).max(8000) });
 
 export async function createValuePropositionProjectAction(formData: FormData): Promise<void> {
-  const me = await requireUser();
+  const me = await requireUser(['PARTICIPANT'], '/value-proposition/new');
   const parsed = projectSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) throw new Error(parsed.error.issues.map((issue) => issue.message).join("; "));
   const id = UUID();
@@ -70,14 +70,14 @@ export async function createValuePropositionProjectAction(formData: FormData): P
 }
 
 export async function listValuePropositionProjectsAction() {
-  const me = await requireUser();
+  const me = await requireUser(['PARTICIPANT'], '/value-proposition');
   return db.select().from(valuePropositionProjects)
     .where(eq(valuePropositionProjects.ownerId, me.id))
     .orderBy(desc(valuePropositionProjects.updatedAt));
 }
 
 export async function getValuePropositionProjectAction(id: string) {
-  const me = await requireUser();
+  const me = await requireUser(['PARTICIPANT'], `/value-proposition/${id}`);
   const project = await db.select().from(valuePropositionProjects)
     .where(and(eq(valuePropositionProjects.id, id), eq(valuePropositionProjects.ownerId, me.id)))
     .limit(1);
@@ -89,7 +89,7 @@ export async function getValuePropositionProjectAction(id: string) {
 }
 
 export async function addValuePropositionTurnAction(id: string, formData: FormData): Promise<void> {
-  const me = await requireUser();
+  const me = await requireUser(['PARTICIPANT'], `/value-proposition/${id}`);
   const parsed = turnSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect(`/value-proposition/${id}?notice=invalid-message`);
   const project = await db.select().from(valuePropositionProjects)

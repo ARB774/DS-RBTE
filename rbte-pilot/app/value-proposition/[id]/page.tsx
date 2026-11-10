@@ -11,8 +11,8 @@ import { MentorMessageInput } from '@/app/components/mentor-message-input';
 import { UUID } from '@/lib/rbte';
 
 export default async function ValuePropositionProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ notice?: string }> }) {
-  await requireUser();
   const { id } = await params;
+  await requireUser(['PARTICIPANT'], `/value-proposition/${id}`);
   const { notice } = await searchParams;
   const data = await getValuePropositionProjectAction(id);
   if (!data) notFound();

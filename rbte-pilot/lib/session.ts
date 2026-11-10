@@ -4,19 +4,20 @@ import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { db } from './db';
 import { type UserRole } from '@/db/schema';
-import { SESSION_COOKIE,tokenSchema,type AuthUser } from './auth';
+import { SESSION_COOKIE,type AuthUser } from './auth';
 import { portalCall,identitySchema } from './portal-client';
 import { portalUser } from './portal-user';
-export const getCurrentSession=cache(async():Promise<{user:AuthUser|null}>=>{
- const parsed=tokenSchema.safeParse((await cookies()).get(SESSION_COOKIE)?.value);
- if(!parsed.success) return {user:null};
- try {
-  const identity=identitySchema.parse(await portalCall({action:'validate',token:parsed.data}));
-  return {user:await portalUser(db,identity)};
- } catch { return {user:null}; }
+import { checkPortalSession,sessionDestination,type SessionCheck } from './session-check';
+export const getCurrentSession=cache(async():Promise<SessionCheck>=>{
+ return checkPortalSession((await cookies()).get(SESSION_COOKIE)?.value,
+  async token=>identitySchema.parse(await portalCall({action:'validate',token})),
+  async identity=>portalUser(db,identitySchema.parse(identity)));
 });
-export async function requireUser(roles:UserRole[]=['PARTICIPANT']):Promise<AuthUser>{
- const {user}=await getCurrentSession();
+export async function requireUser(roles:UserRole[]=['PARTICIPANT'],returnTo='/dashboard'):Promise<AuthUser>{
+ const session=await getCurrentSession();
+ const destination=sessionDestination(session,returnTo);
+ if(destination) redirect(destination);
+ const {user}=session;
  if(!user) redirect('/login');
  if(roles.length&&!roles.includes(user.role)) redirect('/dashboard');
  return user;
