@@ -6,10 +6,14 @@ import { requireUser } from "@/lib/session";
 import { valuePropositionRoute, valuePropositionStageSchema } from "@/lib/value-proposition-route";
 import { parseValuePropositionDiagram } from "@/lib/value-proposition-visualization";
 import { readMentorState } from '@/lib/mentor-state';
+import { readMentorNotice } from '@/lib/mentor-delivery';
+import { MentorMessageInput } from '@/app/components/mentor-message-input';
+import { UUID } from '@/lib/rbte';
 
-export default async function ValuePropositionProjectPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ValuePropositionProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ notice?: string }> }) {
   await requireUser();
   const { id } = await params;
+  const { notice } = await searchParams;
   const data = await getValuePropositionProjectAction(id);
   if (!data) notFound();
   const { project, turns } = data;
@@ -23,6 +27,8 @@ export default async function ValuePropositionProjectPage({ params }: { params: 
   const turnDiagrams = new Map(memory.artifacts.map(item => [item.turnId, parseValuePropositionDiagram(item.diagram)]));
 
   return <div className="container-x py-8">
+    {notice === 'mentor-failed' && <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 mb-4">Ваш ответ сохранён. Наставник пока не смог обработать его; рабочий продукт и этап сохранены.</p>}
+    {notice === 'invalid-message' && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 mb-4">Введите сообщение от 1 до 8000 символов. Текст черновика остаётся в этой вкладке.</p>}
     <header className="flex justify-between gap-5 flex-wrap">
       <div>
         <Link href="/value-proposition" className="text-sm text-[var(--color-brand-700)]">← Все проекты</Link>
@@ -57,7 +63,16 @@ export default async function ValuePropositionProjectPage({ params }: { params: 
     <div className="grid xl:grid-cols-[minmax(0,1fr)_360px] gap-6 mt-6">
       <section className="card p-5 space-y-4">
         <h2 className="font-bold text-lg">Диалог с наставником</h2>
-        {turns.map((turn) => turn.authorRole === "CONTEXT"
+        {turns.map((turn) => turn.authorRole === 'SERVICE'
+          ? <article key={turn.id} className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
+              <p>{readMentorNotice(turn.content)?.message || 'Ответ участника сохранён. Наставник временно недоступен.'}</p>
+              {turn.id === turns.at(-1)?.id && turn.stage === stage && readMentorNotice(turn.content) && <form action={submit} className="mt-3">
+                <input type="hidden" name="content" value="Повторить обработку сохранённого ответа" />
+                <input type="hidden" name="retryErrorId" value={turn.id} />
+                <button type="submit" className="btn btn-ghost">Повторить обработку</button>
+              </form>}
+            </article>
+          : turn.authorRole === "CONTEXT"
           ? <details key={turn.id} className="rounded-xl border border-[#d9dfeb] p-4 text-sm"><summary className="font-semibold cursor-pointer">Контекст продолжения проекта</summary><p className="whitespace-pre-wrap leading-6 mt-3">{turn.content}</p></details>
           : <article key={turn.id} className={turn.authorRole === "MENTOR" ? "rounded-xl bg-[#f4f7fb] p-4" : "rounded-xl border border-[#e5e7eb] p-4"}>
             <div className="text-xs font-semibold text-[#6b7280] mb-1">{turn.authorRole === "MENTOR" ? "Наставник" : "Ваше сообщение"}</div>
@@ -72,7 +87,7 @@ export default async function ValuePropositionProjectPage({ params }: { params: 
             <option value="explanation">Попросить объяснение</option>
             <option value="sources">Спросить об источниках</option>
           </select>
-          <textarea id="content" name="content" required rows={6} maxLength={8000} placeholder="Можно ответить на вопрос, попросить объяснение или исправить принятое содержание." className="w-full rounded-xl border border-[#d6dbe5] p-3" />
+          <MentorMessageInput projectId={id} submissionId={UUID()} savedIds={turns.filter(t => t.authorRole === 'PARTICIPANT').map(t => t.id)} />
           {stage === 'S0' && <label className="flex gap-2 text-sm"><input type="checkbox" name="dataMode" value="anonymized" />Согласен работать только с обезличенными случаями, без имён, контактов и закрытых документов.</label>}
           <button className="btn btn-primary" type="submit">Передать наставнику</button>
         </form>

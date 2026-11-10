@@ -20,8 +20,8 @@ test('mentor request contains stage sources and accepted project context, not on
     payload = JSON.parse(String(init?.body));
     return new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{
       type: 'output_text', text: JSON.stringify({
-        reflection: 'Допуск согласован.', acceptedUpdate: 'Используем обезличенные данные.',
-        observations: ['Роль названа'], criterion: 'Допуск проекта (DS-RBTE.S0)', priorityGap: 'Исходная модель',
+        reflection: 'Допуск согласован.', acceptedUpdate: 'Принятое содержание '.repeat(90),
+        observations: ['Наблюдение участника '.repeat(40)], criterion: 'Допуск проекта (DS-RBTE.S0)', priorityGap: 'Исходная модель',
         learningAction: 'Описать исходное представление', helpLevel: 'question', question: 'Кто ваш клиент?',
         proposedStage: 'S1', readyForNextStage: true, nextStep: 'Исходная модель', diagram: null,
         workingProduct: 'Обезличенный учебный проект', unknowns: [], sourceIds: ['DS-RBTE.S0'],
@@ -41,6 +41,8 @@ test('mentor request contains stage sources and accepted project context, not on
     assert.equal(input.history[0].content, 'Доступны обезличенные случаи');
     assert.match(payload.instructions, /Не требуй заново согласованные пункты/);
     assert.equal(result.proposedStage, 'S1');
+    assert.ok(result.acceptedUpdate.length > 700);
+    assert.ok(result.observations[0].length > 400);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.PILOT_OPENAI_API_KEY;

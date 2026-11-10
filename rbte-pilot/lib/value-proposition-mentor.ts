@@ -17,20 +17,20 @@ import {
 } from "@/lib/value-proposition-visualization";
 
 const mentorOutput = z.object({
-  reflection: z.string().min(1).max(1400),
-  acceptedUpdate: z.string().min(1).max(700),
-  observations: z.array(z.string().min(1).max(400)).max(5),
-  criterion: z.string().min(1).max(600),
-  priorityGap: z.string().min(1).max(700),
-  learningAction: z.string().min(1).max(500),
+  reflection: z.string().min(1),
+  acceptedUpdate: z.string().min(1),
+  observations: z.array(z.string().min(1)).max(5),
+  criterion: z.string().min(1),
+  priorityGap: z.string().min(1),
+  learningAction: z.string().min(1),
   helpLevel: z.enum(["question", "missing-sign", "criterion", "partial-example", "explanation"]),
-  question: z.string().min(1).max(800),
+  question: z.string().min(1),
   proposedStage: valuePropositionStageSchema,
   readyForNextStage: z.boolean(),
-  nextStep: z.string().min(1).max(700),
+  nextStep: z.string().min(1),
   diagram: valuePropositionDiagramSchema.nullable(),
-  workingProduct: z.string().max(16000),
-  unknowns: z.array(z.string().max(700)).max(12),
+  workingProduct: z.string(),
+  unknowns: z.array(z.string()).max(12),
   sourceIds: z.array(z.string()).min(1).max(12),
   criterionEvidence: z.object({ sourceId: z.string(), passageIndex: z.number().int().min(0) }).strict(),
 }).strict();
@@ -59,8 +59,8 @@ const mentorJsonSchema = {
     nextStep: { type: "string" },
     diagram: { anyOf: [valuePropositionDiagramJsonSchema, { type: "null" }] },
     workingProduct: { type: 'string' },
-    unknowns: { type: 'array', items: { type: 'string' } },
-    sourceIds: { type: 'array', items: { type: 'string' } },
+    unknowns: { type: 'array', maxItems: 12, items: { type: 'string' } },
+    sourceIds: { type: 'array', minItems: 1, maxItems: 12, items: { type: 'string' } },
     criterionEvidence: { type: 'object', additionalProperties: false, required: ['sourceId', 'passageIndex'], properties: { sourceId: { type: 'string' }, passageIndex: { type: 'integer' } } },
   },
 } as const;
@@ -181,6 +181,7 @@ readyForNextStage — рекомендация предъявить продук
     .filter((item) => item.type === "output_text")
     .map((item) => item.text ?? "")
     .join("");
+  if (text.length > 128000) throw new Error('Ответ наставника превышает общий допустимый размер.');
   const turn = mentorOutput.parse(JSON.parse(text));
   if (turn.sourceIds.some(id => !methodEvidence.some(source => source.id === id))) throw new Error('Наставник сослался на непрочитанный источник. Ход не сохранён.');
   const criterionQuote = resolveCriterionEvidence(turn.criterionEvidence, methodEvidence).quote;

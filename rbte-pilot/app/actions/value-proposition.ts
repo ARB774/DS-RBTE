@@ -14,6 +14,7 @@ import {
   valuePropositionStageSchema,
 } from "@/lib/value-proposition-route";
 import { parseValuePropositionDiagram } from "@/lib/value-proposition-visualization";
+import { deliverSavedMentorTurn, readMentorNotice } from '@/lib/mentor-delivery';
 
 const projectSchema = z.object({
   name: z.string().trim().min(3).max(200),
@@ -90,12 +91,13 @@ export async function getValuePropositionProjectAction(id: string) {
 export async function addValuePropositionTurnAction(id: string, formData: FormData): Promise<void> {
   const me = await requireUser();
   const parsed = turnSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) throw new Error("Введите ответ участника.");
+  if (!parsed.success) redirect(`/value-proposition/${id}?notice=invalid-message`);
   const project = await db.select().from(valuePropositionProjects)
     .where(and(eq(valuePropositionProjects.id, id), eq(valuePropositionProjects.ownerId, me.id)))
     .limit(1);
   if (!project[0]) throw new Error("Проект не найден.");
   const previousTurns = await db.select({
+    id: valuePropositionTurns.id,
     authorRole: valuePropositionTurns.authorRole,
     stage: valuePropositionTurns.stage,
     content: valuePropositionTurns.content,
@@ -105,7 +107,42 @@ export async function addValuePropositionTurnAction(id: string, formData: FormDa
     .orderBy(asc(valuePropositionTurns.createdAt));
   const currentStage = valuePropositionStageSchema.parse(project[0].currentState);
   const currentDiagram = parseValuePropositionDiagram(project[0].visualization);
-  const mentorTurn = await runMentorTurn({
+  let participantId = z.string().uuid().safeParse(formData.get('submissionId')).success ? String(formData.get('submissionId')) : UUID();
+  let answer = parsed.data.content;
+  let intent = String(formData.get('intent') || '');
+  let dataMode = String(formData.get('dataMode') || '');
+  const retryId = z.string().uuid().safeParse(formData.get('retryErrorId'));
+  if (retryId.success) {
+    const latest = await db.select({ id: valuePropositionTurns.id }).from(valuePropositionTurns).where(eq(valuePropositionTurns.projectId, id)).orderBy(desc(valuePropositionTurns.createdAt)).limit(1);
+    if (latest[0]?.id !== retryId.data) redirect(`/value-proposition/${id}`);
+    const errors = await db.select().from(valuePropositionTurns).where(and(eq(valuePropositionTurns.id, retryId.data), eq(valuePropositionTurns.projectId, id), eq(valuePropositionTurns.authorRole, 'SERVICE'))).limit(1);
+    const notice = errors[0] && readMentorNotice(errors[0].content);
+    if (!notice) redirect(`/value-proposition/${id}`);
+    const originals = await db.select().from(valuePropositionTurns).where(and(eq(valuePropositionTurns.id, notice.participantId), eq(valuePropositionTurns.projectId, id), eq(valuePropositionTurns.authorRole, 'PARTICIPANT'))).limit(1);
+    if (!originals[0] || originals[0].stage !== currentStage) redirect(`/value-proposition/${id}`);
+    participantId = originals[0].id;
+    answer = originals[0].content;
+    intent = notice.intent;
+    dataMode = notice.dataMode;
+  }
+  const participantTime = new Date(Math.max(Date.now(), project[0].updatedAt.getTime() + 1));
+  const reservedAt = new Date(participantTime.getTime() + 1);
+  let duplicate = false;
+  let stale = false;
+  const delivered = await deliverSavedMentorTurn({
+    saveParticipant: async () => {
+      await db.transaction(async tx => {
+        const locked = await tx.select({ updatedAt: valuePropositionProjects.updatedAt }).from(valuePropositionProjects).where(eq(valuePropositionProjects.id, id)).for('update');
+        stale = !locked[0] || locked[0].updatedAt.getTime() !== project[0].updatedAt.getTime();
+        if (!retryId.success) {
+          const inserted = await tx.insert(valuePropositionTurns).values({ id: participantId, projectId: id, authorRole: 'PARTICIPANT', stage: currentStage, content: answer, createdAt: participantTime }).onConflictDoNothing().returning({ id: valuePropositionTurns.id });
+          if (!inserted.length) { duplicate = true; return; }
+        }
+        if (!stale) await tx.update(valuePropositionProjects).set({ updatedAt: reservedAt }).where(and(eq(valuePropositionProjects.id, id), eq(valuePropositionProjects.ownerId, me.id)));
+      });
+      if (duplicate) redirect(`/value-proposition/${id}`);
+    },
+    generate: () => { if (stale) throw new Error('Project changed concurrently'); return runMentorTurn({
     stage: currentStage,
     project: {
       name: project[0].name,
@@ -117,20 +154,21 @@ export async function addValuePropositionTurnAction(id: string, formData: FormDa
       confidentiality: project[0].confidentiality,
     },
     currentDiagram,
-    history: previousTurns,
-    answer: parsed.data.content,
-    intent: String(formData.get('intent') || ''),
-    dataMode: String(formData.get('dataMode') || ''),
+    history: previousTurns.filter(t => t.authorRole !== 'SERVICE' && t.id !== participantId).map(({ id: _turnId, ...turn }) => turn),
+    answer,
+    intent,
+    dataMode,
     evidence: project[0].evidence,
-  });
+  }); },
+  saveReply: async mentorTurn => {
   const resolvedStage = mentorTurn.stage;
   const mentorMessageId = UUID();
-  const turnCreatedAt = new Date(Math.max(Date.now(), project[0].updatedAt.getTime() + 1));
+  const turnCreatedAt = new Date(Math.max(Date.now(), reservedAt.getTime() + 1));
   if (mentorTurn.diagram) mentorTurn.state.artifacts.push({ turnId: mentorMessageId, diagram: mentorTurn.diagram });
   await db.transaction(async tx => {
   const locked = await tx.select({ updatedAt: valuePropositionProjects.updatedAt }).from(valuePropositionProjects)
     .where(and(eq(valuePropositionProjects.id, id), eq(valuePropositionProjects.ownerId, me.id))).for('update');
-  if (!locked[0] || locked[0].updatedAt.getTime() !== project[0].updatedAt.getTime()) throw new Error('Проект изменился в другом окне. Обновите страницу перед отправкой.');
+  if (!locked[0] || locked[0].updatedAt.getTime() !== reservedAt.getTime()) throw new Error('Проект изменился в другом окне.');
   const updated = await tx.update(valuePropositionProjects).set({
     currentState: resolvedStage,
     openGap: mentorTurn.openGap,
@@ -147,14 +185,6 @@ export async function addValuePropositionTurnAction(id: string, formData: FormDa
   }).where(and(eq(valuePropositionProjects.id, id), eq(valuePropositionProjects.ownerId, me.id))).returning({ id: valuePropositionProjects.id });
   if (!updated.length) throw new Error('Проект изменился в другом окне. Обновите страницу перед отправкой.');
   await tx.insert(valuePropositionTurns).values({
-    id: UUID(),
-    projectId: id,
-    authorRole: "PARTICIPANT",
-    stage: currentStage,
-    content: parsed.data.content,
-    createdAt: turnCreatedAt,
-  });
-  await tx.insert(valuePropositionTurns).values({
     id: mentorMessageId,
     projectId: id,
     authorRole: "MENTOR",
@@ -163,5 +193,13 @@ export async function addValuePropositionTurnAction(id: string, formData: FormDa
     createdAt: new Date(turnCreatedAt.getTime() + 1),
   });
   });
-  redirect(`/value-proposition/${id}`);
+  },
+  saveFailure: async () => {
+    await db.insert(valuePropositionTurns).values({ id: UUID(), projectId: id, authorRole: 'SERVICE', stage: currentStage,
+      content: JSON.stringify({ message: 'Ваш ответ сохранён. Ответ наставника пока не удалось обработать. Рабочий продукт и этап не изменены. Можно повторить обработку без повторного ввода.', participantId, intent, dataMode }),
+      createdAt: new Date(Math.max(Date.now(), reservedAt.getTime() + 2)),
+    });
+  },
+  });
+  redirect(`/value-proposition/${id}${delivered ? '' : '?notice=mentor-failed'}`);
 }
