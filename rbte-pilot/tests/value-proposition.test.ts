@@ -63,7 +63,7 @@ test("каждый этап имеет собственную помощь пр�
     ["S10", /контролируемое действие\s+поставщика/],
     ["S11", /не стенограмма/],
   ];
-  for (const [stage, pattern] of expected) assert.match(valuePropositionStageFormulationGuidance[stage], pattern);
+  for (const [stage, pattern] of expected) assert.match(valuePropositionStageFormulationGuidance[stage].replace(/\s+/g, ' '), pattern);
 });
 
 const s5Nodes = [

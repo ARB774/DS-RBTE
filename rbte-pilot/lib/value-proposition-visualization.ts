@@ -93,6 +93,14 @@ export const valuePropositionDiagramSchema = z.object({
 
 export type ValuePropositionDiagram = z.infer<typeof valuePropositionDiagramSchema>;
 
+// A learner's first formulation is evidence of an attempt, not an accepted UDE.
+export function initialUndesirableEffectDraft(answer: string, previous: ValuePropositionDiagram | null): ValuePropositionDiagram | null {
+  const label = answer.trim();
+  if (previous?.kind === 'undesirable-effects' || !label || label.length > 500 || label.includes('?')) return null;
+  return { version:1,kind:'undesirable-effects',title:'Кандидат НЖЯ',purpose:'Уточнить самостоятельную формулировку участника до принятия',activeElementId:'ude-candidate-1',
+    nodes:[{id:'ude-candidate-1',label,type:'ude',status:'candidate',rank:0,order:0}],edges:[] };
+}
+
 export function parseValuePropositionDiagram(value: unknown): ValuePropositionDiagram | null {
   const parsed = valuePropositionDiagramSchema.safeParse(value);
   return parsed.success ? parsed.data : null;

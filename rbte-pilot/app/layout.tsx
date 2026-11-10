@@ -14,7 +14,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = await getCurrentSession();
+  const { user, status } = await getCurrentSession();
   const year = new Date().getFullYear();
   return (
     <html lang="ru">
@@ -68,6 +68,10 @@ export default async function RootLayout({
                 <form action={logoutAction}>
                   <button type="submit" className="btn btn-ghost">Выйти</button>
                 </form>
+              ) : status === 'unavailable' ? (
+                <a href="/auth/unavailable" className="btn btn-ghost">Проверка входа недоступна</a>
+              ) : status === 'forbidden' ? (
+                <a href="/auth/denied" className="btn btn-ghost">Доступ закрыт</a>
               ) : (
                 <a href="/login" className="btn btn-ghost">Войти</a>
               )}

@@ -117,7 +117,7 @@ export function validateValuePropositionS5Progress(input: {
   for (const block of valuePropositionS5Blocks) {
     const accepted = valuePropositionS5Node(next, block)?.status === "accepted";
     if (!accepted) unfinishedSeen = true;
-    else if (unfinishedSeen) errors.push(`блок ${block} принят раньше предыдущего блока`);
+    else if (unfinishedSeen && valuePropositionS5Node(input.currentDiagram, block)?.status !== 'accepted') errors.push(`блок ${block} принят раньше предыдущего блока`);
   }
 
   const currentPrefix = input.enteringS5
