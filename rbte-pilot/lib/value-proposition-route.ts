@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ValuePropositionDiagram } from "@/lib/value-proposition-visualization";
 
 export const valuePropositionStages = [
   "S0",
@@ -27,6 +28,153 @@ export type ValuePropositionStageDefinition = {
   acceptance: string;
   diagram: string;
 };
+
+export const valuePropositionS5Blocks = ["B", "D", "C", "Dprime", "A"] as const;
+export const valuePropositionS5ActiveBlockSchema = z.enum([
+  ...valuePropositionS5Blocks,
+  "verification",
+]);
+export type ValuePropositionS5ActiveBlock = z.infer<typeof valuePropositionS5ActiveBlockSchema>;
+
+export const valuePropositionS5NodeIds: Record<(typeof valuePropositionS5Blocks)[number], string> = {
+  B: "B",
+  D: "D",
+  C: "C",
+  Dprime: "Dprime",
+  A: "A",
+};
+
+const valuePropositionS5NodeTypes = {
+  B: "need",
+  D: "action",
+  C: "need",
+  Dprime: "action",
+  A: "goal",
+} as const;
+
+function valuePropositionS5Node(
+  diagram: ValuePropositionDiagram | null,
+  block: (typeof valuePropositionS5Blocks)[number],
+) {
+  return diagram?.kind === "cloud"
+    ? diagram.nodes.find((node) => node.id === valuePropositionS5NodeIds[block])
+    : undefined;
+}
+
+export function valuePropositionS5AcceptedPrefixLength(diagram: ValuePropositionDiagram | null): number {
+  let accepted = 0;
+  for (const block of valuePropositionS5Blocks) {
+    if (valuePropositionS5Node(diagram, block)?.status !== "accepted") break;
+    accepted += 1;
+  }
+  return accepted;
+}
+
+export function valuePropositionS5ExpectedBlock(
+  diagram: ValuePropositionDiagram | null,
+): ValuePropositionS5ActiveBlock {
+  return valuePropositionS5Blocks[valuePropositionS5AcceptedPrefixLength(diagram)] ?? "verification";
+}
+
+function valuePropositionS5QuestionMatchesBlock(
+  block: ValuePropositionS5ActiveBlock,
+  question: string,
+): boolean {
+  if (block === "verification") return true;
+  const normalized = question.toLocaleLowerCase("ru-RU");
+  if (block === "B" || block === "C") {
+    return /необходим[а-яё]*\s+услов/.test(normalized);
+  }
+  if (block === "D" || block === "Dprime") {
+    return /(что|какое)[\s\S]{0,180}(дела|действ|поступ|выбира|приобрета|применя|отверга|замен)/.test(normalized);
+  }
+  return /общ[а-яё]*\s+цел|цель/.test(normalized);
+}
+
+export function validateValuePropositionS5Progress(input: {
+  currentDiagram: ValuePropositionDiagram | null;
+  nextDiagram: ValuePropositionDiagram | null;
+  activeBlock: ValuePropositionS5ActiveBlock | null;
+  question: string;
+  enteringS5: boolean;
+}): string[] {
+  const errors: string[] = [];
+  const next = input.nextDiagram;
+  if (!next || next.kind !== "cloud") return ["на S5 отсутствует актуальная Туча"];
+
+  for (const block of valuePropositionS5Blocks) {
+    const node = valuePropositionS5Node(next, block);
+    if (!node) {
+      errors.push(`отсутствует канонический блок ${block}`);
+      continue;
+    }
+    if (node.type !== valuePropositionS5NodeTypes[block]) {
+      errors.push(`блок ${block} имеет неверный тип`);
+    }
+  }
+
+  let unfinishedSeen = false;
+  for (const block of valuePropositionS5Blocks) {
+    const accepted = valuePropositionS5Node(next, block)?.status === "accepted";
+    if (!accepted) unfinishedSeen = true;
+    else if (unfinishedSeen) errors.push(`блок ${block} принят раньше предыдущего блока`);
+  }
+
+  const currentPrefix = input.enteringS5
+    ? 0
+    : valuePropositionS5AcceptedPrefixLength(input.currentDiagram);
+  const nextPrefix = valuePropositionS5AcceptedPrefixLength(next);
+  if (input.enteringS5 && nextPrefix !== 0) {
+    errors.push("при входе в S5 нельзя принимать B из ответа на предыдущий этап");
+  } else {
+    if (nextPrefix < currentPrefix) errors.push("снят ранее принятый блок Тучи");
+    if (nextPrefix > currentPrefix + 1) errors.push("за один ход принято больше одного блока Тучи");
+  }
+
+  const expected = valuePropositionS5ExpectedBlock(next);
+  if (input.activeBlock !== expected) {
+    errors.push(`активным должен быть блок ${expected}`);
+  }
+  if (expected !== "verification" && next.activeElementId !== valuePropositionS5NodeIds[expected]) {
+    errors.push(`на рисунке должен быть выделен блок ${expected}`);
+  }
+  if (!valuePropositionS5QuestionMatchesBlock(expected, input.question)) {
+    errors.push(`следующий вопрос не соответствует блоку ${expected}`);
+  }
+  return errors;
+}
+
+export function valuePropositionS5Prompt(
+  diagram: ValuePropositionDiagram | null,
+  enteringS5: boolean,
+): string {
+  const inputBlock = enteringS5 ? "B" : valuePropositionS5ExpectedBlock(diagram);
+  return `
+S5 выполняется как детерминированная последовательность B → D → C → D′ → A.
+Входной активный блок этого хода: ${inputBlock}. ${enteringS5
+    ? "Это переход из S4: не принимай B из ответа, который завершал прежний этап; только открой S5 вопросом о B."
+    : "Рассматривай ответ участника только как попытку этого блока; сведения о последующих блоках сохраняй как контекст, но не принимай раньше очереди."}
+
+В Туче используй канонические id: B, D, C, Dprime, A. С первого вопроса покажи
+все пять блоков; незаполненные имеют status=unknown и текст «Не сформулировано».
+Если в схеме прежней версии последующий блок уже помечен accepted до принятия
+предыдущего, сохрани его текст как candidate, но не считай принятым и вернись к
+первому незавершённому блоку. Это исправление порядка, а не удаление ответа.
+За один ход можно принять не более одного очередного блока. После обработки
+ответа заново найди первый непринятый блок, запиши его в activeS5Block, выдели
+его через activeElementId и задай вопрос только о нём. До принятия B запрещено
+спрашивать о действиях D или D′.
+
+Вопросы по порядку:
+- B: «Какое необходимое условие для важного результата организации ставит под угрозу выбранное НЖЯ?»
+- D: «Что клиентская организация обычно делает, выбирает, приобретает, применяет, отвергает или использует вместо приобретения, чтобы обеспечить B?»
+- C: «Какое другое необходимое условие организация также должна обеспечить и что действие D ставит под угрозу?»
+- D′: «Какое другое действие организация выполняет или считает необходимым, чтобы обеспечить C?»
+- A: «Какова общая цель, для которой одновременно нужны B и C?»
+После принятия A установи activeS5Block=verification и переходи к проверке
+связей, диагоналей и конфликта, не возвращаясь к свободному заполнению блоков.
+`.trim();
+}
 
 export const valuePropositionS2Guidance = `
 На S2 сначала отдели продукт поставщика от поля разработки. Если участник назвал
@@ -105,8 +253,11 @@ export const valuePropositionStageFormulationGuidance: Record<ValuePropositionSt
 последствии для результата организации. Уточняй область, источник, угрозу
 необходимому условию и существенность, но не требуй числа или календарного
 порога, если качественное наблюдение проверяемо.`,
-  S5: `Сначала определи, какой тип блока пытался сформулировать участник. A —
-цель системы; B и C — необходимые условия, а не действия, риски или решения;
+  S5: `Строй блоки только в порядке B → D → C → D′ → A. До принятия B не
+выявляй действия, связанные с НЖЯ, и не спрашивай о D или D′. Сначала определи,
+какое необходимое условие важного результата организации ставит под угрозу
+выбранное НЖЯ. Затем определи, какой тип очередного блока пытался сформулировать
+участник. A — цель системы; B и C — необходимые условия, а не действия, риски или решения;
 D и D′ — реально выполняемые действия клиента с глаголом, а не состояния,
 желания, формальные отрицания друг друга или будущее решение поставщика.
 Каждую связь участник читает по необходимости. Несовместимость D–D′ должна быть

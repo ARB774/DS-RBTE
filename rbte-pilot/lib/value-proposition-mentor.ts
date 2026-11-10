@@ -3,9 +3,13 @@ import { reviewConfig } from "@/lib/review-openai";
 import {
   valuePropositionFormulationRepairProtocol,
   valuePropositionRoute,
+  valuePropositionS5ActiveBlockSchema,
+  valuePropositionS5ExpectedBlock,
+  valuePropositionS5Prompt,
   valuePropositionStageFormulationGuidance,
   valuePropositionStageRequiresDiagram,
   valuePropositionStageSchema,
+  validateValuePropositionS5Progress,
   type ValuePropositionStage,
 } from "@/lib/value-proposition-route";
 import {
@@ -26,6 +30,7 @@ const mentorOutput = z.object({
   proposedStage: valuePropositionStageSchema,
   readyForNextStage: z.boolean(),
   nextStep: z.string().min(1).max(700),
+  activeS5Block: valuePropositionS5ActiveBlockSchema.nullable(),
   diagram: valuePropositionDiagramSchema.nullable(),
 }).strict();
 
@@ -38,6 +43,7 @@ const mentorJsonSchema = {
     "reflection", "acceptedUpdate", "observations", "criterion", "priorityGap",
     "learningAction", "helpLevel", "question", "proposedStage", "readyForNextStage",
     "nextStep", "diagram",
+    "activeS5Block",
   ],
   properties: {
     reflection: { type: "string" },
@@ -51,6 +57,12 @@ const mentorJsonSchema = {
     proposedStage: { type: "string", enum: valuePropositionStageSchema.options },
     readyForNextStage: { type: "boolean" },
     nextStep: { type: "string" },
+    activeS5Block: {
+      anyOf: [
+        { type: "string", enum: valuePropositionS5ActiveBlockSchema.options },
+        { type: "null" },
+      ],
+    },
     diagram: { anyOf: [valuePropositionDiagramJsonSchema, { type: "null" }] },
   },
 } as const;
@@ -75,6 +87,11 @@ export async function generateValuePropositionMentorTurn(input: {
 }): Promise<ValuePropositionMentorTurn> {
   const config = reviewConfig();
   const stage = valuePropositionRoute[input.stage];
+  const s5Prompt = input.stage === "S5"
+    ? valuePropositionS5Prompt(input.currentDiagram, false)
+    : input.stage === "S4"
+      ? `Если этот ход завершает S4 и переводит проект в S5, выполни следующие правила входа:\n${valuePropositionS5Prompt(null, true)}`
+      : "Этот ход не относится к S5: верни activeS5Block=null.";
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     redirect: "error",
@@ -115,6 +132,9 @@ ${valuePropositionFormulationRepairProtocol}
 ПРАВИЛА ФОРМУЛИРОВКИ ТЕКУЩЕГО ЭТАПА ${input.stage}
 ${valuePropositionStageFormulationGuidance[input.stage]}
 
+ДЕТЕРМИНИРОВАННЫЙ МАРШРУТ S5
+${s5Prompt}
+
 ЛОГИЧЕСКИЕ СХЕМЫ В ПРИЛОЖЕНИИ
 1. Диаграмма — часть рабочего продукта. На S4–S10 всегда верни diagram: обновлённую полную текущую схему либо неизменённую текущую схему. Не заменяй её текстовым описанием. На других стадиях diagram допустима, если она помогает видеть продукт.
 2. Сохраняй устойчивые id принятых узлов и стрелок. Не удаляй принятый элемент без явного решения участника. accepted — принято участником; candidate — предложено участником, но ещё не принято; checking — сейчас проверяется; hypothesis — причинная связь или будущий прогноз без подтверждения; unknown — явный разрыв; rejected — явно исключено.
@@ -134,6 +154,7 @@ ${valuePropositionStageFormulationGuidance[input.stage]}
 - priorityGap: один разрыв.
 - learningAction: действие, которое должен выполнить участник.
 - question: новая самостоятельная проба одним вопросом.
+- activeS5Block: следующий блок S5, о котором задан question; на других этапах null.
 - diagram: полная актуальная схема, не патч. Если текущей схемы нет, создай только из данных участника и обозначь неизвестные разрывы.
 `,
       input: JSON.stringify({ ...input, history: input.history.slice(-36) }),
@@ -163,6 +184,35 @@ ${valuePropositionStageFormulationGuidance[input.stage]}
     .map((item) => item.text ?? "")
     .join("");
   const turn = mentorOutput.parse(JSON.parse(text));
+  const enteringS5 = input.stage === "S4"
+    && turn.proposedStage === "S5"
+    && turn.readyForNextStage;
+  const currentS5Block = input.stage === "S5"
+    ? valuePropositionS5ExpectedBlock(input.currentDiagram)
+    : null;
+  const leavingCompletedS5 = input.stage === "S5"
+    && currentS5Block === "verification"
+    && turn.proposedStage === "S6.1"
+    && turn.readyForNextStage;
+
+  if ((input.stage === "S5" || enteringS5) && !leavingCompletedS5) {
+    if (input.stage === "S5" && currentS5Block !== "verification"
+      && turn.proposedStage === "S6.1" && turn.readyForNextStage) {
+      throw new Error("Наставник попытался завершить S5 до построения и проверки Тучи. Ход не сохранён.");
+    }
+    const s5Errors = validateValuePropositionS5Progress({
+      currentDiagram: input.currentDiagram,
+      nextDiagram: turn.diagram,
+      activeBlock: turn.activeS5Block,
+      question: turn.question,
+      enteringS5,
+    });
+    if (s5Errors.length) {
+      throw new Error(`Наставник нарушил порядок S5: ${s5Errors.join("; ")}. Ход не сохранён.`);
+    }
+  } else if (!leavingCompletedS5 && turn.activeS5Block !== null) {
+    throw new Error("Наставник указал блок S5 вне этапа построения Тучи. Ход не сохранён.");
+  }
   if (valuePropositionStageRequiresDiagram(turn.proposedStage) && !turn.diagram) {
     throw new Error("Наставник не обновил обязательную логическую схему. Ход не сохранён.");
   }
