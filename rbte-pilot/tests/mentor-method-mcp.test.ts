@@ -7,6 +7,7 @@ import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { retrieveMentorMethods } from '../lib/mentor-method-client';
 import { valuePropositionEvidence } from '../lib/value-proposition-evidence';
+import { readPinnedSource } from './pinned-source';
 
 test('actual MCP transport reads verified GitHub cache and returns traceable method bodies', async () => {
   const cache = await mkdtemp(join(tmpdir(), 'mentor-mcp-test-'));
@@ -14,7 +15,7 @@ test('actual MCP transport reads verified GitHub cache and returns traceable met
   process.env.MENTOR_KNOWLEDGE_CACHE = cache;
   try {
     for (const source of valuePropositionEvidence('S0')) {
-      const text = (await readFile(`../${source.path}`, 'utf8')).replace(/\r\n/g, '\n');
+      const text = await readPinnedSource(source);
       await writeFile(join(cache, source.sha256 + '.json'), JSON.stringify({ text, fetchedAt: '2026-11-09', origin: 'github' }));
     }
     const sources = await retrieveMentorMethods('S0');

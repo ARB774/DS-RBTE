@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { valuePropositionEvidence } from '../lib/value-proposition-evidence';
 import { valuePropositionStages } from '../lib/value-proposition-route';
-import { readFile } from 'node:fs/promises';
+import { readPinnedSource } from './pinned-source';
 import { createHash } from 'node:crypto';
 
 test('bundled excerpts match the pinned repository documents without invented method text', async () => {
@@ -10,8 +10,7 @@ test('bundled excerpts match the pinned repository documents without invented me
   for (const stage of valuePropositionStages) for (const source of valuePropositionEvidence(stage)) {
     if (checked.has(source.id)) continue;
     checked.add(source.id);
-    const path = source.repo === 'ARB774/DS-RBTE' ? `../${source.path}` : `knowledge/pack-toc/${source.path}`;
-    const text = (await readFile(path, 'utf8')).replace(/\r\n/g, '\n');
+    const text = await readPinnedSource(source);
     assert.equal(createHash('sha256').update(text).digest('hex'), source.sha256);
     assert.ok(text.includes(source.text));
   }

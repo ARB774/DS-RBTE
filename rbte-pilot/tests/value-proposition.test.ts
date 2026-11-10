@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import {
   nextValuePropositionStage,
   resolveValuePropositionStage,
+  valuePropositionFormulationRepairProtocol,
   valuePropositionRoute,
+  valuePropositionS2Guidance,
+  valuePropositionStageFormulationGuidance,
   valuePropositionStageRequiresDiagram,
   valuePropositionStages,
 } from "../lib/value-proposition-route";
@@ -24,6 +27,41 @@ test("маршрут предложения ценности включает о
   assert.equal(valuePropositionStageRequiresDiagram("S4"), true);
   assert.equal(valuePropositionStageRequiresDiagram("S10"), true);
   assert.equal(valuePropositionStageRequiresDiagram("S11"), false);
+});
+
+test("S2 отделяет продукт от поля и обучает формулировать проблему клиента", () => {
+  assert.match(valuePropositionRoute.S2.label, /Продукт и поле/);
+  assert.match(valuePropositionRoute.S2.acceptance, /компоненты отделены от клиентского поля/);
+  assert.match(valuePropositionS2Guidance, /явно зафиксируй.*продукт/s);
+  assert.match(valuePropositionS2Guidance, /Компоненты продукта, каналы и инструменты не становятся\s+отдельными полями/);
+  assert.match(valuePropositionS2Guidance, /что нежелательного\s+происходит с организацией/);
+  assert.match(valuePropositionS2Guidance, /окончательный выбор участнику/);
+  assert.match(valuePropositionS2Guidance, /если критерий S2 выполнен, не\s+оставляй прежний разрыв/);
+});
+
+test("каждый этап имеет собственную помощь при ошибке формулировки", () => {
+  assert.match(valuePropositionFormulationRepairProtocol, /одним главным дефектом/);
+  assert.match(valuePropositionFormulationRepairProtocol, /две-три версии/);
+  assert.match(valuePropositionFormulationRepairProtocol, /окончательное содержание и выбор остаются за ним/);
+  assert.deepEqual(Object.keys(valuePropositionStageFormulationGuidance), [...valuePropositionStages]);
+
+  const expected: Array<[keyof typeof valuePropositionStageFormulationGuidance, RegExp]> = [
+    ["S0", /результат тренировки/],
+    ["S1", /исходную модель в собственных словах/],
+    ["S2", /продукт поставщика от поля разработки/],
+    ["S3", /правила включения, исключения/],
+    ["S4", /одно наблюдаемое текущее состояние/],
+    ["S5", /D и D′ — реально выполняемые действия/],
+    ["S6.1", /X \+ P → Y/],
+    ["S6.2", /область применимости/],
+    ["S6.3", /не самое сомнительное/],
+    ["S7", /кто и что будет делать\s+иначе/],
+    ["S8", /Отрицательное последствие является следствием/],
+    ["S9", /Похвала, общее согласие/],
+    ["S10", /контролируемое действие поставщика/],
+    ["S11", /не стенограмма/],
+  ];
+  for (const [stage, pattern] of expected) assert.match(valuePropositionStageFormulationGuidance[stage].replace(/\s+/g, ' '), pattern);
 });
 
 const negativeBranch = {

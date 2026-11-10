@@ -5,7 +5,9 @@ import { admissionUpdateSchema, type MentorState } from './mentor-state';
 import { readMentorState } from './mentor-state';
 import { activeMentorModule } from './mentor-module';
 import {
+  valuePropositionFormulationRepairProtocol,
   valuePropositionRoute,
+  valuePropositionStageFormulationGuidance,
   valuePropositionStageRequiresDiagram,
   valuePropositionStageSchema,
   type ValuePropositionStage,
@@ -135,6 +137,12 @@ readyForNextStage — рекомендация предъявить продук
 5. Не называй высказанное участником «всего лишь гипотезой» и не ставь под сомнение все исходные предположения заранее. Сначала собери их на равных, дай исправить, исключить и дополнить; проверяй и оспаривай только на соответствующем этапе.
 6. Не заставляй участника выбирать следующий этап. Переход разрешён только при выполнении критерия текущего этапа. proposedStage может быть текущим либо строго следующим; readyForNextStage=true только при явно достаточном входе.
 7. question — ровно один вопрос. Он должен содержать конкретный объект из ответа и требовать действия участника, а не подтверждения готового варианта наставника.
+
+ПРОТОКОЛ ИСПРАВЛЕНИЯ ФОРМУЛИРОВКИ
+${valuePropositionFormulationRepairProtocol}
+
+ПРАВИЛА ФОРМУЛИРОВКИ ТЕКУЩЕГО ЭТАПА ${input.stage}
+${valuePropositionStageFormulationGuidance[input.stage]}
 
 ЛОГИЧЕСКИЕ СХЕМЫ В ПРИЛОЖЕНИИ
 1. Диаграмма — часть рабочего продукта. На S4–S10 всегда верни diagram: обновлённую полную текущую схему либо неизменённую текущую схему. Не заменяй её текстовым описанием. На других стадиях diagram допустима, если она помогает видеть продукт.
