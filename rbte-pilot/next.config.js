@@ -1,17 +1,12 @@
 /** @type {import('next').NextConfig} */
-const path = require("path");
-
-const nextConfig = {
-  output: "standalone",
+module.exports = {
+  output: 'standalone',
+  serverExternalPackages: ['@modelcontextprotocol/client'],
+  poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
-    optimizePackageImports: ["lucia", "drizzle-orm", "zod"],
-  },
-  transpilePackages: ["lucia", "drizzle-orm", "bcryptjs"],
-  webpack: (config) => {
-    config.resolve.alias["@"] = path.resolve(__dirname, ".");
-    return config;
+    cpus: 1,
+    agentUpgrade: 'security',
+    serverActions: { bodySizeLimit: '128kb' },
   },
 };
-
-module.exports = nextConfig;

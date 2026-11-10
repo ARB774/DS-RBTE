@@ -1,6 +1,6 @@
 import { PackId } from "./types.js";
 
-const PACK_TOC_DEFAULT_COMMIT = process.env.PACK_TOC_COMMIT || "replace-with-real-pack-toc-hash";
+const PACK_TOC_DEFAULT_COMMIT = process.env.PACK_TOC_COMMIT || "836c4058ae5c801247f1b76f89b650523492ebbf";
 const GITHUB_READ_TOKEN = process.env.GITHUB_READ_TOKEN || "";
 const PRIVATE_PACK_IDS = new Set<PackId>([PackId.PACK_TOC]);
 

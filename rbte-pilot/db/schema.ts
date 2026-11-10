@@ -146,10 +146,12 @@ export const users: any = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     role: roleEnum('role').notNull().default('PARTICIPANT'),
+    portalId: varchar('portal_id', { length: 32 }).unique(),
     email: varchar('email', { length: 255 }).notNull().unique(),
     name: varchar('name', { length: 255 }).notNull(),
     invitedBy: uuid('invited_by').references(() => users.id),
     passwordHash: text('password_hash').notNull(),
+    active: boolean('active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -160,22 +162,6 @@ export const users: any = pgTable(
   (table) => ({
     roleIdx: index('users_role_idx').on(table.role),
     invitedByIdx: index('users_invited_by_idx').on(table.invitedBy),
-    emailUnique: uniqueIndex('users_email_unique').on(table.email),
-  }),
-);
-
-export const sessions = pgTable(
-  'sessions',
-  {
-    // Lucia v3 session IDs are 40-character base32 strings, not UUIDs.
-    id: text('id').primaryKey(),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  },
-  (table) => ({
-    userIdIdx: index('sessions_user_id_idx').on(table.userId),
   }),
 );
 
@@ -214,6 +200,54 @@ export const situations = pgTable(
     currentRevisionIdIdx: index('situations_current_revision_id_idx').on(
       table.currentRevisionId,
     ),
+  }),
+);
+
+export const valuePropositionProjects = pgTable(
+  'value_proposition_projects',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 200 }).notNull(),
+    ownerRole: varchar('owner_role', { length: 200 }).notNull().default(''),
+    confidentiality: text('confidentiality').notNull().default(''),
+    systemBoundary: text('system_boundary').notNull().default(''),
+    trainingResult: text('training_result').notNull().default(''),
+    currentState: varchar('current_state', { length: 8 }).notNull().default('S0'),
+    verificationClass: varchar('verification_class', { length: 200 }).notNull().default(''),
+    method: varchar('method', { length: 200 }).notNull().default('Pack-TOC / DS-RBTE'),
+    assessment: text('assessment').notNull().default(''),
+    model: text('model').notNull().default(''),
+    evidence: jsonb('evidence').notNull().default([]),
+    cases: jsonb('cases').notNull().default([]),
+    assumptions: jsonb('assumptions').notNull().default([]),
+    sources: jsonb('sources').notNull().default([]),
+    openGap: text('open_gap').notNull().default(''),
+    nextStep: text('next_step').notNull().default(''),
+    stopOrReturnCondition: text('stop_or_return_condition').notNull().default(''),
+    visualization: jsonb('visualization').notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ownerIdx: index('value_proposition_projects_owner_idx').on(table.ownerId),
+    updatedIdx: index('value_proposition_projects_updated_idx').on(table.updatedAt),
+  }),
+);
+
+export const valuePropositionTurns = pgTable(
+  'value_proposition_turns',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id').notNull().references(() => valuePropositionProjects.id, { onDelete: 'cascade' }),
+    authorRole: varchar('author_role', { length: 32 }).notNull(),
+    stage: varchar('stage', { length: 8 }).notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    projectIdx: index('value_proposition_turns_project_idx').on(table.projectId),
+    createdIdx: index('value_proposition_turns_created_idx').on(table.createdAt),
   }),
 );
 
@@ -631,8 +665,6 @@ export const knowledgePins = pgTable(
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type Session = typeof sessions.$inferSelect;
-export type NewSession = typeof sessions.$inferInsert;
 export type Situation = typeof situations.$inferSelect;
 export type NewSituation = typeof situations.$inferInsert;
 export type Revision = typeof revisions.$inferSelect;
@@ -677,3 +709,40 @@ export type McpOperation = (typeof mcpOperationEnum.enumValues)[number];
 export type PinStatus = (typeof pinStatusEnum.enumValues)[number];
 export type SensitivityLevel = (typeof sensitivityEnum.enumValues)[number];
 export type SupportLevel = (typeof supportLevelEnum.enumValues)[number];
+
+export const stepDrafts = pgTable('step_drafts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  situationId: uuid('situation_id').notNull().references(() => situations.id, { onDelete: 'cascade' }),
+  step: varchar('step', {length: 24}).notNull(),
+  version: integer('version').notNull().default(1),
+  fields: jsonb('fields').notNull().$type<Record<string, string>>(),
+  updatedAt: timestamp('updated_at', {withTimezone: true}).notNull().defaultNow(),
+}, table => ({ slot: uniqueIndex('step_draft_slot').on(table.situationId, table.step) }));
+
+export const sessions = pgTable('sessions', {
+ id: varchar('id', {length:64}).primaryKey(),
+ userId: uuid('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),
+ expiresAt: timestamp('expires_at',{withTimezone:true}).notNull(),
+});
+export const loginAttempts = pgTable('login_attempts', {
+ id: varchar('id',{length:64}).primaryKey(),
+ count: integer('count').notNull(),
+ expiresAt: timestamp('expires_at',{withTimezone:true}).notNull(),
+});
+
+export const situationReviews = pgTable('situation_reviews', {
+ situationId:uuid('situation_id').primaryKey().references(()=>situations.id,{onDelete:'cascade'}),
+ userId:uuid('user_id').notNull().references(()=>users.id,{onDelete:'cascade'}),
+ runId:uuid('run_id').notNull(),
+ fingerprint:varchar('fingerprint',{length:64}).notNull(),
+ state:varchar('state',{length:16}).notNull(),
+ report:jsonb('report'),
+ updatedAt:timestamp('updated_at',{withTimezone:true}).notNull().defaultNow(),
+ expiresAt:timestamp('expires_at',{withTimezone:true}).notNull(),
+});
+export const reviewLimits = pgTable('review_limits', {
+ userId:uuid('user_id').primaryKey().references(()=>users.id,{onDelete:'cascade'}),
+ day:varchar('day',{length:10}).notNull(),
+ count:integer('count').notNull(),
+ lastAt:timestamp('last_at',{withTimezone:true}).notNull(),
+});

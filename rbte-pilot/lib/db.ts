@@ -2,19 +2,8 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "@/db/schema";
 
-const rawConnectionString =
-  process.env.DATABASE_URL ??
-  "postgres://postgres:postgres@127.0.0.1:5432/rbte_pilot";
-
-function normalizeDatabaseUrl(value: string) {
-  const url = new URL(value);
-  // `schema` is a Prisma-style option. postgres-js forwards unknown URL
-  // parameters to PostgreSQL, where `schema` is not a valid setting.
-  url.searchParams.delete("schema");
-  return url.toString();
-}
-
-const connectionString = normalizeDatabaseUrl(rawConnectionString);
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error('DATABASE_URL is required');
 
 // Reuse client in dev
 const globalForDb = globalThis as unknown as {
@@ -24,7 +13,7 @@ const globalForDb = globalThis as unknown as {
 
 const sql =
   globalForDb.sql ??
-  postgres(connectionString, { prepare: false, max: 20, idle_timeout: 20 });
+  postgres(connectionString, { prepare: false, max: 5, idle_timeout: 20, connect_timeout: 5, connection: { statement_timeout: 5000 } });
 
 const db = globalForDb.db ?? drizzle(sql, { schema });
 

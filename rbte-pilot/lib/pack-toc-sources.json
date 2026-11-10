@@ -1,0 +1,170 @@
+{
+  "repo": "Victor57618/Pack-TOC",
+  "commit": "836c4058ae5c801247f1b76f89b650523492ebbf",
+  "commitDate": "2026-10-09T12:16:41Z",
+  "truncated": false,
+  "adaptationVersion": "pilot2-toc-1",
+  "scope": "Four individual cloud-building profiles; no consolidation or proof of root conflict",
+  "sources": {
+    "TOC.M.003": {
+      "id": "TOC.M.003",
+      "title": "Грозовая туча (Evaporating Cloud / EC)",
+      "path": "thinking-processes/methods/TOC.M.003-evaporating-cloud.md",
+      "status": "draft",
+      "sha256": "dd58e972fe9e9ca0b905eb4b7c7a1b0314516dbf0d9f315e785a5a51dcac1778",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/methods/TOC.M.003-evaporating-cloud.md"
+    },
+    "TOC.M.006": {
+      "id": "TOC.M.006",
+      "title": "Туча личной дилеммы",
+      "path": "thinking-processes/methods/TOC.M.006-ec-personal-dilemma.md",
+      "status": "draft",
+      "sha256": "eaed19c5187f8d73a54871cbf28a34bfc7fddc7f57fe5b2a2d3df7b1eb48cfc8",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/methods/TOC.M.006-ec-personal-dilemma.md"
+    },
+    "TOC.M.007": {
+      "id": "TOC.M.007",
+      "title": "Туча конфликта сторон",
+      "path": "thinking-processes/methods/TOC.M.007-ec-conflict-of-parties.md",
+      "status": "draft",
+      "sha256": "2f2c5957576fa04a89a4a5c817700e52cb6cd4c4b36dd8c3809767fa29a93bba",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/methods/TOC.M.007-ec-conflict-of-parties.md"
+    },
+    "TOC.M.008": {
+      "id": "TOC.M.008",
+      "title": "Туча тушения пожара (Lieutenant's Cloud)",
+      "path": "thinking-processes/methods/TOC.M.008-ec-firefighting-cloud.md",
+      "status": "draft",
+      "sha256": "ca015f2ad7a79331fabbbf44340c3259b5a54c6b5094f4405eb33e5cef64871d",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/methods/TOC.M.008-ec-firefighting-cloud.md"
+    },
+    "TOC.M.009": {
+      "id": "TOC.M.009",
+      "title": "Туча иммунитета к изменениям",
+      "path": "thinking-processes/methods/TOC.M.009-ec-immunity-to-change.md",
+      "status": "draft",
+      "sha256": "0299c87fb9535bee46a442a2568c5d9e15fb6f427165cf0024bfaf71265ef0cb",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/methods/TOC.M.009-ec-immunity-to-change.md"
+    },
+    "TOCT.13": {
+      "id": "TOCT.13",
+      "title": "TOCT.13 - Туча личного выбора",
+      "path": "thinking-processes/TOCT.13.md",
+      "status": "draft",
+      "sha256": "f20c28009b4afd9ddb1cee17198a57316bdebde77cf5746e66176e7e98d86d84",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/TOCT.13.md"
+    },
+    "TOCT.14": {
+      "id": "TOCT.14",
+      "title": "TOCT.14 - Туча согласования сторон",
+      "path": "thinking-processes/TOCT.14.md",
+      "status": "draft",
+      "sha256": "cd8cb28b18f27cf81995ed9d11d24f74ca9c1defb1b239a1a183401e319299a6",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/TOCT.14.md"
+    },
+    "TOCT.15": {
+      "id": "TOCT.15",
+      "title": "TOCT.15 - Предотвращение повторяющихся авралов",
+      "path": "thinking-processes/TOCT.15.md",
+      "status": "draft",
+      "sha256": "ced7f0e01dd126f6f1ec714f64cf29a3a12feed418a1a981f05a6f21a5e487d1",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/TOCT.15.md"
+    },
+    "TOCT.16": {
+      "id": "TOCT.16",
+      "title": "TOCT.16 - Туча иммунитета к изменениям",
+      "path": "thinking-processes/TOCT.16.md",
+      "status": "draft",
+      "sha256": "bf8105e5b460b91714c7d21c4887add745f8ab495f98bbbcfa151e2c8b28cf82",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/TOCT.16.md"
+    },
+    "TOCT.6": {
+      "id": "TOCT.6",
+      "title": "TOCT.6 - Выявление ограничивающих предположений",
+      "path": "thinking-processes/TOCT.6.md",
+      "status": "draft",
+      "sha256": "6dbc2e67ab58d4648eb7a26fb6b202d3850149873524d30e61febdd746d0e6ff",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/TOCT.6.md"
+    },
+    "TOCT.7": {
+      "id": "TOCT.7",
+      "title": "TOCT.7 - Разработка инъекций",
+      "path": "thinking-processes/TOCT.7.md",
+      "status": "draft",
+      "sha256": "0a490e0d9a5fe950ebc2ffb6f07bfa36d635f5a15107b0d0eb9d8dedb8254178",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/TOCT.7.md"
+    },
+    "TOC.M.004": {
+      "id": "TOC.M.004",
+      "title": "Опознание исходного предположения (ИП)",
+      "path": "thinking-processes/recognize-assumption.md",
+      "status": "active",
+      "sha256": "9a624e912b47be01e03d8b03fbf63f66247f919fd1527d5730a3d897bceb8858",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/recognize-assumption.md"
+    },
+    "TOC.DOC.040": {
+      "id": "TOC.DOC.040",
+      "title": "---",
+      "path": "thinking-processes/notation.md",
+      "status": "active",
+      "sha256": "cff0d12fa952ad48f5782fc4950245687cec92a3146be98a43a609818e6f659b",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/notation.md"
+    },
+    "TOC.D.008": {
+      "id": "TOC.D.008",
+      "title": "Предположение ≠ убеждение",
+      "path": "thinking-processes/distinctions/TOC.D.008-assumption-not-belief.md",
+      "status": "draft",
+      "sha256": "cccfe01704c774f59d4a49c04ccd22099cd2284deb0c3046ed70202932580196",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/distinctions/TOC.D.008-assumption-not-belief.md"
+    },
+    "TOC.WP.004": {
+      "id": "TOC.WP.004",
+      "title": "Построенная туча (диаграмма A-B-C-D-D')",
+      "path": "thinking-processes/work-products/TOC.WP.004-built-cloud.md",
+      "status": "draft",
+      "sha256": "49aa799bf146b77d48591b828fcf6b1ee07a174b751f856d7846d4e73ddff192",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/work-products/TOC.WP.004-built-cloud.md"
+    },
+    "TOC.WP.003": {
+      "id": "TOC.WP.003",
+      "title": "Список исходных предположений (ИП)",
+      "path": "thinking-processes/work-products/TOC.WP.003-assumptions-list.md",
+      "status": "draft",
+      "sha256": "76f5803c042962d9bcb27d6ac477eb3cb81836d6f333d6a3b9123a17e2ccdf67",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/work-products/TOC.WP.003-assumptions-list.md"
+    },
+    "TOC.WP.006": {
+      "id": "TOC.WP.006",
+      "title": "Инъекция",
+      "path": "thinking-processes/work-products/TOC.WP.006-injection.md",
+      "status": "draft",
+      "sha256": "889fdf7c0d92bcddf0308c58b69ae6410fa307872f494bc0ef36aac6feab400e",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/work-products/TOC.WP.006-injection.md"
+    },
+    "TOC.FM.002": {
+      "id": "TOC.FM.002",
+      "title": "Слишком общее A",
+      "path": "thinking-processes/failure-modes/TOC.FM.002-too-general-a.md",
+      "status": "draft",
+      "sha256": "a7dacc28db60fa05a29cd8041d40d88ad3e2130b8f4606b223b5cd88826f3ef2",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/failure-modes/TOC.FM.002-too-general-a.md"
+    },
+    "TOC.FM.003": {
+      "id": "TOC.FM.003",
+      "title": "D или D' — не действие",
+      "path": "thinking-processes/failure-modes/TOC.FM.003-d-not-action.md",
+      "status": "draft",
+      "sha256": "5d087b66cd4056d6ba6c954eae35322666f3bad73f7391494861faa4a4feb882",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/failure-modes/TOC.FM.003-d-not-action.md"
+    },
+    "TOC.FM.004": {
+      "id": "TOC.FM.004",
+      "title": "Предположение повторяет элемент",
+      "path": "thinking-processes/failure-modes/TOC.FM.004-assumption-repeats-element.md",
+      "status": "draft",
+      "sha256": "2b20bb168450ae19aeb8526f1957dd004cd5d2f22ac27e7a690e4b8897c5248f",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/failure-modes/TOC.FM.004-assumption-repeats-element.md"
+    }
+  }
+}
