@@ -85,3 +85,14 @@ test('knowing a forbidden data regime does not satisfy admission', () => {
   const state = mergeAdmission(readMentorState([]), [{ key: 'privacy', value: 'Использование запрещено', quote: 'Использование запрещено', usable: false }], ['Использование запрещено']);
   assert.ok(missingAdmission(state).includes('privacy'));
 });
+
+test('a repeated question cannot discard a newly formed working product or its diagram', async () => {
+  const data=input(); data.stage='S4'; const state=readMentorState([]);state.lastQuestion='Какой результат вы наблюдали?';data.evidence=state;
+  const diagram={version:1,kind:'undesirable-effects' as const,title:'Кандидат',purpose:'Уточнение',activeElementId:'ude1',nodes:[{id:'ude1',label:'мало заявок через интернет',type:'ude' as const,status:'candidate' as const,rank:0,order:0}],edges:[]};
+  const result=await runMentorTurn(data,{retrieve,extract:noGenerate,generate:async()=>({
+    reflection:'Кандидат сохранён',acceptedUpdate:'Новая попытка',observations:['Наблюдение'],criterion:'Критерий',priorityGap:'Конкретность',learningAction:'Уточнить НЖЯ',helpLevel:'question',question:state.lastQuestion,
+    proposedStage:'S4',readyForNextStage:false,nextStep:'Уточнить',diagram,workingProduct:'Кандидат: мало заявок через интернет',unknowns:[],sourceIds:['DS-RBTE.S4'],criterionEvidence:{sourceId:'DS-RBTE.S4',passageIndex:0},criterionQuote:'Критерий',
+  })});
+  assert.equal(result.diagram?.nodes[0].label,'мало заявок через интернет');
+  assert.equal(result.state.pending?.text,'Кандидат: мало заявок через интернет');
+});

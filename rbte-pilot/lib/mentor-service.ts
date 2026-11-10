@@ -94,15 +94,16 @@ export async function runMentorTurn(input: MentorServiceInput, deps: Dependencie
     return base(`Уже зафиксировано:\n${text || 'Пока нет согласованных пунктов.'}\n\nОсталось уточнить: ${admissionLabels[key]}. Основание: DS-RBTE.S0.\n\n${help}${admissionQuestions[key]}`, admissionLabels[key], admissionQuestions[key]);
   }
   const turn = await deps.generate({ ...input, stateCard: state, methodEvidence: sources, intent: 'answer' });
+  if (turn.workingProduct) state.pending = { stage, version: (activeProduct(state, stage)?.version ?? 0) + 1, status: 'draft', ready: turn.readyForNextStage, text: turn.workingProduct, unknowns: turn.unknowns, sourceIds: turn.sourceIds, visualization: turn.diagram ?? input.currentDiagram };
   const repeated = normalizeQuestion(turn.question) === normalizeQuestion(state.lastQuestion);
-  if (repeated) {
+  if (repeated && !turn.readyForNextStage) {
     state = { ...state, repeats: state.repeats + 1 };
-    return base(`Предыдущий вопрос уже был задан. Повторять его как новое требование нельзя.\n\nТекущий рабочий продукт:\n${state.pending?.text || activeProduct(state, stage)?.text || 'Ещё не собран'}\n\nЧто мешает следующей попытке: непонятен смысл задания, недоступны сведения или нужно исправить моё понимание вашего ответа?`, 'Уточнить препятствие выполнения', 'Объяснить затруднение, не повторяя прежнее задание');
+    state.lastQuestion='Что мешает следующей попытке: непонятен смысл задания, недоступны сведения или нужно исправить моё понимание вашего ответа?';
+    return { ...base(`Предыдущий вопрос уже был задан. Повторять его как новое требование нельзя.\n\nТекущий рабочий продукт:\n${state.pending?.text || activeProduct(state, stage)?.text || 'Ещё не собран'}\n\n${state.lastQuestion}`, 'Уточнить препятствие выполнения', 'Объяснить затруднение, не повторяя прежнее задание'), diagram:turn.diagram??input.currentDiagram };
   }
   state.lastQuestion = turn.question;
   state.lastGapKey = turn.priorityGap;
   state.repeats = 0;
-  if (turn.workingProduct) state.pending = { stage, version: (activeProduct(state, stage)?.version ?? 0) + 1, status: 'draft', ready: turn.readyForNextStage, text: turn.workingProduct, unknowns: turn.unknowns, sourceIds: turn.sourceIds, visualization: turn.diagram ?? input.currentDiagram };
   // Only a complete product may be offered for closure; ordinary drafts stay editable.
   if (state.pending && !turn.readyForNextStage) state.pending = { ...state.pending, sourceIds: turn.sourceIds };
   const result = base(`${turn.reflection}\n\nТекущий рабочий продукт:\n${turn.workingProduct || 'Пока не собран'}\n\nКритерий: ${turn.criterion}\nОснования: ${turn.sourceIds.join(', ')}\n\n${turn.readyForNextStage && turn.workingProduct ? 'Версия готова к подтверждению. Подтвердите её кнопкой ниже или внесите исправление.' : `Главное затруднение: ${turn.priorityGap}\n\n${turn.question}`}`, turn.priorityGap, turn.nextStep);
