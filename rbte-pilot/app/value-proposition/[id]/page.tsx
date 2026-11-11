@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addValuePropositionTurnAction, getValuePropositionProjectAction } from "@/app/actions/value-proposition";
-import { ValuePropositionDiagramView } from "@/app/components/value-proposition-diagram";
+import { ValuePropositionDiagramPreview, ValuePropositionDiagramView } from "@/app/components/value-proposition-diagram";
 import { requireUser } from "@/lib/session";
 import { valuePropositionRoute, valuePropositionStageSchema } from "@/lib/value-proposition-route";
 import { parseValuePropositionDiagram } from "@/lib/value-proposition-visualization";
@@ -52,17 +52,8 @@ export default async function ValuePropositionProjectPage({ params, searchParams
       {!!product?.unknowns.length && <p className="text-sm">Пока неизвестно: {product.unknowns.join('; ')}</p>}
     </section>
 
-    <section className="card p-5 mt-6">
-      {diagram
-        ? <ValuePropositionDiagramView diagram={diagram} />
-        : <div className="min-h-52 flex flex-col justify-center items-center text-center rounded-xl border border-dashed border-[#b8c1d1] bg-[#fbfcff] p-8">
-          <h2 className="font-bold">{stageDefinition.diagram}</h2>
-          <p className="text-sm text-[#526072] mt-2 max-w-xl">Схема появится здесь после следующей содержательной попытки. Наставник восстановит только те элементы, которые есть в сохранённом контексте, а неизвестные места покажет как разрывы.</p>
-        </div>}
-    </section>
-
     <div className="grid xl:grid-cols-[minmax(0,1fr)_360px] gap-6 mt-6">
-      <section className="card p-5 space-y-4">
+      <section className="card p-5 space-y-4 min-w-0">
         <h2 className="font-bold text-lg">Диалог с наставником</h2>
         {visibleMentorTurns(turns).map((turn) => turn.authorRole === 'SERVICE'
           ? <article key={turn.id} className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
@@ -77,7 +68,7 @@ export default async function ValuePropositionProjectPage({ params, searchParams
           ? <details key={turn.id} className="rounded-xl border border-[#d9dfeb] p-4 text-sm"><summary className="font-semibold cursor-pointer">Контекст продолжения проекта</summary><p className="whitespace-pre-wrap leading-6 mt-3">{turn.content}</p></details>
           : <article key={turn.id} className={turn.authorRole === "MENTOR" ? "rounded-xl bg-[#f4f7fb] p-4" : "rounded-xl border border-[#e5e7eb] p-4"}>
             <div className="text-xs font-semibold text-[#6b7280] mb-1">{turn.authorRole === "MENTOR" ? "Наставник" : "Ваше сообщение"}</div>
-            {turnDiagrams.get(turn.id) && <ValuePropositionDiagramView diagram={turnDiagrams.get(turn.id)!} />}
+            {turnDiagrams.get(turn.id) && <ValuePropositionDiagramPreview diagram={turnDiagrams.get(turn.id)!} />}
             <p className="whitespace-pre-wrap text-sm leading-6">{turn.content}</p>
           </article>)}
         <form action={submit} className="pt-2 space-y-3">
@@ -94,9 +85,10 @@ export default async function ValuePropositionProjectPage({ params, searchParams
         </form>
       </section>
 
-      <aside className="space-y-4 h-fit xl:sticky xl:top-5">
-        <section className="card p-5 space-y-3">
-          <h2 className="font-bold">Источники текущего этапа</h2>
+      <aside className="space-y-4 h-fit min-w-0">
+        <details className="card p-5 group">
+          <summary className="font-bold cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Источники текущего этапа</summary>
+          <div className="mt-4 space-y-3">
           <p className="text-sm">Материалы читаются через MCP из GitHub или проверенного кэша. Редакция фиксируется для воспроизводимости.</p>
           {sources.map((source, i) => <details key={i} className="text-xs border rounded-lg p-2">
             <summary>{String(source.id || 'Источник')}</summary>
@@ -110,24 +102,39 @@ export default async function ValuePropositionProjectPage({ params, searchParams
             <input type="hidden" name="intent" value="sources" />
             <button className="btn btn-ghost" type="submit">Показать прочитанные документы</button>
           </form>
-        </section>
-        <section className="card p-5 space-y-4">
-          <h2 className="font-bold">Учебный фокус</h2>
+          </div>
+        </details>
+        <details className="card p-5 group">
+          <summary className="font-bold cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Учебный фокус</summary>
+          <div className="mt-4 space-y-3">
           <dl className="text-sm space-y-3">
             <div><dt className="text-[#6b7280]">Что учится делать участник</dt><dd>{project.model || stageDefinition.workProduct}</dd></div>
             <div><dt className="text-[#6b7280]">Критерий текущей пробы</dt><dd>{project.assessment || stageDefinition.acceptance}</dd></div>
             <div><dt className="text-[#6b7280]">Главный открытый разрыв</dt><dd>{project.openGap}</dd></div>
             <div><dt className="text-[#6b7280]">Следующий ход</dt><dd>{project.nextStep}</dd></div>
           </dl>
-        </section>
-        <section className="card p-5 space-y-3">
-          <h2 className="font-bold">Карточка проекта</h2>
+          </div>
+        </details>
+        <details className="card p-5 group">
+          <summary className="font-bold cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Карточка проекта</summary>
+          <div className="mt-4 space-y-3">
           <dl className="text-sm space-y-3">
             <div><dt className="text-[#6b7280]">Граница клиента</dt><dd>{project.systemBoundary || "Не установлена"}</dd></div>
             <div><dt className="text-[#6b7280]">Результат тренировки</dt><dd>{project.trainingResult}</dd></div>
             <div><dt className="text-[#6b7280]">Метод</dt><dd>{project.method}</dd></div>
           </dl>
-        </section>
+          </div>
+        </details>
+    <section className="card p-5 min-w-0 space-y-3">
+      <h2 className="font-bold">Текущий рисунок</h2>
+      {diagram
+        ? <ValuePropositionDiagramView diagram={diagram} />
+        : <div className="min-h-52 flex flex-col justify-center items-center text-center rounded-xl border border-dashed border-[#b8c1d1] bg-[#fbfcff] p-8">
+          <h2 className="font-bold">{stageDefinition.diagram}</h2>
+          <p className="text-sm text-[#526072] mt-2 max-w-xl">Схема появится здесь после следующей содержательной попытки. Наставник восстановит только те элементы, которые есть в сохранённом контексте, а неизвестные места покажет как разрывы.</p>
+        </div>}
+    </section>
+
       </aside>
     </div>
   </div>;
