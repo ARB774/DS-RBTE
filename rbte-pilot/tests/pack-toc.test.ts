@@ -12,8 +12,8 @@ const cloud={goal:'Выполнять обязательства перед кл
 test('pinned Pack-TOC sources are complete and match their recorded SHA256',async()=>{
  assert.equal(TOC_COMMIT,'836c4058ae5c801247f1b76f89b650523492ebbf');
  for(const source of Object.values(tocSources)){
-  const bytes=await readFile(new URL('../knowledge/pack-toc/'+source.path,import.meta.url));
-  assert.equal(createHash('sha256').update(bytes).digest('hex'),source.sha256,source.id);
+  const text=(await readFile(new URL('../knowledge/pack-toc/'+source.path,import.meta.url),'utf8')).replace(/\r\n?/g,'\n');
+  assert.equal(createHash('sha256').update(text).digest('hex'),source.sha256,source.id);
   assert.ok(source.url.includes('/blob/'+TOC_COMMIT+'/'));
  }
 });

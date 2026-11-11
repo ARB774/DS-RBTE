@@ -39,7 +39,8 @@ test('mentor request contains stage sources and accepted project context, not on
     assert.ok(input.methodEvidence.some((s: any) => s.id === 'DS-RBTE.S0' && s.text.includes('реалистичного')));
     assert.equal(input.project.systemBoundary, 'Один B2B-контур');
     assert.equal(input.history[0].content, 'Доступны обезличенные случаи');
-    assert.match(payload.instructions, /Не требуй заново согласованные пункты/);
+    assert.match(payload.instructions, /Единственный источник содержательной методики/);
+    assert.doesNotMatch(payload.instructions, /Не требуй заново согласованные пункты/);
     assert.equal(result.proposedStage, 'S1');
     assert.ok(result.acceptedUpdate.length > 700);
     assert.ok(result.observations[0].length > 400);
@@ -84,7 +85,8 @@ test('S5 incomplete model reply recovers the cloud without accepting model conte
     const input = JSON.parse(payload.input);
     assert.equal(input.project.systemBoundary, 'Один B2B-контур');
     assert.equal(input.history[0].content, 'Доступны обезличенные случаи');
-    assert.match(payload.instructions, /Не требуй заново согласованные пункты/);
+    assert.match(payload.instructions, /Единственный источник содержательной методики/);
+    assert.doesNotMatch(payload.instructions, /Строй блоки только в порядке/);
     assert.equal(result.proposedStage, 'S5');
     assert.equal(result.diagram?.kind, 'cloud');
     assert.equal(result.diagram?.activeElementId, 'B');

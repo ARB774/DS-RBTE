@@ -4,18 +4,17 @@ import {
   nextValuePropositionStage,
   resolveValuePropositionStage,
   validateValuePropositionS5Progress,
-  valuePropositionFormulationRepairProtocol,
   valuePropositionRoute,
   valuePropositionS5ExpectedBlock,
-  valuePropositionS2Guidance,
-  valuePropositionStageFormulationGuidance,
   valuePropositionStageRequiresDiagram,
   valuePropositionStages,
 } from "../lib/value-proposition-route";
+import { valuePropositionEvidence } from "../lib/value-proposition-evidence";
 import {
   parseValuePropositionDiagram,
   valuePropositionDiagramSchema,
 } from "../lib/value-proposition-visualization";
+import { restoreMentorCloud } from "../lib/mentor-cloud";
 
 test("маршрут предложения ценности включает отчёт S11 и не позволяет перепрыгивать этапы", () => {
   assert.equal(valuePropositionStages[0], "S0");
@@ -34,36 +33,21 @@ test("маршрут предложения ценности включает о
 test("S2 отделяет продукт от поля и обучает формулировать проблему клиента", () => {
   assert.match(valuePropositionRoute.S2.label, /Продукт и поле/);
   assert.match(valuePropositionRoute.S2.acceptance, /компоненты отделены от клиентского поля/);
-  assert.match(valuePropositionS2Guidance, /явно зафиксируй.*продукт/s);
-  assert.match(valuePropositionS2Guidance, /Компоненты продукта, каналы и инструменты не становятся\s+отдельными полями/);
-  assert.match(valuePropositionS2Guidance, /что нежелательного\s+происходит с организацией/);
-  assert.match(valuePropositionS2Guidance, /окончательный выбор участнику/);
-  assert.match(valuePropositionS2Guidance, /если критерий S2 выполнен, не\s+оставляй прежний разрыв/);
+  const procedure = valuePropositionEvidence("S2").map(source => source.text).join("\n");
+  assert.match(procedure, /продукт, предлагаемый рынку/);
+  assert.match(procedure, /Его компоненты не требуют выбора/);
+  assert.match(procedure, /наблюдаем.*проблем/si);
+  assert.match(procedure, /окончательн.*участник/si);
 });
 
-test("каждый этап имеет собственную помощь при ошибке формулировки", () => {
-  assert.match(valuePropositionFormulationRepairProtocol, /одним главным дефектом/);
-  assert.match(valuePropositionFormulationRepairProtocol, /две-три версии/);
-  assert.match(valuePropositionFormulationRepairProtocol, /окончательное содержание и выбор остаются за ним/);
-  assert.deepEqual(Object.keys(valuePropositionStageFormulationGuidance), [...valuePropositionStages]);
-
-  const expected: Array<[keyof typeof valuePropositionStageFormulationGuidance, RegExp]> = [
-    ["S0", /результат тренировки/],
-    ["S1", /исходную модель в собственных словах/],
-    ["S2", /продукт поставщика от поля разработки/],
-    ["S3", /правила включения, исключения/],
-    ["S4", /одно наблюдаемое текущее состояние/],
-    ["S5", /B → D → C → D′ → A/],
-    ["S6.1", /X \+ P → Y/],
-    ["S6.2", /область применимости/],
-    ["S6.3", /не самое сомнительное/],
-    ["S7", /кто и что будет делать\s+иначе/],
-    ["S8", /Отрицательное последствие является следствием/],
-    ["S9", /Похвала, общее согласие/],
-    ["S10", /контролируемое действие\s+поставщика/],
-    ["S11", /не стенограмма/],
-  ];
-  for (const [stage, pattern] of expected) assert.match(valuePropositionStageFormulationGuidance[stage].replace(/\s+/g, ' '), pattern);
+test("помощь при формулировке загружается из документации, а не из маршрута приложения", () => {
+  const formulation = valuePropositionEvidence("S4").find(source => source.id === "DS-RBTE.FORMULATION")?.text ?? "";
+  assert.match(formulation, /одним главным\s+дефектом/);
+  assert.match(formulation, /две-три/);
+  assert.match(formulation, /окончательное содержание остаётся\s+за ним/);
+  for (const stage of valuePropositionStages) {
+    assert.ok(valuePropositionEvidence(stage).some(source => source.id === `DS-RBTE.${stage}`));
+  }
 });
 
 const s5Nodes = [
@@ -136,6 +120,27 @@ test("S5 запрещает начинать с действий и приним
     enteringS5: false,
   });
   assert.deepEqual(repairedLegacyOrder, []);
+});
+
+test("приёмка S5: НЖЯ нельзя принять как необходимое условие B", () => {
+  const undesirableEffect = "Мало заявок через интернет";
+  const attempted = s5Cloud(["B"], "D");
+  attempted.nodes.find(node => node.id === "B")!.label = undesirableEffect;
+
+  const errors = validateValuePropositionS5Progress({
+    currentDiagram: s5Cloud([], "B"),
+    nextDiagram: attempted,
+    activeBlock: "D",
+    question: "Что клиентская организация делает, чтобы обеспечить B?",
+    enteringS5: false,
+    undesirableEffects: [undesirableEffect],
+  });
+
+  assert.ok(errors.some(error => /повторяет выбранное НЖЯ/.test(error)));
+  const repaired = restoreMentorCloud([attempted], [undesirableEffect]);
+  assert.equal(repaired.nodes.find(node => node.id === "B")?.status, "candidate");
+  assert.equal(valuePropositionS5ExpectedBlock(repaired), "B");
+  assert.equal(repaired.activeElementId, "B");
 });
 
 test("вход в S5 открывает B и не принимает его из ответа на S4", () => {

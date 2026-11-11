@@ -1,8 +1,16 @@
 import { parseValuePropositionDiagram, type ValuePropositionDiagram } from './value-proposition-visualization';
-import { valuePropositionS5ExpectedBlock } from './value-proposition-route';
+import { valuePropositionS5ExpectedBlock, valuePropositionS5NeedIssue } from './value-proposition-route';
 
 const blocks = ['B', 'D', 'C', 'Dprime', 'A'] as const;
-export function restoreMentorCloud(values: unknown[]): ValuePropositionDiagram {
+export function mentorUndesirableEffectLabels(values: unknown[]): string[] {
+  return [...new Set(values
+    .map(parseValuePropositionDiagram)
+    .filter((diagram): diagram is ValuePropositionDiagram => diagram?.kind === 'undesirable-effects')
+    .flatMap(diagram => diagram.nodes.filter(node => node.type === 'ude' && node.status !== 'rejected').map(node => node.label.trim()))
+    .filter(Boolean))];
+}
+
+export function restoreMentorCloud(values: unknown[], undesirableEffects: string[] = []): ValuePropositionDiagram {
   const diagrams = values.map(parseValuePropositionDiagram).filter((d): d is ValuePropositionDiagram => d?.kind === 'cloud');
   const canonical = (id: string) => ["D'", 'D′'].includes(id) ? 'Dprime' : id;
   const nodes = new Map<string, ValuePropositionDiagram['nodes'][number]>();
@@ -17,6 +25,12 @@ export function restoreMentorCloud(values: unknown[]): ValuePropositionDiagram {
   for (const [order, id] of blocks.entries()) if (!nodes.has(id)) nodes.set(id, {
     id, label: 'Не сформулировано', type: id === 'A' ? 'goal' : id === 'B' || id === 'C' ? 'need' : 'action', status: 'unknown', rank: 0, order,
   });
+  let invalidNeedSeen = false;
+  for (const id of blocks) {
+    const node = nodes.get(id)!;
+    if ((id === 'B' || id === 'C') && node.status === 'accepted' && valuePropositionS5NeedIssue(node.label, undesirableEffects)) invalidNeedSeen = true;
+    if (invalidNeedSeen && node.status === 'accepted') nodes.set(id, { ...node, status: 'candidate' });
+  }
   const cloud: ValuePropositionDiagram = { version: diagrams[0]?.version ?? 1, kind: 'cloud', title: diagrams[0]?.title ?? 'Туча',
     purpose: diagrams[0]?.purpose ?? 'Построение Тучи по одному блоку', activeElementId: null,
     nodes: [...nodes.values()], edges: [...edges.values()].filter(e => nodes.has(e.from) && nodes.has(e.to)) };
@@ -25,14 +39,16 @@ export function restoreMentorCloud(values: unknown[]): ValuePropositionDiagram {
   return cloud;
 }
 
-export function mentorCloudQuestion(cloud: ValuePropositionDiagram): string {
-  const questions = {
-    B: 'Какое необходимое условие важного результата организации ставит под угрозу выбранное НЖЯ?',
-    D: 'Что клиентская организация делает, чтобы обеспечить принятое необходимое условие B?',
-    C: 'Какое другое необходимое условие организация должна обеспечить и что действие D ставит под угрозу?',
-    Dprime: 'Какое другое действие клиентская организация выполняет, чтобы обеспечить C?',
-    A: 'Какова общая цель, для которой нужны оба необходимых условия B и C?',
-    verification: 'Как вы читаете связи необходимости и объясняете несовместимость действий в этой Туче?',
-  };
-  return questions[valuePropositionS5ExpectedBlock(cloud)];
+export function mentorCloudQuestion(cloud: ValuePropositionDiagram, sourceText: string): string {
+  const block = valuePropositionS5ExpectedBlock(cloud);
+  if (block === 'verification') {
+    const firstCheck = sourceText.match(/1\.\s+(Для достижения `?A`? необходимо `?B`?\.)/u)?.[1];
+    if (!firstCheck) throw new Error('В прочитанном модуле S5 не найдена первая проверка Тучи.');
+    return `${firstCheck} Верна ли эта связь в данном случае и почему?`;
+  }
+  const label = block === 'Dprime' ? 'D′' : block;
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const question = sourceText.match(new RegExp(`\\*\\*${escaped}:\\*\\*\\s*«([\\s\\S]*?)»`, 'u'))?.[1];
+  if (!question) throw new Error(`В прочитанном модуле S5 не найден вопрос для блока ${label}.`);
+  return question.replace(/\s+/g, ' ').trim();
 }

@@ -3,17 +3,6 @@ import { valuePropositionStageSchema, type ValuePropositionStage } from './value
 
 export const admissionKeys = ['scope', 'role', 'data', 'privacy', 'result'] as const;
 export type AdmissionKey = typeof admissionKeys[number];
-export const admissionLabels: Record<AdmissionKey, string> = {
-  scope: 'Одно B2B-поле проекта', role: 'Роль и полномочия участника', data: 'Доступный материал и путь проверки',
-  privacy: 'Допустимый режим данных', result: 'Результат обучения',
-};
-export const admissionQuestions: Record<AdmissionKey, string> = {
-  scope: 'Какую одну услугу вашей компании для организаций берём в работу?',
-  role: 'Что вы можете делать в этом проекте и кто утверждает предложение?',
-  data: 'На какие беседы, случаи или профессиональный опыт о клиентах вы можете опереться?',
-  privacy: 'Можно ли работать с обезличенными описаниями случаев, без имён, контактов и закрытых документов?',
-  result: 'Какой результат разработки предложения ценности вы хотите научиться получать самостоятельно?',
-};
 const factSchema = z.object({ key: z.enum(admissionKeys), value: z.string().min(1).max(2000), quote: z.string().min(1).max(30000), supportingQuotes: z.array(z.string()).optional(), usable: z.boolean().optional() });
 export const admissionUpdateSchema = z.array(factSchema).max(5);
 const productSchema = z.object({ stage: valuePropositionStageSchema, version: z.number().int().positive(), text: z.string(),
@@ -44,14 +33,14 @@ export function mergeAdmission(state: MentorState, updates: z.infer<typeof admis
   return { ...state, admission: [...next.values()] };
 }
 export function missingAdmission(state: MentorState) { return admissionKeys.filter(key => !state.admission.some(f => f.key === key && f.usable !== false)); }
-export function admissionProduct(state: MentorState) { return state.admission.map(f => `${admissionLabels[f.key]}: ${f.value}`).join('\n'); }
 export function explicitAnonymizedConsent(text: string) {
   if (/[?]|не соглас|не разреш|запрещ|нельзя|можно ли/iu.test(text)) return false;
   return /обезлич|аноним|без им[её]н/iu.test(text) && /работаем|соглас|разрешаю|используем|только/iu.test(text);
 }
 export function normalizeQuestion(text: string) { return text.toLocaleLowerCase('ru').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); }
-export type MentorIntent = 'answer' | 'sources' | 'explanation' | 'confirm';
+export type MentorIntent = 'answer' | 'sources' | 'explanation' | 'confirm' | 'restart';
 export function mentorIntent(text: string, explicit?: string): MentorIntent {
+  if (explicit === 'restart' || /(?:начн|начат|перезапуст|постро).{0,40}(?:s5|этап|туч).{0,40}(?:сначала|с начала|заново)|(?:s5|этап|туч).{0,40}(?:сначала|с начала|заново)/iu.test(text)) return 'restart';
   if (explicit === 'answer') return 'answer';
   if (explicit === 'confirm') return 'confirm';
   if (explicit === 'sources' || /(?:какие|какими|откуда|каким).{0,55}(?:документ|источник|материал)|(?:используешь|доступны).{0,25}(?:документ|источник)|\bmcp\b/iu.test(text)) return 'sources';
