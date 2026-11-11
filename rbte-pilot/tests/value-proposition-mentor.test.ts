@@ -11,6 +11,36 @@ test('admission quotes are copied from indexed originals and invalid indexes fai
   assert.throws(() => admissionFromIndexedSources([{ key: 'role', value: 'test', usable: true, sourceIndexes: [9] }], texts));
 });
 
+test('explanations may have no accepted update; ordinary replies may not', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.PILOT_OPENAI_API_KEY;
+  process.env.PILOT_OPENAI_API_KEY = 'test-key-not-a-real-secret-0000';
+  globalThis.fetch = async () => {
+    return new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{
+      type: 'output_text', text: JSON.stringify({
+        reflection: 'Граница проекта — это выбранный контур работы.', acceptedUpdate: '', observations: [],
+        criterion: 'Критерий активного модуля', priorityGap: 'Нет изменения', learningAction: 'Продолжить',
+        helpLevel: 'explanation', question: 'Продолжаем?', proposedStage: 'S0', readyForNextStage: false,
+        nextStep: 'Ответить на вопрос', activeS5Block: null, diagram: null, workingProduct: '', unknowns: [],
+        sourceIds: ['DS-RBTE.S0'], criterionEvidence: { sourceId: 'DS-RBTE.S0', passageIndex: 0 },
+      }),
+    }] }] }));
+  };
+  const request = { stage: 'S0' as const, project: {
+    name: 'Учебный проект', ownerRole: 'Руководитель', systemBoundary: 'B2B', trainingResult: 'Профиль клиента',
+    openGap: 'Допуск', nextStep: 'Исходная модель',
+  }, currentDiagram: null, history: [], answer: 'Что входит в границы проекта?', intent: 'explanation',
+  methodEvidence: valuePropositionEvidence('S0').map(s => ({ ...s, origin: 'verified-cache' as const, fetchedAt: '2026-11-09', excerptSha256: 'test' })) };
+  try {
+    await generateValuePropositionMentorTurn(request);
+    await assert.rejects(generateValuePropositionMentorTurn({ ...request, intent: undefined }), /не указал принятое изменение/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.PILOT_OPENAI_API_KEY;
+    else process.env.PILOT_OPENAI_API_KEY = originalKey;
+  }
+});
+
 test('mentor request contains stage sources and accepted project context, not only a method name', async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.PILOT_OPENAI_API_KEY;

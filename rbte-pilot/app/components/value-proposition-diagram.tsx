@@ -173,3 +173,45 @@ export function ValuePropositionDiagramView({ diagram }: { diagram: ValueProposi
     </div>
   </section>;
 }
+
+/** A lightweight drawing; the full interactive canvas mounts only when opened. */
+export function ValuePropositionDiagramPreview({ diagram }: { diagram: ValuePropositionDiagram }) {
+  const [open, setOpen] = useState(false);
+  const contentId = useId();
+  const maxRank = Math.max(0, ...diagram.nodes.map(node => node.rank));
+  const maxOrder = Math.max(0, ...diagram.nodes.map(node => node.order));
+  const width = (maxOrder + 1) * 300 + 40;
+  const height = (maxRank + 1) * 160 + 40;
+  const positions = new Map(diagram.nodes.map(node => [node.id, {
+    x: 20 + node.order * 300, y: 20 + (maxRank - node.rank) * 160,
+  }]));
+  return <div className="my-3 min-w-0">
+    <button type="button" aria-expanded={open} aria-controls={contentId}
+      onClick={() => setOpen(value => !value)}
+      className="block w-full max-w-sm rounded-xl border border-[#cbd5e1] bg-white p-3 text-left hover:border-[#2563eb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+      <span className="flex items-start justify-between gap-3 text-sm font-semibold">
+        <span>{diagram.title}</span><span className="shrink-0 text-xs text-[#526072]">в. {diagram.version}</span>
+      </span>
+      <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-28 w-full rounded-lg bg-[#fbfcff]" aria-hidden="true">
+        {diagram.edges.map(edge => {
+          const from = positions.get(edge.from), to = positions.get(edge.to);
+          return from && to ? <line key={edge.id} x1={from.x + 125} y1={from.y + 50} x2={to.x + 125} y2={to.y + 50}
+            stroke={edgeColors[edge.kind]} strokeWidth={4} strokeDasharray={edge.status === 'accepted' ? undefined : '10 6'} /> : null;
+        })}
+        {diagram.nodes.map(node => {
+          const point = positions.get(node.id)!;
+          return <g key={node.id}>
+            <rect x={point.x} y={point.y} width={250} height={100} rx={14} fill="white"
+              stroke={node.type === 'ude' || node.type === 'risk' ? '#dc2626' : node.type === 'need' ? '#15803d' : '#64748b'} strokeWidth={3} />
+            <text x={point.x + 12} y={point.y + 30} fill="#526072" fontSize={16}>{nodeTypeLabels[node.type]}</text>
+            <text x={point.x + 12} y={point.y + 65} fill="#1e293b" fontSize={18}>{node.label.slice(0, 20)}{node.label.length > 20 ? '…' : ''}</text>
+          </g>;
+        })}
+      </svg>
+      <span className="mt-2 block text-xs text-[#526072]">{open ? 'Свернуть рисунок ↑' : 'Развернуть рисунок в диалоге ↓'}</span>
+    </button>
+    <div id={contentId} hidden={!open} className="mt-3 min-w-0">
+      {open && <ValuePropositionDiagramView diagram={diagram} />}
+    </div>
+  </div>;
+}
