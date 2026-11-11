@@ -12,8 +12,5 @@ export function activeMentorModule(stage: ValuePropositionStage, state: MentorSt
     input: state.packets.at(-1)?.product ?? state.products.at(-1) ?? 'Карточка проекта и самостоятельный материал участника',
     output: route.workProduct, completion: route.acceptance,
     procedure: { sourceId, commit: procedure.commit, range: procedure.range, text: procedure.text },
-    prohibitedShortcuts: 'Не активировать другой этап до предъявления и подтверждения выходного продукта. Не заменять действие участника готовым решением. Не считать прежний ответ наставника доказательством.',
-    insufficientData: 'Сохранить неизвестное, принять допустимую предварительную версию либо назвать конкретную недоступную предпосылку из процедуры. При непонимании объяснить действие, а не повторять анкету.',
-    resume: 'Прочитать карточку, последний пакет перехода и принятые версии. Историю использовать только для проверки происхождения.',
   };
 }

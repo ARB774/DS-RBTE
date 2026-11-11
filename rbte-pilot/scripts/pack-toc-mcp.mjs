@@ -13,9 +13,9 @@ const corpusRoot=await realpath(join(root,'knowledge/pack-toc'));
 const records=await Promise.all(Object.values(manifest.sources).map(async source=>{
  const path=await realpath(join(corpusRoot,source.path)),rel=relative(corpusRoot,path);
  if(rel.startsWith('..')||isAbsolute(rel))throw new Error('Pack-TOC path outside corpus');
- const data=await readFile(path);
- if(createHash('sha256').update(data).digest('hex')!==source.sha256)throw new Error('Pack-TOC source integrity check failed');
- return {...source,text:data.toString('utf8')};
+ const text=(await readFile(path,'utf8')).replace(/\r\n?/g,'\n');
+ if(createHash('sha256').update(text).digest('hex')!==source.sha256)throw new Error('Pack-TOC source integrity check failed');
+ return {...source,text};
 }));
 const meta={repository:manifest.repo,commit:manifest.commit,adaptationVersion:manifest.adaptationVersion};
 const result=value=>({content:[{type:'text',text:JSON.stringify(value)}]});

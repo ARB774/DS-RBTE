@@ -5,6 +5,7 @@ import { valuePropositionStages } from '../lib/value-proposition-route';
 import { readPinnedSource } from './pinned-source';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 test('bundled excerpts match the pinned repository documents without invented method text', async () => {
   const checked = new Set<string>();
@@ -58,4 +59,30 @@ test('current mentor documentation carries the previously accepted pilot correct
   ];
   const latestDocumentationCommit = execFileSync('git', ['log', '-1', '--format=%H', '--', ...canonical], { cwd: '..', encoding: 'utf8' }).trim();
   assert.equal(mentorDocumentationVersion.dsRbte, latestDocumentationCommit);
+});
+
+test('содержательная методика находится в документации, а не в исполняемом промпте приложения', () => {
+  const runtimeFiles = [
+    '../lib/value-proposition-mentor.ts',
+    '../lib/value-proposition-route.ts',
+    '../lib/mentor-service.ts',
+    '../lib/mentor-state.ts',
+    '../lib/mentor-module.ts',
+    '../lib/mentor-cloud.ts',
+    '../lib/value-proposition-visualization.ts',
+    '../app/actions/value-proposition.ts',
+  ];
+  const runtime = runtimeFiles.map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
+  for (const duplicate of [
+    /ПРАВИЛА НАСТАВНИЧЕСТВА/,
+    /ЛОГИЧЕСКИЕ СХЕМЫ В ПРИЛОЖЕНИИ/,
+    /Строй блоки только в порядке B/,
+    /Компоненты продукта, каналы и инструменты не становятся/,
+    /Отрицательное последствие является следствием решения/,
+  ]) assert.doesNotMatch(runtime, duplicate);
+
+  assert.match(runtime, /Единственный источник содержательной методики/);
+  const documentation = valuePropositionStages.flatMap(stage => valuePropositionEvidence(stage)).map(source => source.text).join('\n');
+  assert.match(documentation, /B → D → C → D′ → A/);
+  assert.match(documentation, /отрицательн\p{L}*\s+последств/iu);
 });

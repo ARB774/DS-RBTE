@@ -11,9 +11,25 @@ const updates = admissionKeys.map((key, i) => ({ key, value: participant[i], quo
 function input(): MentorServiceInput { return { stage: 'S0', project: { name: 'Учебная B2B-услуга', ownerRole: 'Руководитель отдела', confidentiality: participant[3], systemBoundary: participant[0], trainingResult: participant[4], openGap: 'Объяснить, как уже умеете разрабатывать предложение', nextStep: 'Повторить старый вопрос' },
   history: [{ authorRole: 'PARTICIPANT', stage: 'S0', content: participant[1] }, { authorRole: 'PARTICIPANT', stage: 'S0', content: participant[2] }, ...Array.from({ length: 40 }, () => ({ authorRole: 'MENTOR', stage: 'S0', content: 'Сначала докажите, как используете данные' }))], answer: 'Давайте продолжим обучение', evidence: [], currentDiagram: null }; }
 const noGenerate = async (): Promise<never> => { throw new Error('Learning assessment must not run'); };
+const generateFromDocuments = async (request: any) => {
+  const complete = request.stage !== 'S0' || request.stateCard.admission.length === admissionKeys.length;
+  const sourceId = `DS-RBTE.${request.stage}`;
+  const text = request.stage === 'S0'
+    ? request.stateCard.admission.map((item: any) => `${item.key}: ${item.value}`).join('\n')
+    : request.stateCard.products.at(-1)?.text ?? '';
+  return {
+    reflection: request.intent === 'opening' ? 'Активный модуль загружен из документации.' : 'Попытка сопоставлена с активной процедурой.',
+    acceptedUpdate: text || 'Изменений нет', observations: [], criterion: 'Критерий активного модуля',
+    priorityGap: complete ? 'confirmation' : 'missing-admission', learningAction: 'Выполнить действие активного модуля',
+    helpLevel: 'question' as const, question: complete ? 'Подтвердите показанный рабочий продукт или исправьте его.' : 'Какое недостающее условие допуска вы можете уточнить?',
+    proposedStage: request.stage, readyForNextStage: complete, nextStep: complete ? 'Подтвердить продукт' : 'Уточнить условие допуска',
+    activeS5Block: null, diagram: request.currentDiagram, workingProduct: text, unknowns: complete ? [] : ['Условие допуска'],
+    sourceIds: [sourceId], criterionEvidence: { sourceId, passageIndex: 0 }, criterionQuote: 'Критерий активного модуля',
+  };
+};
 
 test('legacy looping dialogue reconstructs participant facts beyond 36 turns and offers closure', async () => {
-  const result = await runMentorTurn(input(), { retrieve, generate: noGenerate, extract: async ({ texts }) => {
+  const result = await runMentorTurn(input(), { retrieve, generate: generateFromDocuments, extract: async ({ texts }) => {
     assert.ok(texts.includes(participant[1]));
     assert.ok(texts.includes(participant[3]));
     assert.ok(!texts.some(t => t.includes('Сначала докажите')));
@@ -22,7 +38,7 @@ test('legacy looping dialogue reconstructs participant facts beyond 36 turns and
   assert.equal(result.stage, 'S0');
   assert.equal(result.state.pending?.ready, true);
   assert.equal(result.state.admission.length, 5);
-  assert.match(result.content, /утверждение директором не мешает/);
+  assert.match(result.content, /Текущий рабочий продукт/);
   assert.doesNotMatch(result.nextStep, /используете данные/);
 });
 
@@ -37,18 +53,18 @@ test('source question calls MCP and directly answers without assessing learner o
 
 test('asking what a boundary means receives an explanation instead of a failed attempt', async () => {
   const data = input(); data.answer = 'Что входит в границы проекта?';
-  const result = await runMentorTurn(data, { retrieve, extract: noGenerate, generate: noGenerate });
-  assert.match(result.content, /Граница проекта — это/);
+  const result = await runMentorTurn(data, { retrieve, extract: noGenerate, generate: async request => ({ ...(await generateFromDocuments(request)), reflection: 'Объяснение сформировано по DS-RBTE.S0.' }) });
+  assert.match(result.content, /DS-RBTE\.S0/);
   assert.doesNotMatch(result.content, /вместо того|не соответствует/);
   assert.equal(result.stage, 'S0');
 });
 
 test('confirming displayed product closes module, stores transition packet and reads next module', async () => {
   const data = input();
-  const first = await runMentorTurn(data, { retrieve, extract: async () => updates, generate: noGenerate });
+  const first = await runMentorTurn(data, { retrieve, extract: async () => updates, generate: generateFromDocuments });
   const stages: string[] = [];
   const result = await runMentorTurn({ ...data, evidence: first.state, answer: 'Подтверждаю показанный рабочий продукт', intent: 'confirm' }, {
-    retrieve: async stage => { stages.push(stage); return retrieve(stage); }, extract: noGenerate, generate: noGenerate,
+    retrieve: async stage => { stages.push(stage); return retrieve(stage); }, extract: noGenerate, generate: generateFromDocuments,
   });
   assert.equal(result.stage, 'S1');
   assert.deepEqual(stages, ['S0', 'S1']);
@@ -67,16 +83,16 @@ test('a confirmation cannot skip an unfinished module; fabricated participant ev
 
 test('missing privacy asks only about permitted data, not ability to develop value proposition', async () => {
   const data = input(); data.project.confidentiality = 'Имею доступ к конфиденциальным данным';
-  const result = await runMentorTurn(data, { retrieve, extract: async () => [...updates.filter(s => s.key !== 'privacy'), { key: 'privacy', value: 'Разрешено', quote: data.project.confidentiality, usable: true }], generate: noGenerate });
-  assert.match(result.nextStep, /обезличенными/);
-  assert.equal(result.state.pending, null);
+  const result = await runMentorTurn(data, { retrieve, extract: async () => [...updates.filter(s => s.key !== 'privacy'), { key: 'privacy', value: 'Разрешено', quote: data.project.confidentiality, usable: true }], generate: generateFromDocuments });
+  assert.ok(missingAdmission(result.state).includes('privacy'));
+  assert.equal(result.state.pending?.ready, false);
   assert.doesNotMatch(result.content, /как используете данные|все заинтересованные/);
 });
 
 test('explicit message intent takes precedence and persisted facts survive a short new history', async () => {
   assert.equal(mentorIntent('Что такое MCP?', 'answer'), 'answer');
   const state = mergeAdmission(readMentorState(['legacy']), updates, participant);
-  const result = await runMentorTurn({ ...input(), evidence: state, history: [], answer: 'Продолжим' }, { retrieve, extract: async () => [], generate: noGenerate });
+  const result = await runMentorTurn({ ...input(), evidence: state, history: [], answer: 'Продолжим' }, { retrieve, extract: async () => [], generate: generateFromDocuments });
   assert.equal(result.state.admission.length, 5);
   assert.deepEqual(result.state.legacyEvidence, ['legacy']);
 });
@@ -95,4 +111,37 @@ test('a repeated question cannot discard a newly formed working product or its d
   })});
   assert.equal(result.diagram?.nodes[0].label,'мало заявок через интернет');
   assert.equal(result.state.pending?.text,'Кандидат: мало заявок через интернет');
+});
+
+test('приёмка S5: команда начать сначала очищает ошибочный B и возвращает вопрос о необходимом условии', async () => {
+  const data = input();
+  data.stage = 'S5';
+  data.answer = 'Начни S5 сначала';
+  const undesirableEffect = {
+    version: 1, kind: 'undesirable-effects' as const, title: 'НЖЯ', purpose: 'Выбранные НЖЯ', activeElementId: null,
+    nodes: [{ id: 'ude1', label: 'Мало заявок через интернет', type: 'ude' as const, status: 'accepted' as const, rank: 0, order: 0 }], edges: [],
+  };
+  const badCloud = {
+    version: 1, kind: 'cloud' as const, title: 'Туча', purpose: 'Построение Тучи', activeElementId: 'D',
+    nodes: [
+      { id: 'B', label: 'Мало заявок через интернет', type: 'need' as const, status: 'accepted' as const, rank: 0, order: 0 },
+      { id: 'D', label: 'Не сформулировано', type: 'action' as const, status: 'unknown' as const, rank: 0, order: 1 },
+      { id: 'C', label: 'Не сформулировано', type: 'need' as const, status: 'unknown' as const, rank: 0, order: 2 },
+      { id: 'Dprime', label: 'Не сформулировано', type: 'action' as const, status: 'unknown' as const, rank: 0, order: 3 },
+      { id: 'A', label: 'Не сформулировано', type: 'goal' as const, status: 'unknown' as const, rank: 0, order: 4 },
+    ], edges: [],
+  };
+  const state = readMentorState([]);
+  state.products.push({ stage: 'S4', version: 1, text: 'Мало заявок через интернет', status: 'confirmed', ready: true, unknowns: [], sourceIds: ['DS-RBTE.S4'], visualization: undesirableEffect });
+  state.pending = { stage: 'S5', version: 1, text: 'B: Мало заявок через интернет', status: 'draft', ready: false, unknowns: ['D', 'C', 'Dprime', 'A'], sourceIds: ['DS-RBTE.S5'], visualization: badCloud };
+  data.evidence = state;
+  data.currentDiagram = badCloud;
+
+  const result = await runMentorTurn(data, { retrieve, extract: noGenerate, generate: noGenerate });
+
+  assert.equal(result.state.pending, null);
+  assert.match(result.content, /Черновик текущего этапа сброшен/);
+  assert.match(result.nextStep, /необходимое условие/);
+  assert.equal(result.diagram?.activeElementId, 'B');
+  assert.equal(result.diagram?.nodes.find(node => node.id === 'B')?.status, 'unknown');
 });
