@@ -27,7 +27,7 @@ export default async function ValuePropositionProjectPage({ params, searchParams
   const sources = Array.isArray(project.sources) ? project.sources as Array<Record<string, unknown>> : [];
   const turnDiagrams = new Map(memory.artifacts.map(item => [item.turnId, parseValuePropositionDiagram(item.diagram)]));
 
-  return <div className="container-x py-8">
+  return <div className="container-x pt-8 pb-28">
     {notice === 'mentor-failed' && <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 mb-4">Ваш ответ сохранён. Наставник пока не смог обработать его; рабочий продукт и этап сохранены.</p>}
     {notice === 'invalid-message' && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 mb-4">Введите сообщение от 1 до 8000 символов. Текст черновика остаётся в этой вкладке.</p>}
     <header className="flex justify-between gap-5 flex-wrap">
@@ -54,7 +54,7 @@ export default async function ValuePropositionProjectPage({ params, searchParams
 
     <div className="grid xl:grid-cols-[minmax(0,1fr)_360px] gap-6 mt-6">
       <section className="card p-5 space-y-4 min-w-0">
-        <h2 className="font-bold text-lg">Диалог с наставником</h2>
+        <h2 id="mentor-dialogue-start" tabIndex={-1} className="font-bold text-lg scroll-mt-6">Диалог с наставником</h2>
         {visibleMentorTurns(turns).map((turn) => turn.authorRole === 'SERVICE'
           ? <article key={turn.id} className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
               <p>{readMentorNotice(turn.content)?.message || 'Ответ участника сохранён. Наставник временно недоступен.'}</p>
@@ -71,7 +71,7 @@ export default async function ValuePropositionProjectPage({ params, searchParams
             {turnDiagrams.get(turn.id) && <ValuePropositionDiagramPreview diagram={turnDiagrams.get(turn.id)!} />}
             <p className="whitespace-pre-wrap text-sm leading-6">{turn.content}</p>
           </article>)}
-        <form action={submit} className="pt-2 space-y-3">
+        <form id="mentor-dialogue-end" tabIndex={-1} action={submit} className="pt-2 space-y-3 scroll-mt-6">
           <label className="text-sm font-semibold" htmlFor="content">Ответ, вопрос или исправление</label>
           <select name="intent" className="block rounded-lg border p-2 text-sm" aria-label="Тип сообщения">
             <option value="">Определить по сообщению</option>
@@ -85,7 +85,7 @@ export default async function ValuePropositionProjectPage({ params, searchParams
         </form>
       </section>
 
-      <aside className="space-y-4 h-fit min-w-0">
+      <aside className="space-y-4 min-w-0 self-stretch">
         <details className="card p-5 group">
           <summary className="font-bold cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Источники текущего этапа</summary>
           <div className="mt-4 space-y-3">
@@ -125,7 +125,7 @@ export default async function ValuePropositionProjectPage({ params, searchParams
           </dl>
           </div>
         </details>
-    <section className="card p-5 min-w-0 space-y-3">
+    <section className="card p-5 min-w-0 space-y-3 xl:sticky xl:top-5 xl:max-h-[calc(100dvh-2.5rem)] xl:overflow-y-auto">
       <h2 className="font-bold">Текущий рисунок</h2>
       {diagram
         ? <ValuePropositionDiagramView diagram={diagram} />
@@ -137,5 +137,9 @@ export default async function ValuePropositionProjectPage({ params, searchParams
 
       </aside>
     </div>
+    <nav aria-label="Навигация по диалогу" className="fixed bottom-4 left-4 z-30 flex gap-2 rounded-xl border border-[#d9dfeb] bg-white p-2 shadow-lg">
+      <a href="#mentor-dialogue-start" title="К началу диалога" aria-label="К началу диалога" className="btn btn-ghost gap-2"><span aria-hidden="true">↑</span><span className="text-xs">Начало</span></a>
+      <a href="#mentor-dialogue-end" title="К последним сообщениям и полю ответа" aria-label="К последним сообщениям и полю ответа" className="btn btn-ghost gap-2"><span aria-hidden="true">↓</span><span className="text-xs">К ответу</span></a>
+    </nav>
   </div>;
 }
