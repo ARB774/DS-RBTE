@@ -6,12 +6,10 @@ import { admissionUpdateSchema, type MentorState } from './mentor-state';
 import { readMentorState } from './mentor-state';
 import { activeMentorModule } from './mentor-module';
 import {
-  valuePropositionFormulationRepairProtocol,
   valuePropositionRoute,
   valuePropositionS5ActiveBlockSchema,
   valuePropositionS5ExpectedBlock,
   valuePropositionS5Prompt,
-  valuePropositionStageFormulationGuidance,
   valuePropositionStageRequiresDiagram,
   valuePropositionStageSchema,
   validateValuePropositionS5Progress,
@@ -156,11 +154,8 @@ readyForNextStage — рекомендация предъявить продук
 6. Не заставляй участника выбирать следующий этап. Переход разрешён только при выполнении критерия текущего этапа. proposedStage может быть текущим либо строго следующим; readyForNextStage=true только при явно достаточном входе.
 7. question — ровно один вопрос. Он должен содержать конкретный объект из ответа и требовать действия участника, а не подтверждения готового варианта наставника.
 
-ПРОТОКОЛ ИСПРАВЛЕНИЯ ФОРМУЛИРОВКИ
-${valuePropositionFormulationRepairProtocol}
-
-ПРАВИЛА ФОРМУЛИРОВКИ ТЕКУЩЕГО ЭТАПА ${input.stage}
-${valuePropositionStageFormulationGuidance[input.stage]}
+ПРЕДМЕТНЫЕ ПРАВИЛА И ФОРМУЛИРОВКИ
+Не восстанавливай правила этапа по памяти и не выводи их из краткого описания маршрута. Полное правило помощи при формулировке находится в DS-RBTE.FORMULATION, общие правила поля S0–S2 — в DS-RBTE.S0-S2, а процедура текущего этапа — в activeModule.procedure. При расхождении с прежним ответом наставника следуй прочитанным источникам и прямо исправь прежнее требование.
 
 ДЕТЕРМИНИРОВАННЫЙ МАРШРУТ S5
 ${s5Prompt}

@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
+    "mentor:evidence": "node scripts/build-mentor-evidence.mjs",
+    "mentor:evidence:check": "node scripts/build-mentor-evidence.mjs --check",
+    "prebuild": "npm run mentor:evidence:check",
     "build": "next build --webpack",
     "start": "next start -H 127.0.0.1 -p 8300",
     "lint": "tsc --noEmit",
@@ -11,6 +14,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "pretest": "npm run mentor:evidence:check",
     "test": "node --conditions=react-server --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
