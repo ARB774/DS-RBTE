@@ -23,7 +23,7 @@ import {
 
 const mentorOutput = z.object({
   reflection: z.string().min(1),
-  acceptedUpdate: z.string().min(1),
+  acceptedUpdate: z.string(),
   observations: z.array(z.string().min(1)).max(5),
   criterion: z.string().min(1),
   priorityGap: z.string().min(1),
@@ -166,6 +166,9 @@ export async function generateValuePropositionMentorTurn(input: {
     .join("");
   if (text.length > 128000) throw new Error('Ответ наставника превышает общий допустимый размер.');
   const turn = mentorOutput.parse(JSON.parse(text));
+  if (input.intent !== 'explanation' && !turn.acceptedUpdate.trim()) {
+    throw new Error('Наставник не указал принятое изменение. Ход не сохранён.');
+  }
   if (firstCandidate) {
     turn.diagram=firstCandidate;
     turn.proposedStage=input.stage;
