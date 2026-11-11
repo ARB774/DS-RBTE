@@ -1,0 +1,22 @@
+name: Mentor documentation
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  verify-mentor-documentation:
+    name: Documentation bundle matches canonical sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify mentor documentation bundle
+        working-directory: rbte-pilot
+        run: node scripts/build-mentor-evidence.mjs --check

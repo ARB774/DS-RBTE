@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { getCurrentSession } from "@/lib/session";
 import { logoutAction } from "@/app/actions/auth";
+import { mentorDocumentationVersion, rbteApplicationVersion, shortRevision } from "@/lib/value-proposition-evidence";
 
 export const metadata: Metadata = {
   title: "RBTE Pilot — Лидер трансформации",
@@ -86,6 +87,9 @@ export default async function RootLayout({
             <div>
               © {year} RBTE Pilot · материалы закрыты по умолчанию ·
               Удовлетворённость ≠ доказательство переноса.
+              <span className="block mt-1">
+                Версии: приложение {shortRevision(rbteApplicationVersion)} · документация наставника {shortRevision(mentorDocumentationVersion.dsRbte)} · Pack-TOC {shortRevision(mentorDocumentationVersion.packToc)}
+              </span>
             </div>
             <div className="flex items-center gap-4">
               <a
