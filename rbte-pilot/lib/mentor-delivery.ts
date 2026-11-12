@@ -48,10 +48,17 @@ export async function deliverSavedMentorTurn<T>(steps: {
     await steps.saveReply(reply);
     return true;
   } catch (error) {
+    const providerStatus = error instanceof Error && error.name === 'MentorProviderHttpError'
+      ? (error as Error & { providerStatus?: unknown }).providerStatus
+      : undefined;
+    const safeProviderStatus = typeof providerStatus === 'number' && Number.isInteger(providerStatus) && providerStatus >= 100 && providerStatus <= 599
+      ? providerStatus
+      : undefined;
     console.error('mentor-reply-failed', JSON.stringify({
       phase,
       category: mentorFailureCategory(error),
       errorName: error instanceof Error ? error.name : 'UnknownError',
+      ...(safeProviderStatus === undefined ? {} : { providerStatus: safeProviderStatus }),
     }));
     try { await steps.saveFailure(); } catch { console.error('mentor-failure-notice-unavailable'); }
     return false;
