@@ -109,7 +109,7 @@ export async function generateValuePropositionMentorTurn(input: {
   }
   const activeModule = activeMentorModule(input.stage, input.stateCard ?? readMentorState([]), methodEvidence);
   const stateCard = input.stateCard ? { ...input.stateCard, artifacts: undefined, legacyEvidence: undefined } : undefined;
-  const responseSchema = mentorResponseSchema(input.stage, input.intent);
+  const responseSchema = mentorResponseSchema(input.stage, input.intent, methodEvidence.map(source => source.id));
   const firstCandidate = input.stage === 'S4' && input.intent !== 'explanation' ? initialUndesirableEffectDraft(input.answer,input.currentDiagram) : null;
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -135,7 +135,7 @@ export async function generateValuePropositionMentorTurn(input: {
 
 Если intent=explanation, ответь на вопрос по документам и не меняй продукт или этап. Если intent=opening, не оценивай служебный текст как попытку участника: кратко обозначь работу и задай первый вопрос процедуры. Во всех остальных случаях разбери самостоятельную попытку и верни участнику одно следующее действие.
 
-Поля ответа — контракт приложения: workingProduct содержит целую текущую версию из материала участника; acceptedUpdate — только принятое изменение; observations — только наблюдаемое в данных; unknowns — существенное неизвестное; priorityGap — один разрыв; question — один вопрос; diagram — полная актуальная схема, а не патч. Сохраняй устойчивые идентификаторы уже принятых элементов. На этапах, где схема обязательна по JSON-схеме, верни её и не заменяй текстом. activeS5Block — технический указатель первого незавершённого блока активной Тучи; вне этого этапа верни null.
+Поля ответа — контракт приложения: workingProduct содержит целую текущую версию из материала участника; acceptedUpdate — принятое изменение и может быть пустым, если в этом ходе продукт не меняется; observations — только наблюдаемое в данных; unknowns — существенное неизвестное; priorityGap — один разрыв; question — один вопрос; diagram — полная актуальная схема, а не патч. Сохраняй устойчивые идентификаторы уже принятых элементов. На этапах, где схема обязательна по JSON-схеме, верни её и не заменяй текстом. activeS5Block — технический указатель первого незавершённого блока активной Тучи; вне этого этапа верни null.
 `,
       input: JSON.stringify({ ...input, currentDiagram:firstCandidate??input.currentDiagram, stateCard, methodEvidence: methodEvidence.map(source => ({ ...source, passages: methodPassages(source.text).map((text, index) => ({ index, text })) })), activeModule,
         history: input.stateCard && (input.stateCard.products.length || input.stateCard.pending) ? input.history.slice(-36) : input.history }),
@@ -166,9 +166,6 @@ export async function generateValuePropositionMentorTurn(input: {
     .join("");
   if (text.length > 128000) throw new Error('Ответ наставника превышает общий допустимый размер.');
   const turn = mentorOutput.parse(JSON.parse(text));
-  if (input.intent !== 'explanation' && !turn.acceptedUpdate.trim()) {
-    throw new Error('Наставник не указал принятое изменение. Ход не сохранён.');
-  }
   if (firstCandidate) {
     turn.diagram=firstCandidate;
     turn.proposedStage=input.stage;
@@ -261,7 +258,7 @@ export function admissionFromIndexedSources(value: unknown, texts: string[]) {
 }
 
 export function methodPassages(text: string) { return text.split(/\n\s*\n/).filter(part => part.trim().length > 0); }
-export function mentorResponseSchema(stage: ValuePropositionStage, intent?: string) {
+export function mentorResponseSchema(stage: ValuePropositionStage, intent?: string, allowedSourceIds: string[] = []) {
   const required = !['explanation', 'opening'].includes(intent ?? '') && valuePropositionStageRequiresDiagram(stage);
   const diagram = stage === 'S4' && required ? {
     ...valuePropositionDiagramJsonSchema,
@@ -270,7 +267,10 @@ export function mentorResponseSchema(stage: ValuePropositionStage, intent?: stri
       nodes: { ...valuePropositionDiagramJsonSchema.properties.nodes, minItems: 1 },
     },
   } : valuePropositionDiagramJsonSchema;
+  const sourceIdSchema = allowedSourceIds.length ? { type: 'string', enum: allowedSourceIds } : { type: 'string' };
   return { ...mentorJsonSchema, properties: { ...mentorJsonSchema.properties,
+    sourceIds: { ...mentorJsonSchema.properties.sourceIds, items: sourceIdSchema },
+    criterionEvidence: { ...mentorJsonSchema.properties.criterionEvidence, properties: { ...mentorJsonSchema.properties.criterionEvidence.properties, sourceId: sourceIdSchema } },
     diagram: required ? diagram : { anyOf: [diagram, { type: 'null' }] },
   } };
 }
