@@ -151,7 +151,10 @@ export async function generateValuePropositionMentorTurn(input: {
   });
   if (!response.ok) {
     await response.body?.cancel();
-    throw new Error("Наставник временно недоступен.");
+    const error = new Error("Наставник временно недоступен.") as Error & { providerStatus?: number };
+    error.name = 'MentorProviderHttpError';
+    error.providerStatus = response.status;
+    throw error;
   }
   const data = await response.json() as {
     status?: string;
