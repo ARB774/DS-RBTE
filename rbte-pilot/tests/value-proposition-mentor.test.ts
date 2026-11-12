@@ -11,11 +11,13 @@ test('admission quotes are copied from indexed originals and invalid indexes fai
   assert.throws(() => admissionFromIndexedSources([{ key: 'role', value: 'test', usable: true, sourceIndexes: [9] }], texts));
 });
 
-test('explanations may have no accepted update; ordinary replies may not', async () => {
+test('explanations and ordinary replies may have no accepted update; references are constrained to loaded sources', async () => {
   const originalFetch = globalThis.fetch;
   const originalKey = process.env.PILOT_OPENAI_API_KEY;
   process.env.PILOT_OPENAI_API_KEY = 'test-key-not-a-real-secret-0000';
-  globalThis.fetch = async () => {
+  let payload: any;
+  globalThis.fetch = async (_url, init) => {
+    payload = JSON.parse(String(init?.body));
     return new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{
       type: 'output_text', text: JSON.stringify({
         reflection: 'Граница проекта — это выбранный контур работы.', acceptedUpdate: '', observations: [],
@@ -32,8 +34,13 @@ test('explanations may have no accepted update; ordinary replies may not', async
   }, currentDiagram: null, history: [], answer: 'Что входит в границы проекта?', intent: 'explanation',
   methodEvidence: valuePropositionEvidence('S0').map(s => ({ ...s, origin: 'verified-cache' as const, fetchedAt: '2026-11-09', excerptSha256: 'test' })) };
   try {
-    await generateValuePropositionMentorTurn(request);
-    await assert.rejects(generateValuePropositionMentorTurn({ ...request, intent: undefined }), /не указал принятое изменение/);
+    const explanation = await generateValuePropositionMentorTurn(request);
+    assert.equal(explanation.acceptedUpdate, '');
+    const ordinary = await generateValuePropositionMentorTurn({ ...request, intent: undefined });
+    assert.equal(ordinary.acceptedUpdate, '');
+    const allowed = request.methodEvidence.map(source => source.id);
+    assert.deepEqual(payload.text.format.schema.properties.sourceIds.items.enum, allowed);
+    assert.deepEqual(payload.text.format.schema.properties.criterionEvidence.properties.sourceId.enum, allowed);
   } finally {
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.PILOT_OPENAI_API_KEY;
