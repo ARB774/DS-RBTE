@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkActions, classifyAction, selectOnlyActions } from '../lib/dilemma-actions';
+import { checkActions, classifyAction, seedCloudActions, selectOnlyActions } from '../lib/dilemma-actions';
 import { definitionFor } from '../lib/steps';
 test('actions require two classified actions and both distinct selections',()=>{
  assert.ok(checkActions('').length);
@@ -23,6 +23,11 @@ test('the first action of each type becomes main without an extra click',()=>{
  const restored=selectOnlyActions(complete.map(row=>({...row,selected:false})));
  assert.equal(restored[0].selected,true);
  assert.equal(restored[1].selected,true);
+});
+test('accepted actions seed D and D prime on the first cloud version',()=>{
+ assert.deepEqual(seedCloudActions({goal:'Цель'},{D:'Не использовать ИИ',Dp:'Использовать ИИ'},0),{goal:'Цель',actionA:'Не использовать ИИ',actionB:'Использовать ИИ'});
+ assert.deepEqual(seedCloudActions({actionA:'Уточнённое D',actionB:'Уточнённое D′'},{D:'Старое D',Dp:'Старое D′'},0),{actionA:'Уточнённое D',actionB:'Уточнённое D′'});
+ assert.deepEqual(seedCloudActions({actionA:'',actionB:''},{D:'Старое D',Dp:'Старое D′'},1),{actionA:'',actionB:''});
 });
 test('actions and simplified cloud apply only to personal dilemma',()=>{
  assert.equal(definitionFor('actions','CONFLICT'),undefined);
