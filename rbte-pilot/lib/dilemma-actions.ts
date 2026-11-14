@@ -1,5 +1,23 @@
 import type { MethodIssue } from './cloud-method';
 export type ActionRow={text:string;kind:''|'forced'|'preferred';selected:boolean};
+export function selectOnlyActions(rows:ActionRow[]):ActionRow[]{
+ const updated=rows.map(row=>({...row}));
+ for(const kind of ['forced','preferred'] as const){
+  const candidates=updated.map((row,rowIndex)=>({row,rowIndex})).filter(({row})=>row.kind===kind&&row.text.trim());
+  if(candidates.length===1&&!candidates[0].row.selected)candidates[0].row.selected=true;
+ }
+ return updated;
+}
+export function classifyAction(rows:ActionRow[],index:number,kind:'forced'|'preferred'):ActionRow[]{
+ const previous=rows[index];
+ const hasMain=rows.some((row,rowIndex)=>rowIndex!==index&&row.kind===kind&&row.selected);
+ const updated=rows.map((row,rowIndex)=>rowIndex===index?{...row,kind,selected:!hasMain}:row);
+ if(previous?.selected&&previous.kind&&previous.kind!==kind){
+  const remaining=updated.map((row,rowIndex)=>({row,rowIndex})).filter(({row})=>row.kind===previous.kind&&row.text.trim());
+  if(remaining.length===1)updated[remaining[0].rowIndex]={...remaining[0].row,selected:true};
+ }
+ return selectOnlyActions(updated);
+}
 export function actionRows(value:string):ActionRow[]{
  try{const rows:unknown=JSON.parse(value);if(Array.isArray(rows)&&rows.length<=20&&rows.every(r=>r&&typeof r.text==='string'&&r.text.length<=500&&['','forced','preferred'].includes(r.kind)&&typeof r.selected==='boolean'))return rows;}catch{}
  return [];
