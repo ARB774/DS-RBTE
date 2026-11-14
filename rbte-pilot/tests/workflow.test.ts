@@ -13,7 +13,10 @@ import { contextOf,hashBasis } from '../lib/workflow-store';
 import { persistDraft } from '../lib/drafts';
 import { persistSituation } from '../lib/create-situation';
 import { stepDrafts,users,revisions,situations } from '../db/schema';
+import { dilemmaAssistantEvidence } from '../lib/value-proposition-evidence';
+import { createHash } from 'node:crypto';
 const cloud={goal:'Устойчиво выполнять свою работу',needA:'Сохранять сроки поставки',needB:'Сохранять качество продукции',actionA:'Отгрузить заказ сегодня',actionB:'Проверить все детали до отгрузки'};
+const dilemmaDocs=async(step:string)=>dilemmaAssistantEvidence(step).map(source=>({...source,origin:'verified-cache' as const,fetchedAt:'2026-11-14',excerptSha256:createHash('sha256').update(source.text).digest('hex')}));
 test('personal dilemma adds actions; other profiles retain ten steps',()=>{
  assert.equal(stepOrder.filter(s=>definitionFor(s,'DILEMMA')).length+1,11);
  assert.equal(stepOrder.filter(s=>definitionFor(s,'CONFLICT')).length+1,10);
@@ -57,7 +60,18 @@ test('semantic review sends only current/earlier content and validates field ref
  const report=await evaluateWorkflow('cloud',{profile:'IMMUNITY',signal:'Учебный эпизод'},[{step:'cloud',fields:cloud},{step:'result',fields:{actual:'FUTURE_SECRET'}},{step:'explore',fields:{observations:'LEGACY_SECRET'}}],{key:'fake',model:'fake'},transport as typeof fetch);
  assert.equal(report.mode,'ai');assert.equal(body.store,false);
  assert.ok(!body.input.includes('FUTURE_SECRET'));assert.ok(!body.input.includes('LEGACY_SECRET'));
- await assert.rejects(()=>evaluateWorkflow('cloud',{profile:'DILEMMA',signal:'эпизод'},[],{key:'fake',model:'fake'},(async()=>new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[{field:'trial.action',criterion:'x',observation:'x',question:'x'}],note:'x'})}]}]}))) as typeof fetch));
+ let dilemmaBody:any;
+ await evaluateWorkflow('logic',{profile:'DILEMMA',signal:'эпизод'},[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да'}}],{key:'fake',model:'fake'},(async(_url,init)=>{dilemmaBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
+ const dilemmaInput=JSON.parse(dilemmaBody.input);
+ assert.ok(dilemmaInput.methodEvidence.some((source:any)=>source.id==='DS-RBTE.DILEMMA.ACCEPTANCE'));
+ assert.equal(dilemmaInput.questions,undefined);assert.equal(dilemmaInput.learningCriteria,undefined);assert.equal(dilemmaInput.toc,undefined);assert.equal(dilemmaInput.evidence,undefined);
+ assert.doesNotMatch(dilemmaBody.instructions,/D — конкретное|бездействие — тоже действие/);
+ await assert.rejects(()=>evaluateWorkflow('cloud',{profile:'DILEMMA',signal:'эпизод'},[],{key:'fake',model:'fake'},(async()=>new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[{field:'trial.action',criterion:'x',observation:'x',question:'x'}],note:'x'})}]}]}))) as typeof fetch,dilemmaDocs));
+});
+test('personal dilemma workflow stops before the provider when assistant documentation is unavailable',async()=>{
+ let providerCalled=false;
+ await assert.rejects(()=>evaluateWorkflow('logic',{profile:'DILEMMA',signal:'эпизод'},[{step:'logic',fields:{ab:'Да'}}],{key:'fake',model:'fake'},(async()=>{providerCalled=true;return new Response('{}');}) as typeof fetch,async()=>{throw new Error('docs unavailable');}),/docs unavailable/);
+ assert.equal(providerCalled,false);
 });
 test('database persistence: four profiles, history, ownership, locked situations, conflicts, baseline',async()=>{
  const pg=new PGlite();const database=drizzle(pg);

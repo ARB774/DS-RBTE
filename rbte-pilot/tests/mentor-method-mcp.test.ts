@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
-import { retrieveMentorMethods } from '../lib/mentor-method-client';
-import { valuePropositionEvidence } from '../lib/value-proposition-evidence';
+import { retrieveDilemmaAssistantMethods, retrieveMentorMethods } from '../lib/mentor-method-client';
+import { dilemmaAssistantEvidence, valuePropositionEvidence } from '../lib/value-proposition-evidence';
 import { readPinnedSource } from './pinned-source';
 
 test('actual MCP transport reads verified GitHub cache and returns traceable method bodies', async () => {
@@ -39,4 +39,25 @@ test('knowledge MCP exposes read-only stage search and exact get; arbitrary path
     assert.ok(tools.every(t => t.annotations?.readOnlyHint));
     assert.equal((await client.callTool({ name: 'get_mentor_method', arguments: { id: '../../etc/passwd' } })).isError, true);
   } finally { await client.close(); await transport.close(); }
+});
+
+test('personal dilemma reads its assistant documentation through the same verified MCP boundary', async () => {
+  const cache = await mkdtemp(join(tmpdir(), 'dilemma-method-mcp-test-'));
+  const previous = process.env.MENTOR_KNOWLEDGE_CACHE;
+  process.env.MENTOR_KNOWLEDGE_CACHE = cache;
+  try {
+    for (const source of dilemmaAssistantEvidence('cloud')) {
+      const text = await readPinnedSource(source);
+      await writeFile(join(cache, source.sha256 + '.json'), JSON.stringify({ text, fetchedAt: '2026-11-14', origin: 'github' }));
+    }
+    const sources = await retrieveDilemmaAssistantMethods('cloud');
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ACCEPTANCE' && s.text.includes('ЛД-17')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.AI-ROLE' && s.text.includes('ИИ не должен')));
+    assert.ok(sources.some(s => s.id === 'TOC.M.006'));
+    assert.ok(sources.every(s => s.origin === 'verified-cache' && s.excerptSha256.length === 64));
+  } finally {
+    if (previous === undefined) delete process.env.MENTOR_KNOWLEDGE_CACHE;
+    else process.env.MENTOR_KNOWLEDGE_CACHE = previous;
+    await rm(cache, { recursive: true, force: true });
+  }
 });
