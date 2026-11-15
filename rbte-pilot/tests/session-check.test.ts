@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkPortalSession, sessionDestination, authReturnPath } from '../lib/session-check';
+import { checkPortalSession, localDevelopmentIdentity, sessionDestination, authReturnPath } from '../lib/session-check';
 import { PortalResponseError } from '../lib/portal-client';
 import type { AuthUser } from '../lib/auth';
 
@@ -45,4 +45,13 @@ test('return to the project is preserved while off-site and encoded redirect tar
     assert.equal(authReturnPath(unsafe), '/dashboard');
   }
   assert.ok(sessionDestination({ user: null, status: 'unavailable' }, next)?.includes(encodeURIComponent(next)));
+});
+
+test('local identity is available only in an explicitly enabled development process', () => {
+  assert.deepEqual(localDevelopmentIdentity({ NODE_ENV: 'development', PILOT_LOCAL_AUTH: '1' }), { id: '1', name: 'Local participant' });
+  assert.deepEqual(localDevelopmentIdentity({ NODE_ENV: 'development', PILOT_LOCAL_AUTH: '1', PILOT_LOCAL_USER_ID: '42', PILOT_LOCAL_USER_NAME: 'Виктор' }), { id: '42', name: 'Виктор' });
+  assert.equal(localDevelopmentIdentity({ NODE_ENV: 'production', PILOT_LOCAL_AUTH: '1' }), null);
+  assert.equal(localDevelopmentIdentity({ NODE_ENV: 'development', PILOT_LOCAL_AUTH: '0' }), null);
+  assert.equal(localDevelopmentIdentity({ NODE_ENV: 'development', PILOT_LOCAL_AUTH: '1', PILOT_LOCAL_USER_ID: '../admin' }), null);
+  assert.equal(localDevelopmentIdentity({ NODE_ENV: 'development', PILOT_LOCAL_AUTH: '1', PILOT_LOCAL_USER_NAME: '   ' }), null);
 });

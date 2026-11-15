@@ -3,6 +3,7 @@ import { DilemmaCloud } from './dilemma-cloud';
 import { dilemmaSteps,dilemmaTitle } from '@/lib/dilemma-route';
 import { hasDilemmaSemanticReview } from '@/lib/dilemma-review';
 import { ActionsTable } from './dilemma-actions';
+import { seedCloudActions } from '@/lib/dilemma-actions';
 import { cloudEntryFields } from '@/lib/cloud-entry';
 import { TocGuide } from './toc-guide';
 import { tocOrderText,tocSources } from '@/lib/pack-toc';
@@ -26,7 +27,7 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  const entry=cloudEntryFields(step,initial);
  const legacyCloud=entry!==initial&&Object.values(nodeFields).some(key=>initial[key]);
  const defaults=()=>Object.fromEntries(definition.fields.map(f=>[f.key,f.options?.[0]??'']));
- const [fields,setFields]=useState<Record<string,string>>(()=>({...defaults(),...entry})),[version,setVersion]=useState(initialVersion),[dirty,setDirty]=useState(false),[pending,start]=useTransition(),[message,setMessage]=useState(personal&&initial.__draft==='true'?'Сохранён черновик.':personalCloud&&initial.__cloudReview==='submitted'&&!initial.__check?.includes('"mode":"ai"')?'Ответы сохранены. Проверка не завершена. Повторите проверку.':''),[active,setActive]=useState<CloudNode[]>([]),[consent,setConsent]=useState(false),[showHelp,setShowHelp]=useState(step!=='practice'&&step!=='cloud'),[report,setReport]=useState<WorkflowCheck|null>(()=>{try{const saved=entry.__check?JSON.parse(entry.__check):null;return personalCloud&&(entry.__draft==='true'||(saved?.mode!=='ai'&&entry.__cloudReview!=='submitted'))?null:saved;}catch{return null;}}),[outdated,setOutdated]=useState(stale);
+ const [fields,setFields]=useState<Record<string,string>>(()=>seedCloudActions({...defaults(),...entry},actionChoices,personalCloud?initialVersion:1)),[version,setVersion]=useState(initialVersion),[dirty,setDirty]=useState(false),[pending,start]=useTransition(),[message,setMessage]=useState(personal&&initial.__draft==='true'?'Сохранён черновик.':personalCloud&&initial.__cloudReview==='submitted'&&!initial.__check?.includes('"mode":"ai"')?'Ответы сохранены. Проверка не завершена. Повторите проверку.':''),[active,setActive]=useState<CloudNode[]>([]),[consent,setConsent]=useState(false),[showHelp,setShowHelp]=useState(step!=='practice'&&step!=='cloud'),[report,setReport]=useState<WorkflowCheck|null>(()=>{try{const saved=entry.__check?JSON.parse(entry.__check):null;return personalCloud&&(entry.__draft==='true'||(saved?.mode!=='ai'&&entry.__cloudReview!=='submitted'))?null:saved;}catch{return null;}}),[outdated,setOutdated]=useState(stale);
  useEffect(()=>{const warn=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[dirty]);
  useEffect(()=>{setOutdated(stale);},[stale]);
  useEffect(()=>{if(!personal)return;const guard=(event:MouseEvent)=>{const link=(event.target as Element)?.closest?.('a');if(!dirty||!link||link.target==='_blank'||event.ctrlKey||event.metaKey||link.getAttribute('href')?.startsWith('#'))return;if(!window.confirm('Есть несохранённые изменения. Уйти без сохранения?')){event.preventDefault();event.stopPropagation();}};document.addEventListener('click',guard,true);return()=>document.removeEventListener('click',guard,true);},[dirty,personal]);

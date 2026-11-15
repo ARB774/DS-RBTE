@@ -9,6 +9,9 @@ import { z } from 'zod/v4';
 import { dilemmaLinkKeys,hasDilemmaSemanticReview } from '../lib/dilemma-review';
 import { checkStep } from '../lib/workflow-check';
 import { TOC_COMMIT } from '../lib/pack-toc';
+import { dilemmaAssistantEvidence } from '../lib/value-proposition-evidence';
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 const cloud={goal:'Сдать достоверный квартальный отчёт в согласованный срок',needA:'Соблюсти срок передачи',needB:'Обеспечить точность данных',actionA:'Передать отчёт сегодня без проверки',actionB:'Проверить отчёт до передачи завтра'};
 const links=()=>dilemmaLinkKeys.map(key=>({key,status:'ok',observation:'По учебному тексту связь логически согласована.',question:'',sourceIds:['TOC.M.003']}));
 function provider(report:unknown,onRequest?:(body:any)=>void):typeof fetch{
@@ -17,6 +20,8 @@ function provider(report:unknown,onRequest?:(body:any)=>void):typeof fetch{
  return (async(_url,init)=>{onRequest?.(JSON.parse(String(init?.body)));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(wire)}]}]}));}) as typeof fetch;
 }
 const situation={profile:'DILEMMA',signal:'Учебный пример: срок сдачи сегодня, проверка занимает дополнительный день.'};
+const assistantSources=async()=>dilemmaAssistantEvidence('cloud').map(source=>({...source,origin:'verified-cache' as const,fetchedAt:'2026-11-14',excerptSha256:createHash('sha256').update(source.text).digest('hex')}));
+const evaluate=(s:Parameters<typeof evaluateDilemmaCloud>[0],d:Parameters<typeof evaluateDilemmaCloud>[1],c:Parameters<typeof evaluateDilemmaCloud>[2],t:typeof fetch=fetch)=>evaluateDilemmaCloud(s,d,c,t,assistantSources);
 test('real MCP stdio search retrieves pinned criteria and complete seven readings',async()=>{
  const {evidence,retrieval}=await retrieveDilemmaEvidence();
  assert.equal(retrieval.transport,'mcp-stdio');assert.equal(retrieval.commit,TOC_COMMIT);
@@ -39,11 +44,12 @@ test('MCP exposes only read-only search/get; unknown IDs and path traversal fail
 });
 test('semantic review uses MCP evidence, checks all seven links and excludes future/private metadata',async()=>{
  let body:any;
- const report=await evaluateDilemmaCloud(situation,[{step:'cloud',fields:{...cloud,__check:'PRIVATE_CHECK'}},{step:'result',fields:{actual:'FUTURE_SECRET'}}],{key:'test-key',model:'test-model'},provider({issues:[],links:links(),note:'Учебная проверка.'},b=>body=b));
+ const report=await evaluate(situation,[{step:'cloud',fields:{...cloud,__check:'PRIVATE_CHECK'}},{step:'result',fields:{actual:'FUTURE_SECRET'}}],{key:'test-key',model:'test-model'},provider({issues:[],links:links(),note:'Учебная проверка.'},b=>body=b));
  assert.equal(body.store,false);
  assert.ok(!body.input.includes('FUTURE_SECRET')&&!body.input.includes('PRIVATE_CHECK'));
  const input=JSON.parse(body.input);assert.equal(input.retrieval.transport,'mcp-stdio');
- assert.ok(input.evidence.some((e:any)=>e.id==='TOCT.13'));
+ assert.ok(input.methodEvidence.some((e:any)=>e.id==='TOCT.13'));
+ assert.ok(input.methodEvidence.some((e:any)=>e.id==='DS-RBTE.DILEMMA.ACCEPTANCE'));
  assert.equal(report.semantic?.links.length,7);assert.equal(hasDilemmaSemanticReview(report),true);
  assert.equal(hasDilemmaSemanticReview(checkStep('cloud','DILEMMA',cloud)),false);
 });
@@ -71,23 +77,23 @@ test('an initial all-green hallucination is critically audited and cannot overri
  const checked=links();checked[0]={...checked[0],status:'uncertain',observation:'В описании отчёта нет основания связать срок сдачи с покупкой велосипеда.',question:'Как эта потребность необходима для указанной общей цели?'};
  const second=provider({issues:[{field:'goal',criterion:'Цель относится к эпизоду',observation:wrong.goal,question:'Какой общий результат нужен в описанном эпизоде?',sourceIds:['TOC.M.003']}],links:checked,note:'Предыдущий ответ придумал связь.'},body=>{assert.ok(JSON.parse(body.input).previousReview);assert.equal(body.model,'gpt-5.4');});
  const transport:typeof fetch=(...args)=>{count++;return (count===1?first:second)(...args);};
- const report=await evaluateDilemmaCloud(situation,[{step:'cloud',fields:wrong}],{key:'test',model:'gpt-4.1-mini',dilemmaModel:'gpt-5.4'},transport);
+ const report=await evaluate(situation,[{step:'cloud',fields:wrong}],{key:'test',model:'gpt-4.1-mini',dilemmaModel:'gpt-5.4'},transport);
  assert.equal(count,2);assert.equal(report.semantic?.verification?.passes,2);
  assert.ok(report.issues.some(i=>i.field==='goal'));assert.ok(report.issues.some(i=>i.field==='needA'&&i.criterion==='Потребность объясняет действие'));
  assert.equal(report.semantic?.links.find(l=>l.key==='ab')?.status,'uncertain');
 });
 test('formal errors survive two falsely positive semantic reports; a failed audit never passes',async()=>{
  const wrong={...cloud,needA:cloud.actionA};
- const report=await evaluateDilemmaCloud(situation,[{step:'cloud',fields:wrong}],{key:'test',model:'test'},provider({issues:[],links:links(),note:'Всё согласовано.'}));
+ const report=await evaluate(situation,[{step:'cloud',fields:wrong}],{key:'test',model:'test'},provider({issues:[],links:links(),note:'Всё согласовано.'}));
  assert.ok(report.issues.some(i=>i.criterion==='Потребность объясняет действие'));
  let count=0;
  const first=provider({issues:[],links:links(),note:'Всё согласовано.'});
- await assert.rejects(()=>evaluateDilemmaCloud(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},((...args)=>++count===1?first(...args):Promise.resolve(new Response('offline',{status:503}))) as typeof fetch),/unavailable/);
+ await assert.rejects(()=>evaluate(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},((...args)=>++count===1?first(...args):Promise.resolve(new Response('offline',{status:503}))) as typeof fetch),/unavailable/);
  assert.equal(count,2);
 });
 test('link errors become field feedback with a source and a concrete hint',async()=>{
  const checked=links();checked[1]={...checked[1],status:'issue',observation:'D не обеспечивает B.',question:'Как это действие обеспечивает вашу потребность B?'};
- const report=await evaluateDilemmaCloud(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},provider({issues:[],links:checked,note:'Уточните связь.'}));
+ const report=await evaluate(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},provider({issues:[],links:checked,note:'Уточните связь.'}));
  assert.equal(report.issues[0].field,'actionA');assert.equal(report.issues[0].link,'bd');
  assert.match(report.issues[0].question,/потребность B/);
 });
@@ -98,9 +104,16 @@ test('missing/duplicate links, invented sources and unanswered uncertainty are r
   {issues:[],links:links().map(l=>({...l,sourceIds:['FAKE.123']})),note:'Вымышленный источник.'},
   {issues:[],links:links().map(l=>({...l,status:'uncertain'})),note:'Нет подсказки.'}
  ];
- for(const report of invalid)await assert.rejects(()=>evaluateDilemmaCloud(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},provider(report)));
+ for(const report of invalid)await assert.rejects(()=>evaluate(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},provider(report)));
 });
 test('MCP semantic path is limited to DILEMMA and a provider failure is not a passed review',async()=>{
- await assert.rejects(()=>evaluateDilemmaCloud({...situation,profile:'CONFLICT'},[],{key:'test',model:'test'}),/limited/);
- await assert.rejects(()=>evaluateDilemmaCloud(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},(async()=>new Response('offline',{status:503})) as typeof fetch),/unavailable/);
+ await assert.rejects(()=>evaluate({...situation,profile:'CONFLICT'},[],{key:'test',model:'test'}),/limited/);
+ await assert.rejects(()=>evaluate(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},(async()=>new Response('offline',{status:503})) as typeof fetch),/unavailable/);
+});
+test('personal dilemma cannot fall back to embedded method rules when assistant documentation is unavailable',async()=>{
+ let providerCalled=false;
+ await assert.rejects(()=>evaluateDilemmaCloud(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},(async()=>{providerCalled=true;return new Response('{}');}) as typeof fetch,async()=>{throw new Error('docs offline');}),/docs offline/);
+ assert.equal(providerCalled,false);
+ const source=await readFile(new URL('../lib/dilemma-review-ai.ts',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/D — конкретное вынужденное действие|При расхождении общей карточки|бездействие — тоже действие/);
 });

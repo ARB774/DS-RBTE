@@ -7,8 +7,15 @@ import { type UserRole } from '@/db/schema';
 import { SESSION_COOKIE,type AuthUser } from './auth';
 import { portalCall,identitySchema } from './portal-client';
 import { portalUser } from './portal-user';
-import { checkPortalSession,sessionDestination,type SessionCheck } from './session-check';
+import { checkPortalSession,localDevelopmentIdentity,sessionDestination,type SessionCheck } from './session-check';
 export const getCurrentSession=cache(async():Promise<SessionCheck>=>{
+ const localIdentity=localDevelopmentIdentity(process.env);
+ if(localIdentity){
+  try {
+   const user=await portalUser(db,localIdentity);
+   return user?{user,status:'authenticated'}:{user:null,status:'forbidden'};
+  } catch { console.warn('pilot-session-unavailable','local-database'); return {user:null,status:'unavailable'}; }
+ }
  return checkPortalSession((await cookies()).get(SESSION_COOKIE)?.value,
   async token=>identitySchema.parse(await portalCall({action:'validate',token})),
   async identity=>portalUser(db,identitySchema.parse(identity)));
