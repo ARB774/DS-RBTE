@@ -12,6 +12,7 @@ import { TOC_COMMIT } from '../lib/pack-toc';
 import { dilemmaAssistantEvidence } from '../lib/value-proposition-evidence';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { upsertDilemmaReviewReply } from '../lib/dilemma-review-replies';
 const cloud={goal:'Сдать достоверный квартальный отчёт в согласованный срок',needA:'Соблюсти срок передачи',needB:'Обеспечить точность данных',actionA:'Передать отчёт сегодня без проверки',actionB:'Проверить отчёт до передачи завтра'};
 const links=()=>dilemmaLinkKeys.map(key=>({key,status:'ok',observation:'По учебному тексту связь логически согласована.',question:'',sourceIds:['TOC.M.003']}));
 function provider(report:unknown,onRequest?:(body:any)=>void):typeof fetch{
@@ -109,6 +110,18 @@ test('missing/duplicate links, invented sources and unanswered uncertainty are r
 test('MCP semantic path is limited to DILEMMA and a provider failure is not a passed review',async()=>{
  await assert.rejects(()=>evaluate({...situation,profile:'CONFLICT'},[],{key:'test',model:'test'}),/limited/);
  await assert.rejects(()=>evaluate(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},(async()=>new Response('offline',{status:503})) as typeof fetch),/unavailable/);
+});
+test('participant reply is saved as review context and must be considered instead of ignored',async()=>{
+ const prior={field:'actionA',criterion:'Конкретность действия D',observation:cloud.actionA,question:'Какой конкретный эпизод вы имеете в виду?',sourceIds:['TOC.M.003']};
+ const reviewReplies=upsertDilemmaReviewReply(undefined,prior,'Речь о сдаче отчёта 18 ноября; в этот день проверку выполнить невозможно.');
+ const checked=links();checked[1]={...checked[1],status:'uncertain',observation:'Ответ участника требует проверки в контексте связи.',question:'Что именно делает проверку невозможной в этом эпизоде?'};
+ let body:any;
+ await evaluate(situation,[{step:'cloud',fields:{...cloud,reviewReplies}}],{key:'test',model:'test'},provider({issues:[prior],links:checked,note:'Ответ участника учтён; требуется одно уточнение.'},request=>body=request));
+ const input=JSON.parse(body.input);
+ assert.equal(input.participantReplies.length,1);
+ assert.match(input.participantReplies[0].reply,/18 ноября/);
+ assert.match(body.instructions,/не повторяй его/);
+ assert.match(body.instructions,/Окончательный выбор формулировки остаётся за участником/);
 });
 test('personal dilemma cannot fall back to embedded method rules when assistant documentation is unavailable',async()=>{
  let providerCalled=false;

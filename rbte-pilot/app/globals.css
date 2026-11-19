@@ -117,6 +117,7 @@ body {
 .cloud-D label,.cloud-D strong,.cloud-Dp label,.cloud-Dp strong {color:#1d4ed8;}
 
 /* The guided personal dilemma is isolated from all other profile diagrams. */
+.dilemma-review-layout { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:20px; align-items:start; }
 .dilemma-cloud-scroll { overflow-x:auto; padding:4px; }
 .dilemma-canvas { position:relative; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:300px 300px; gap:48px 64px; min-width:760px; width:100%; }
 .dilemma-lines { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
@@ -130,7 +131,9 @@ body {
 .dilemma-bubble.has-error { border-color:#b91c1c; }
 .dilemma-bubble-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:4px 10px; text-align:center; font-size:.9rem; min-height:40px; }
 .dilemma-bubble-heading label { font-weight:700; line-height:1.3; color:#334155; }
-.dilemma-bubble-heading button,.dilemma-confirm button,.dilemma-feedback button { text-decoration:underline; font-size:.8rem; color:#1d4ed8; padding:3px; }
+.dilemma-bubble-heading button,.dilemma-confirm button { text-decoration:underline; font-size:.8rem; color:#1d4ed8; padding:3px; }
+.dilemma-bubble-heading .dilemma-issue-badge { border:1px solid #fecaca; border-radius:999px; background:#fef2f2; color:#b91c1c; padding:2px 8px; text-decoration:none; font-weight:700; }
+.dilemma-bubble-heading .dilemma-issue-badge[aria-pressed="true"] { background:#fee2e2; box-shadow:0 0 0 2px #fecaca; }
 .dilemma-bubble-content { flex:1; min-height:0; display:flex; flex-direction:column; gap:8px; overflow-y:auto; padding:6px 2px 0; }
 .dilemma-question { font-size:.88rem; line-height:1.4; margin:0; }
 .dilemma-bubble textarea { flex:1 0 72px; width:100%; min-height:72px; max-height:190px; border:0; border-radius:8px; resize:none; padding:8px; background:#f8fafc; color:#0f172a; font:inherit; font-size:.95rem; line-height:1.45; outline:none; }
@@ -138,13 +141,36 @@ body {
 .dilemma-bubble textarea:focus-visible { box-shadow:inset 0 0 0 2px #93c5fd; }
 .dilemma-bubble button:disabled { opacity:.5; }
 .dilemma-confirm { display:flex; justify-content:space-between; align-items:center; gap:6px; color:#64748b; font-size:.75rem; }
-.dilemma-error,.dilemma-feedback { color:#b91c1c; font-size:.85rem; line-height:1.4; }
-.dilemma-feedback strong { font-weight:600; }
-.dilemma-feedback p { margin:4px 0; }
-.dilemma-feedback button { display:inline-block; margin-right:8px; }
-.dilemma-evidence { font-size:.8rem; line-height:1.4; padding:8px; background:#fff7ed; }
-.dilemma-evidence>div+div { margin-top:10px; }
-.dilemma-evidence a { text-decoration:underline; }
+.dilemma-error { color:#b91c1c; font-size:.85rem; line-height:1.4; }
+.dilemma-review-panel { position:sticky; top:16px; max-height:648px; overflow:auto; border:1px solid #fecaca; border-radius:18px; background:#fff; padding:16px; }
+.dilemma-review-panel header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.dilemma-review-panel h3,.dilemma-review-panel h4 { margin:0; color:#7f1d1d; }
+.dilemma-review-panel header span { min-width:30px; border-radius:999px; background:#fee2e2; color:#991b1b; padding:4px 8px; text-align:center; font-weight:700; }
+.dilemma-review-pending { display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:start; margin:12px 0; border:1px solid #bfdbfe; border-radius:10px; background:#eff6ff; padding:10px; color:#1e3a8a; font-size:.82rem; }
+.dilemma-review-pending>span { width:11px; height:11px; margin-top:4px; border:2px solid #93c5fd; border-top-color:#2563eb; border-radius:50%; animation:dilemma-spin .8s linear infinite; }
+.dilemma-review-pending strong { display:block; }
+.dilemma-review-pending p { margin:3px 0 0; line-height:1.35; }
+.dilemma-review-pending time { white-space:nowrap; color:#475569; }
+@keyframes dilemma-spin { to { transform:rotate(360deg); } }
+.dilemma-review-help { margin:8px 0 12px; color:#475569; font-size:.85rem; line-height:1.4; }
+.dilemma-review-note { margin:0 0 12px; border-left:3px solid #94a3b8; padding-left:9px; color:#334155; font-size:.85rem; line-height:1.4; }
+.dilemma-issue-groups { display:flex; flex-wrap:wrap; gap:6px; padding-bottom:12px; border-bottom:1px solid #e2e8f0; }
+.dilemma-issue-groups button { border:1px solid #cbd5e1; border-radius:999px; background:#fff; color:#334155; padding:5px 9px; font-size:.78rem; text-align:left; }
+.dilemma-issue-groups button[aria-pressed="true"] { border-color:#b91c1c; background:#fef2f2; color:#991b1b; }
+.dilemma-selected-feedback { margin-top:14px; }
+.dilemma-selected-feedback article { margin-top:12px; border-top:1px solid #e2e8f0; padding-top:12px; font-size:.86rem; line-height:1.45; }
+.dilemma-selected-feedback article p { margin:6px 0; }
+.dilemma-selected-feedback details { color:#475569; }
+.dilemma-selected-feedback details a { margin-right:8px; text-decoration:underline; }
+.dilemma-reply-editor { display:grid; gap:7px; margin-top:12px; border-radius:10px; background:#f8fafc; padding:10px; }
+.dilemma-reply-editor label { color:#0f172a; font-weight:700; }
+.dilemma-reply-editor textarea { width:100%; min-height:76px; resize:vertical; border:1px solid #cbd5e1; border-radius:8px; background:#fff; padding:8px; color:#0f172a; font:inherit; }
+.dilemma-reply-editor button { justify-self:start; border-radius:8px; background:#2563eb; color:#fff; padding:7px 11px; font-weight:600; }
+.dilemma-reply-editor button:disabled { opacity:.5; }
+.dilemma-reply-editor small { color:#64748b; line-height:1.35; }
+.dilemma-edit-from-review { margin-top:14px; border-radius:8px; background:#2563eb; color:#fff; padding:8px 12px; font-weight:600; }
+.dilemma-edit-from-review:disabled { opacity:.5; }
 .dilemma-reference { font-size:.75rem; color:#64748b; }
 .dilemma-reference summary { cursor:pointer; }
+@media(max-width:1100px) { .dilemma-review-layout { grid-template-columns:1fr; } .dilemma-review-panel { position:static; max-height:none; } }
 @media(max-width:800px) { .dilemma-canvas { gap:40px 40px; } .dilemma-bubble { padding:14px; } }
