@@ -21,7 +21,7 @@ export function localReview(snapshot:ReviewSnapshot){
  }
  need(['creation.signal','creation.task'],'AL.WP.005','Какой эпизод разбираете и какое действие требуется?','Без контекста нельзя связать критерий с рабочей задачей.');
  const cloudKeys=['cloud.goal','cloud.needA','cloud.needB','cloud.actionA','cloud.actionB'];
- need(cloudKeys,'Методика тучи','Какие цель, потребности и действия нужно согласовать?','Пустое облако требует уточнения; в полной карте иммунитета D — желаемое действие по TOCT.16.');
+ need(cloudKeys,'Методика Тучи','Какие цель, потребности и действия нужно согласовать?','Пустой элемент Тучи требует уточнения; в полной карте иммунитета D — желаемое действие по TOCT.16.');
  for(const step of Object.keys(steps)){
   const def=definitionFor(step,snapshot.profile);if(!def)continue;
   const fields=Object.fromEntries(def.fields.map(f=>[f.key,fv(step+'.'+f.key)]));

@@ -24,7 +24,7 @@ export function checkCloud(profile:Profile,fields:Record<string,string>):MethodI
  const issues:MethodIssue[]=[];
  const required=tocProfiles[profile].order;
  for(const node of required){const field=nodeFields[node],value=(fields[field]||'').trim();
-  if(!value||/^(не знаю|нет|тест|потом|не понятно|непонятно|\.{2,}|…+)$/iu.test(value))issues.push({field,criterion:'Содержательная формулировка '+nodeNames[node],observation:value||'Облако пока пустое',question:profileQuestions[profile][node]});
+  if(!value||/^(не знаю|нет|тест|потом|не понятно|непонятно|\.{2,}|…+)$/iu.test(value))issues.push({field,criterion:'Содержательная формулировка '+nodeNames[node],observation:value||'Элемент Тучи пока пуст',question:profileQuestions[profile][node]});
  }
  for(const [need,action] of [['needA','actionA'],['needB','actionB']]){
   if(fields[need]?.trim()&&normalize(fields[need])===normalize(fields[action]||''))issues.push({field:need,criterion:'Потребность объясняет действие',observation:fields[need],question:'Вы повторили действие. Что важное оно позволяет обеспечить или сохранить?'});
@@ -38,7 +38,7 @@ export function checkCloud(profile:Profile,fields:Record<string,string>):MethodI
  return issues.map(issue=>({...issue,sourceIds:issue.sourceIds||['TOC.M.003',tocProfiles[profile].method]}));
 }
 export const methodNotes:Record<string,string>={
- cloud:'Схема изначально пустая. Впишите собственные формулировки прямо в облака, следуя порядку выбранного профиля. Потребность объясняет, что защищает действие; общая цель объединяет обе потребности.',
+ cloud:'Схема изначально пустая. Впишите собственные формулировки прямо в элементы Тучи, следуя порядку выбранного профиля. Потребность объясняет, что защищает действие; общая цель объединяет обе потребности.',
  logic:'Прочитайте каждую связь как утверждение необходимости. Согласие с предложением требует собственного основания. Неизвестное можно сохранить для уточнения.',
  assumptions:'Исходная посылка объясняет связь: «Чтобы обеспечить B, необходимо D, потому что…». Можно записать несколько посылок, каждую с новой строки.',
  'assumption-check':'Проверяйте границы применимости убеждения. Оно может оказаться полезным в одних условиях и ограничивающим в других.',

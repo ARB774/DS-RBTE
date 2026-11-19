@@ -1,6 +1,7 @@
 import { dilemmaTitle } from './dilemma-route';
 import { tocProfiles,tocSourceIds } from './pack-toc';
 import type { Profile } from './cloud-method';
+import { normalizeDilemmaReviewReplies } from './dilemma-review-replies';
 export type Field = { key: string; label: string; profiles?: string[]; required?: boolean; sourceIds?:string[]; hint?: string; options?: string[] };
 export type StepDefinition = { title: string; fields: Field[]; note?: string };
 const legacySteps: Record<string, StepDefinition> = {
@@ -64,7 +65,7 @@ export const steps:Record<string,StepDefinition>={
  decision:{...legacySteps.decision,title:'6 · Поиск и обоснование решения',fields:[...legacySteps.decision.fields.map(f=>({...f,required:!['optionB','optionC'].includes(f.key)})),text('link','Какую связь и исходную посылку меняет решение?'),text('ensureB','D* обеспечит B, потому что…'),text('ensureC','D* обеспечит C, потому что…'),text('ensureA','Как сохранение B и C помогает достичь A?')]},
  trial:{...legacySteps.trial,title:'7 · План рабочей пробы',fields:[text('selectedAssumption','Какую посылку или решение проверяет проба?'),...legacySteps.trial.fields.map(f=>({...f,required:f.key!=='obstacle'})),text('partner','С кем обсудите достаточность и допустимость испытания?',['IMMUNITY'])]},
  result:{...legacySteps.result,title:'8 · Результат и пересмотр',fields:[...legacySteps.result.fields.map(f=>({...f,required:true,options:f.key==='next'?['Наблюдать','Повторить пробу','Изменить решение','Пересмотреть посылку','Вернуться к туче','Завершить']:f.options})),text('needB','Что произошло с потребностью B?'),text('needC','Что произошло с потребностью C?'),text('goal','Как изменилось достижение A?'),text('assumption','Что выяснилось о выбранной посылке?')]},
- feedback:{...legacySteps.feedback,title:'9 · Обратная связь',fields:[...legacySteps.feedback.fields,text('target','К какому облаку, связи, посылке или результату относится замечание?'),text('evidence','Какое наблюдение послужило основанием?'),text('criterion','Какой критерий применён и в чём затруднение?'),text('question','Какой вопрос или следующее действие предлагается?'),choice('response','Ваше решение',['Не выбрано','Принять','Изменить','Обоснованно отклонить']),text('reason','Почему выбрано это решение?')]},
+ feedback:{...legacySteps.feedback,title:'9 · Обратная связь',fields:[...legacySteps.feedback.fields,text('target','К какому элементу Тучи, связи, посылке или результату относится замечание?'),text('evidence','Какое наблюдение послужило основанием?'),text('criterion','Какой критерий применён и в чём затруднение?'),text('question','Какой вопрос или следующее действие предлагается?'),choice('response','Ваше решение',['Не выбрано','Принять','Изменить','Обоснованно отклонить']),text('reason','Почему выбрано это решение?')]},
  practice:{title:'10 · Самостоятельное построение новой тучи',fields:[text('episode','Другой эпизод: кто, что, когда, где?'),text('actionA','D · Действие'),text('actionB','D′ · Действие'),text('needA','B · Потребность'),text('needB','C · Потребность'),text('goal','A · Общая цель'),text('logic','Объясните необходимость связей и конфликт (для иммунитета — угрозу B со стороны D′)'),text('assumption','Выявите исходную посылку и предложите её проверку'),choice('assistance','Какую помощь использовали?',['Без содержательных подсказок','Подсказки сервиса','Партнёр или преподаватель','ИИ','Несколько видов помощи']),text('reflection','Что удалось объяснить самостоятельно, а что пока вызывает затруднения?')]}
 };
 function profileLinksAll():Field[]{
@@ -108,12 +109,13 @@ export function parseStepFields(step: string, input: Record<string, unknown>, pr
  const definition = step==='explore'?legacyExplore:Object.hasOwn(steps, step) ? (profile?definitionFor(step,profile):steps[step]) : undefined;
  if (!definition) throw new Error('Неизвестный шаг');
  const result: Record<string,string> = {};
- for (const field of definition.fields) {
+  for (const field of definition.fields) {
   const value=input[field.key] ?? field.options?.[0] ?? '';
   if (typeof value !== 'string' || value.length>4000 || (field.options && !field.options.includes(value)))
    throw new Error('Проверьте поля: не более 4000 символов в каждом');
-  result[field.key]=value;
- }
+   result[field.key]=value;
+  }
+  if(step==='cloud'&&profile==='DILEMMA'&&input.reviewReplies!==undefined)result.reviewReplies=normalizeDilemmaReviewReplies(input.reviewReplies);
  if (JSON.stringify(result).length>60000) throw new Error('Слишком большой объём данных');
  return result;
 }

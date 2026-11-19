@@ -15,6 +15,7 @@ import { persistSituation } from '../lib/create-situation';
 import { stepDrafts,users,revisions,situations } from '../db/schema';
 import { dilemmaAssistantEvidence } from '../lib/value-proposition-evidence';
 import { createHash } from 'node:crypto';
+import { readDilemmaReviewReplies,upsertDilemmaReviewReply } from '../lib/dilemma-review-replies';
 const cloud={goal:'Устойчиво выполнять свою работу',needA:'Сохранять сроки поставки',needB:'Сохранять качество продукции',actionA:'Отгрузить заказ сегодня',actionB:'Проверить все детали до отгрузки'};
 const dilemmaDocs=async(step:string)=>dilemmaAssistantEvidence(step).map(source=>({...source,origin:'verified-cache' as const,fetchedAt:'2026-11-14',excerptSha256:createHash('sha256').update(source.text).digest('hex')}));
 test('personal dilemma adds actions; other profiles retain ten steps',()=>{
@@ -53,6 +54,10 @@ test('invalid fields and option values are rejected; caller cannot forge check m
  assert.throws(()=>parseStepFields('logic',{ab:'incorrect'},'DILEMMA'));
  assert.throws(()=>parseStepFields('cloud',{goal:'x'.repeat(4001)},'DILEMMA'));
  assert.equal(parseStepFields('cloud',{...cloud,__basis:'forged'},'DILEMMA').__basis,undefined);
+ const issue={field:'actionA',criterion:'Конкретное действие',observation:cloud.actionA,question:'Какой эпизод описан?',sourceIds:['TOC.M.003']};
+ const reviewReplies=upsertDilemmaReviewReply(undefined,issue,'Эпизод 18 ноября.');
+ assert.equal(readDilemmaReviewReplies(parseStepFields('cloud',{...cloud,reviewReplies},'DILEMMA').reviewReplies)[0].reply,'Эпизод 18 ноября.');
+ assert.throws(()=>parseStepFields('cloud',{...cloud,reviewReplies:'[{"reply":"подмена"}]'},'DILEMMA'),/некорректный ответ/);
 });
 test('semantic review sends only current/earlier content and validates field references',async()=>{
  let body:any;
