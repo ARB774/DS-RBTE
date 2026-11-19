@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Туча ТОС</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        padding: 8px;
+        background: #eef3f8;
+      }
+
+      figure {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 12px;
+        border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+        border-radius: 16px;
+        background: #fff;
+        color: #101828;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+      }
+
+      figcaption {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 0 4px 10px;
+      }
+
+      #title { font-weight: 700; font-size: 18px; }
+      #version { color: #667085; font-size: 13px; }
+
+      #cloud {
+        display: none;
+        width: 100%;
+        height: calc(100% - 42px);
+        object-fit: contain;
+        object-position: center;
+      }
+
+      #status {
+        min-height: 260px;
+        display: grid;
+        place-items: center;
+        color: #667085;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <figure>
+      <figcaption>
+        <span id="title">Текущая Туча</span>
+        <span id="version">загрузка…</span>
+      </figcaption>
+      <div id="status">Получаю изображение Тучи…</div>
+      <img id="cloud" alt="Актуальная Туча ТОС" />
+    </figure>
+
+    <script type="module">
+      const imageEl = document.querySelector("#cloud");
+      const statusEl = document.querySelector("#status");
+      const titleEl = document.querySelector("#title");
+      const versionEl = document.querySelector("#version");
+      const standaloneMode = window.parent === window;
+
+      const renderResult = (result) => {
+        const envelope = result?.mcp_tool_result ?? result?.call_tool_result ?? result;
+        const cloud = envelope?._meta?.cloud ?? result?._meta?.cloud;
+        if (!cloud?.dataUrl) return false;
+
+        titleEl.textContent = cloud.title || "Текущая Туча";
+        versionEl.textContent = cloud.version || "актуальная версия";
+        imageEl.src = cloud.dataUrl;
+        imageEl.style.display = "block";
+        statusEl.style.display = "none";
+        return true;
+      };
+
+      let rpcId = 0;
+      const pendingRequests = new Map();
+
+      const rpcNotify = (method, params) => {
+        window.parent.postMessage({ jsonrpc: "2.0", method, params }, "*");
+      };
+
+      const rpcRequest = (method, params) =>
+        new Promise((resolve, reject) => {
+          const id = ++rpcId;
+          pendingRequests.set(id, { resolve, reject });
+          window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+        });
+
+      window.addEventListener("message", (event) => {
+        if (event.source !== window.parent) return;
+        const message = event.data;
+        if (!message || message.jsonrpc !== "2.0") return;
+
+        if (typeof message.id === "number") {
+          const pending = pendingRequests.get(message.id);
+          if (!pending) return;
+          pendingRequests.delete(message.id);
+          if (message.error) pending.reject(message.error);
+          else pending.resolve(message.result);
+          return;
+        }
+
+        if (message.method === "ui/notifications/tool-result") {
+          renderResult(message.params);
+        }
+      }, { passive: true });
+
+      const initialize = async () => {
+        try {
+          await rpcRequest("ui/initialize", {
+            appInfo: { name: "toc-cloud-display", version: "0.1.0" },
+            appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] },
+            protocolVersion: "2026-01-26",
+          });
+          rpcNotify("ui/notifications/initialized", {});
+        } catch (error) {
+          statusEl.textContent = "Не удалось открыть встроенный рисунок Тучи.";
+          console.error(error);
+        }
+      };
+
+      const startStandaloneViewer = () => {
+        titleEl.textContent = "Текущая Туча";
+        versionEl.textContent = "автоматическое обновление";
+        statusEl.textContent = "Жду первую Тучу от наставника…";
+
+        const refresh = () => {
+          const candidate = new Image();
+          candidate.onload = () => {
+            imageEl.src = candidate.src;
+            imageEl.style.display = "block";
+            statusEl.style.display = "none";
+            versionEl.textContent = `обновлено ${new Date().toLocaleTimeString("ru-RU")}`;
+          };
+          candidate.onerror = () => {
+            if (!imageEl.src) {
+              imageEl.style.display = "none";
+              statusEl.style.display = "grid";
+            }
+          };
+          candidate.src = `./cloud-current.png?cache=${Date.now()}`;
+        };
+
+        refresh();
+        window.setInterval(refresh, 1000);
+      };
+
+      if (standaloneMode) {
+        startStandaloneViewer();
+      } else {
+        const legacyResult = window.openai?.toolResponseMetadata;
+        if (!renderResult(legacyResult)) initialize();
+      }
+    </script>
+  </body>
+</html>
