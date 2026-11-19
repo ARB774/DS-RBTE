@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCurrentSession } from "@/lib/session";
 
 const profiles = [
   {
@@ -40,7 +42,10 @@ const steps = [
  {n:'10',t:'Самостоятельная туча',d:'Новый эпизод и проверка освоения с учётом помощи.'},
 ];
 
-export default function Home() {
+export default async function Home() {
+  const { status } = await getCurrentSession();
+  if (status === "anonymous") redirect("/auth/start?next=%2F");
+
   return (
     <div className="container-x py-10">
       <p className="card p-4 mb-6">PILOT-2 · Pack-TOC: учимся строить грозовую тучу для каждого профиля. Сохраняйте шаги и уточняйте формулировки по вопросам сервиса.</p>
@@ -62,8 +67,8 @@ export default function Home() {
             <Link href="/situations/new" className="btn btn-primary">
               + Создать закрытую ситуацию
             </Link>
-            <Link href="/login" className="btn btn-ghost">
-              Войти как участник / ведущий
+            <Link href="/dashboard" className="btn btn-ghost">
+              Мои ситуации
             </Link>
           </div>
           <ul className="mt-8 text-sm text-[#374151] grid sm:grid-cols-2 gap-x-6 gap-y-2 marker:text-[var(--color-brand-600)] list-disc pl-5">
