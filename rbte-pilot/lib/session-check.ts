@@ -27,6 +27,7 @@ export async function checkPortalSession(token: unknown, validate: (token: strin
 }
 
 export function authReturnPath(value: unknown): string {
+  if (value === '/') return value;
   if (typeof value !== 'string' || value.length > 300 || !/^\/(?:dashboard|value-proposition|situations)(?:\/[A-Za-z0-9_-]+)*$/.test(value)) return '/dashboard';
   return value;
 }
