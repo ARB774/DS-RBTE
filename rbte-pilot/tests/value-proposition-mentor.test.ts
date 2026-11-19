@@ -1,0 +1,137 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { generateValuePropositionMentorTurn, admissionFromIndexedSources, resolveCriterionEvidence } from '../lib/value-proposition-mentor';
+import { valuePropositionEvidence } from '../lib/value-proposition-evidence';
+
+test('admission quotes are copied from indexed originals and invalid indexes fail', () => {
+  const texts = ['Я веду переговоры.', 'Предложение утверждает директор.'];
+  const result = admissionFromIndexedSources([{ key: 'role', value: 'Переговоры; утверждение директором', usable: true, sourceIndexes: [0, 1] }], texts);
+  assert.equal(result[0].quote, texts[0]);
+  assert.deepEqual(result[0].supportingQuotes, texts);
+  assert.throws(() => admissionFromIndexedSources([{ key: 'role', value: 'test', usable: true, sourceIndexes: [9] }], texts));
+});
+
+test('explanations and ordinary replies may have no accepted update; references are constrained to loaded sources', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.PILOT_OPENAI_API_KEY;
+  process.env.PILOT_OPENAI_API_KEY = 'test-key-not-a-real-secret-0000';
+  let payload: any;
+  globalThis.fetch = async (_url, init) => {
+    payload = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{
+      type: 'output_text', text: JSON.stringify({
+        reflection: 'Граница проекта — это выбранный контур работы.', acceptedUpdate: '', observations: [],
+        criterion: 'Критерий активного модуля', priorityGap: 'Нет изменения', learningAction: 'Продолжить',
+        helpLevel: 'explanation', question: 'Продолжаем?', proposedStage: 'S0', readyForNextStage: false,
+        nextStep: 'Ответить на вопрос', activeS5Block: null, diagram: null, workingProduct: '', unknowns: [],
+        sourceIds: ['DS-RBTE.S0'], criterionEvidence: { sourceId: 'DS-RBTE.S0', passageIndex: 0 },
+      }),
+    }] }] }));
+  };
+  const request = { stage: 'S0' as const, project: {
+    name: 'Учебный проект', ownerRole: 'Руководитель', systemBoundary: 'B2B', trainingResult: 'Профиль клиента',
+    openGap: 'Допуск', nextStep: 'Исходная модель',
+  }, currentDiagram: null, history: [], answer: 'Что входит в границы проекта?', intent: 'explanation',
+  methodEvidence: valuePropositionEvidence('S0').map(s => ({ ...s, origin: 'verified-cache' as const, fetchedAt: '2026-11-09', excerptSha256: 'test' })) };
+  try {
+    const explanation = await generateValuePropositionMentorTurn(request);
+    assert.equal(explanation.acceptedUpdate, '');
+    const ordinary = await generateValuePropositionMentorTurn({ ...request, intent: undefined });
+    assert.equal(ordinary.acceptedUpdate, '');
+    const allowed = request.methodEvidence.map(source => source.id);
+    assert.deepEqual(payload.text.format.schema.properties.sourceIds.items.enum, allowed);
+    assert.deepEqual(payload.text.format.schema.properties.criterionEvidence.properties.sourceId.enum, allowed);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.PILOT_OPENAI_API_KEY;
+    else process.env.PILOT_OPENAI_API_KEY = originalKey;
+  }
+});
+
+test('mentor request contains stage sources and accepted project context, not only a method name', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.PILOT_OPENAI_API_KEY;
+  process.env.PILOT_OPENAI_API_KEY = 'test-key-not-a-real-secret-0000';
+  let payload: any;
+  globalThis.fetch = async (_url, init) => {
+    payload = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{
+      type: 'output_text', text: JSON.stringify({
+        reflection: 'Допуск согласован.', acceptedUpdate: 'Принятое содержание '.repeat(90),
+        observations: ['Наблюдение участника '.repeat(40)], criterion: 'Допуск проекта (DS-RBTE.S0)', priorityGap: 'Исходная модель',
+        learningAction: 'Описать исходное представление', helpLevel: 'question', question: 'Кто ваш клиент?',
+        proposedStage: 'S1', readyForNextStage: true, nextStep: 'Исходная модель', diagram: null, activeS5Block: null,
+        workingProduct: 'Обезличенный учебный проект', unknowns: [], sourceIds: ['DS-RBTE.S0'],
+        criterionEvidence: { sourceId: 'DS-RBTE.S0', passageIndex: 0 },
+      }),
+    }] }] }));
+  };
+  try {
+    const result = await generateValuePropositionMentorTurn({ stage: 'S0', project: {
+      name: 'Учебный проект', ownerRole: 'Руководитель', systemBoundary: 'Один B2B-контур',
+      trainingResult: 'Профиль клиента', openGap: 'Допуск', nextStep: 'Исходная модель',
+    }, currentDiagram: null, history: [{ authorRole: 'PARTICIPANT', stage: 'S0', content: 'Доступны обезличенные случаи' }], answer: 'Режим данных согласован',
+      methodEvidence: valuePropositionEvidence('S0').map(s => ({ ...s, origin: 'verified-cache', fetchedAt: '2026-11-09', excerptSha256: 'test' })) });
+    const input = JSON.parse(payload.input);
+    assert.ok(input.methodEvidence.some((s: any) => s.id === 'DS-RBTE.S0' && s.text.includes('реалистичного')));
+    assert.equal(input.project.systemBoundary, 'Один B2B-контур');
+    assert.equal(input.history[0].content, 'Доступны обезличенные случаи');
+    assert.match(payload.instructions, /Единственный источник содержательной методики/);
+    assert.doesNotMatch(payload.instructions, /Не требуй заново согласованные пункты/);
+    assert.equal(result.proposedStage, 'S1');
+    assert.ok(result.acceptedUpdate.length > 700);
+    assert.ok(result.observations[0].length > 400);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.PILOT_OPENAI_API_KEY;
+    else process.env.PILOT_OPENAI_API_KEY = originalKey;
+  }
+});
+
+test('method criterion is resolved from original passages, not a quote generated by the model', () => {
+  const sources = [{ id: 'DS-RBTE.S1', text: 'Первый абзац.\n\nКритерий: собственное представление участника.' }];
+  assert.equal(resolveCriterionEvidence({ sourceId: 'DS-RBTE.S1', passageIndex: 1 }, sources).quote, 'Критерий: собственное представление участника.');
+  assert.throws(() => resolveCriterionEvidence({ sourceId: 'invented', passageIndex: 0 }, sources));
+  assert.throws(() => resolveCriterionEvidence({ sourceId: 'DS-RBTE.S1', passageIndex: 7 }, sources));
+});
+
+test('S5 incomplete model reply recovers the cloud without accepting model content', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.PILOT_OPENAI_API_KEY;
+  process.env.PILOT_OPENAI_API_KEY = 'test-key-not-a-real-secret-0000';
+  let payload: any;
+  globalThis.fetch = async (_url, init) => {
+    payload = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{
+      type: 'output_text', text: JSON.stringify({
+        reflection: 'Допуск согласован.', acceptedUpdate: 'Принятое содержание '.repeat(90),
+        observations: ['Наблюдение участника '.repeat(40)], criterion: 'Допуск проекта (DS-RBTE.S5)', priorityGap: 'Исходная модель',
+        learningAction: 'Описать исходное представление', helpLevel: 'question', question: 'Кто ваш клиент?',
+        proposedStage: 'S1', readyForNextStage: true, nextStep: 'Исходная модель', diagram: null, activeS5Block: null,
+        workingProduct: 'Обезличенный учебный проект', unknowns: [], sourceIds: ['DS-RBTE.S5'],
+        criterionEvidence: { sourceId: 'DS-RBTE.S5', passageIndex: 0 },
+      }),
+    }] }] }));
+  };
+  try {
+    const result = await generateValuePropositionMentorTurn({ stage: 'S5', project: {
+      name: 'Учебный проект', ownerRole: 'Руководитель', systemBoundary: 'Один B2B-контур',
+      trainingResult: 'Профиль клиента', openGap: 'Допуск', nextStep: 'Исходная модель',
+    }, currentDiagram: null, history: [{ authorRole: 'PARTICIPANT', stage: 'S5', content: 'Доступны обезличенные случаи' }], answer: 'Режим данных согласован',
+      methodEvidence: valuePropositionEvidence('S5').map(s => ({ ...s, origin: 'verified-cache', fetchedAt: '2026-11-09', excerptSha256: 'test' })) });
+    const input = JSON.parse(payload.input);
+    assert.equal(input.project.systemBoundary, 'Один B2B-контур');
+    assert.equal(input.history[0].content, 'Доступны обезличенные случаи');
+    assert.match(payload.instructions, /Единственный источник содержательной методики/);
+    assert.doesNotMatch(payload.instructions, /Строй блоки только в порядке/);
+    assert.equal(result.proposedStage, 'S5');
+    assert.equal(result.diagram?.kind, 'cloud');
+    assert.equal(result.diagram?.activeElementId, 'B');
+    assert.ok(result.diagram?.nodes.every(n => n.status === 'unknown'));
+    assert.equal(result.readyForNextStage, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.PILOT_OPENAI_API_KEY;
+    else process.env.PILOT_OPENAI_API_KEY = originalKey;
+  }
+});

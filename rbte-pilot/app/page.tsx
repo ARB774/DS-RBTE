@@ -1,159 +1,153 @@
 import Link from "next/link";
 
 const profiles = [
-  { id: "01", name: "Личная дилемма", desc: "Разобрать выбор одного человека и основания двух несовместимых действий." },
-  { id: "02", name: "Конфликт сторон", desc: "Разделить подтверждённую позицию другой стороны и собственные предположения о ней." },
-  { id: "03", name: "Туча лейтенанта", desc: "Исследовать состоявшийся эпизод и механизм повторяющегося тушения пожаров." },
-  { id: "04", name: "Иммунитет к изменениям", desc: "Увидеть цель, препятствующее поведение и защищаемую ценность человека." },
+  {
+    id: "DILEMMA",
+    name: "Личная дилемма",
+    desc: "Две стороны выбора одного человека. Потребности, обязательства, ценность.",
+    icon: "🧭",
+  },
+  {
+    id: "CONFLICT",
+    name: "Конфликт сторон",
+    desc: "Разные стороны, подтверждённая и предполагаемая позиция другой стороны.",
+    icon: "⚖️",
+  },
+  {
+    id: "LT_CLOUD",
+    name: "Тушение пожара",
+    desc: "Состоявшийся эпизод и механизм повторяющегося тушения пожаров.",
+    icon: "⛈️",
+  },
+  {
+    id: "IMMUNITY",
+    name: "Иммунитет к изменениям",
+    desc: "Цель, препятствующее поведение, конкурирующее обязательство, защищаемая ценность.",
+    icon: "🛡️",
+  },
 ];
 
 const steps = [
-  { n: "4.1", t: "Создание ситуации", d: "Сигнал, рабочая задача и самостоятельная попытка — до помощи ИИ." },
-  { n: "4.2", t: "Исследование", d: "Наблюдения, объяснения, неизвестные и способы проверки." },
-  { n: "4.3", t: "Туча", d: "Цель, потребности, конфликтующие действия и связи между ними." },
-  { n: "4.4", t: "Решение", d: "Не менее двух вариантов. Основной вариант выбирает участник." },
-  { n: "4.5", t: "Рабочая проба", d: "Гипотеза, действие, граница полномочий и наблюдаемые признаки." },
-  { n: "4.6", t: "Результат", d: "Фактическое действие, наблюдение и независимые уровни эффекта." },
-  { n: "4.7", t: "Предъявление", d: "Выбранная редакция и обратная связь по известным критериям." },
-];
-
-const principles = [
-  ["01", "Закрыто по умолчанию", "Черновики и диалог с ИИ не раскрываются автоматически."],
-  ["02", "Факты отдельно от выводов", "Наблюдение, объяснение, гипотеза и решение имеют разные статусы."],
-  ["03", "ИИ не принимает решение", "Модель задаёт вопросы и предлагает гипотезы; автором выбора остаётся человек."],
-  ["04", "Результат — вне формы", "Заполненная форма и удовлетворённость не доказывают перенос или рабочий эффект."],
+ {n:'1',t:'Описание ситуации',d:'Один конкретный эпизод и выбор профиля.'},
+ {n:'2',t:'Построение грозовой тучи',d:'Действия, потребности, общая цель. Ответы сразу отображаются на схеме.'},
+ {n:'3',t:'Проверка логики',d:'Необходимость связей, конфликт и угрозы потребностям.'},
+ {n:'4',t:'Исходные посылки',d:'Что делает каждую связь необходимой в вашем представлении?'},
+ {n:'5',t:'Проверка посылок',d:'Факты, исключения, условия применимости.'},
+ {n:'6',t:'Решение',d:'Как сохранить обе потребности и продвинуться к общей цели?'},
+ {n:'7',t:'Рабочая проба',d:'Ограниченная проверка решения или убеждения.'},
+ {n:'8',t:'Результат',d:'Действия, наблюдения, выводы и пересмотр.'},
+ {n:'9',t:'Обратная связь',d:'Критерий, основание и ваше решение о правке.'},
+ {n:'10',t:'Самостоятельная туча',d:'Новый эпизод и проверка освоения с учётом помощи.'},
 ];
 
 export default function Home() {
   return (
-    <div>
-      <section className="container-x pt-10 sm:pt-16">
-        <div className="grid overflow-hidden rounded-[1.75rem] border border-[var(--border-soft)] bg-[var(--surface)] shadow-[var(--shadow-soft)] lg:grid-cols-[1.18fr_0.82fr]">
-          <div className="p-6 sm:p-10 lg:p-14">
-            <div className="badge badge-orange mb-6">Пилот · курс «Лидер трансформации»</div>
-            <h1 className="max-w-3xl text-[2.35rem] font-extrabold leading-[1.04] tracking-[-0.045em] sm:text-5xl lg:text-[3.6rem]">
-              От сложной рабочей ситуации — к проверяемой пробе.
-            </h1>
-            <p className="mt-6 max-w-2xl text-[0.98rem] leading-7 text-[var(--text)] sm:text-[1.05rem]">
-              RBTE помогает исследовать реальные управленческие ситуации, отделять факты от объяснений, строить варианты и возвращаться с наблюдаемым результатом. ИИ поддерживает мышление, но не подменяет авторство решения.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/situations/new" className="btn btn-primary">Создать закрытую ситуацию</Link>
-              <Link href="/login" className="btn btn-ghost">Войти в рабочую среду</Link>
-            </div>
-
-            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 border-t border-[var(--border-soft)] pt-6 text-xs font-semibold text-[var(--navy-500)]">
-              <span>7 последовательных шагов</span>
-              <span>4 профиля ситуаций</span>
-              <span>4 уровня качества без баллов</span>
-            </div>
+    <div className="container-x py-10">
+      <p className="card p-4 mb-6">PILOT-2 · Pack-TOC: учимся строить грозовую тучу для каждого профиля. Сохраняйте шаги и уточняйте формулировки по вопросам сервиса.</p>
+      <section className="grid md:grid-cols-5 gap-8 items-center">
+        <div className="md:col-span-3">
+          <div className="badge mb-4">PILOT-2 · Pack-TOC · 20.10.2026 · курс «Лидер трансформации»</div>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">
+            Пройди путь от реальной ситуации до
+            <span className="text-[var(--color-brand-600)]"> рабочей пробы</span> и
+            следующей итерации.
+          </h1>
+          <p className="mt-4 text-[#374151] leading-relaxed">
+            RBTE — рабочая среда взрослого обучения. Структура шагов поддерживает
+            мышление вопросами, проверками и вариантами, но не становится автором
+            диагноза или решения. Заполненная форма или ответ ИИ сами по себе
+            результатом не считаются.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/situations/new" className="btn btn-primary">
+              + Создать закрытую ситуацию
+            </Link>
+            <Link href="/login" className="btn btn-ghost">
+              Войти как участник / ведущий
+            </Link>
           </div>
+          <ul className="mt-8 text-sm text-[#374151] grid sm:grid-cols-2 gap-x-6 gap-y-2 marker:text-[var(--color-brand-600)] list-disc pl-5">
+            <li>Работа участника закрыта по умолчанию</li>
+            <li>Исходная проба — до содержательной помощи ИИ</li>
+            <li>Наблюдение, объяснение, гипотеза, решение — разные типы</li>
+            <li>Удовлетворённость ≠ доказательство переноса/эффекта</li>
+            <li>Четырёхуровневая шкала без баллов</li>
+            <li>Порог пилота: 10% участников с фактической пробой</li>
+          </ul>
+        </div>
 
-          <div className="surface-grid relative border-t border-[var(--border-soft)] bg-[var(--navy)] p-6 text-white sm:p-10 lg:border-l lg:border-t-0 lg:p-12">
-            <div className="relative z-10">
-              <div className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/55">Рабочий маршрут</div>
-              <div className="mt-2 text-2xl font-bold leading-tight text-white">Ситуация не превращается в вывод одним кликом.</div>
-              <p className="mt-3 text-sm leading-relaxed text-white/65">Каждый переход сохраняет основания, зависимые связи и историю редакций.</p>
-
-              <div className="route-rail mt-8 space-y-4">
-                {steps.slice(0, 5).map((step) => (
-                  <div key={step.n} className="route-node">
-                    <span className="route-node-number !border-[var(--navy)] !bg-[var(--orange)]">{step.n}</span>
-                    <div className="pt-1.5">
-                      <div className="text-sm font-bold text-white">{step.t}</div>
-                      <div className="mt-0.5 text-[0.72rem] text-white/55">{step.d}</div>
+        <div className="md:col-span-2">
+          <div className="card p-5">
+            <div className="font-bold text-[#111827] mb-3">
+              4 профиля ситуаций RBTE
+            </div>
+            <div className="space-y-3">
+              {profiles.map((p) => (
+                <div key={p.id} className="flex gap-3 items-start">
+                  <div className="text-2xl">{p.icon}</div>
+                  <div>
+                    <div className="font-semibold text-sm">{p.name}</div>
+                    <div className="text-xs text-[#6b7280] leading-relaxed mt-0.5">
+                      {p.desc}
                     </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="mt-8 rounded-xl border border-white/10 bg-white/[0.06] p-4 text-xs leading-relaxed text-white/70">
-                Завершение формы не считается результатом. Проверка продолжается в реальном действии и наблюдении.
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="container-x py-16 sm:py-20">
-        <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:gap-14">
+      <section className="mt-16">
+        <div className="flex items-end justify-between mb-5">
           <div>
-            <div className="badge mb-4">Принципы среды</div>
-            <h2 className="text-3xl font-extrabold leading-tight">Поддержка без подмены действия участника.</h2>
-            <p className="mt-4 text-sm leading-6 text-[var(--text)]">
-              Интерфейс показывает границы приватности, роль ИИ и статус материала именно в тот момент, когда это влияет на следующий шаг.
+            <h2 className="text-2xl font-bold">Маршрут PILOT-2</h2>
+            <p className="text-sm text-[#6b7280] mt-1">
+              Путь участника: от описания ситуации до обратной связи по заранее известным критериям.
             </p>
-            <Link href="/help" className="mt-6 inline-flex text-sm font-bold text-[var(--orange-dark)] hover:underline">Как устроены права и безопасность →</Link>
           </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {principles.map(([n, title, text]) => (
-              <article key={n} className="card p-5 shadow-none">
-                <div className="mb-5 flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-[var(--orange-dark)]">{n}</span>
-                  <span className="h-px w-12 bg-[var(--border)]" />
-                </div>
-                <h3 className="text-[0.98rem] font-extrabold">{title}</h3>
-                <p className="mt-2 text-xs leading-5 text-[var(--text)]">{text}</p>
-              </article>
-            ))}
-          </div>
+          <Link
+            href="https://github.com/ARB774/DS-RBTE/blob/main/WP-45/%D0%A2%D0%97%20%D0%BD%D0%B0%20%D0%BF%D0%B5%D1%80%D0%B2%D1%8B%D0%B9%20%D0%B2%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82%20RBTE.md"
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-ghost text-sm hidden md:inline-flex"
+          >
+            Читать ТЗ ред.1.1 →
+          </Link>
         </div>
-      </section>
-
-      <section className="border-y border-[var(--border-soft)] bg-[rgba(255,253,249,0.62)]">
-        <div className="container-x py-16 sm:py-20">
-          <div className="mb-8 max-w-2xl">
-            <div className="badge badge-orange mb-4">4 профиля</div>
-            <h2 className="text-3xl font-extrabold leading-tight">Один маршрут — разные типы исходной ситуации.</h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--text)]">Профиль задаёт правила проверки и подсказки, но не становится готовым диагнозом ситуации пользователя.</p>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            {profiles.map((profile) => (
-              <article key={profile.id} className="card card-hover flex gap-4 p-5 shadow-none sm:p-6">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--navy)] text-xs font-extrabold text-white">{profile.id}</span>
-                <div>
-                  <h3 className="font-extrabold">{profile.name}</h3>
-                  <p className="mt-1 text-xs leading-5 text-[var(--text)]">{profile.desc}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="container-x py-16 sm:py-20">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div className="max-w-2xl">
-            <div className="badge mb-4">Маршрут 4.1–4.7</div>
-            <h2 className="text-3xl font-extrabold leading-tight">Семь рабочих областей вместо одной длинной анкеты.</h2>
-          </div>
-          <Link href="/situations/new" className="btn btn-navy">Начать маршрут</Link>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step, index) => (
-            <article key={step.n} className={`card p-5 shadow-none ${index === steps.length - 1 ? "lg:col-start-4" : ""}`}>
-              <div className="mb-4 flex items-center justify-between">
-                <span className="badge badge-orange">{step.n}</span>
-                <span className="text-[0.65rem] font-bold uppercase tracking-widest text-[var(--text)]">шаг</span>
+        <div className="grid md:grid-cols-4 gap-4">
+          {steps.map((s) => (
+            <div key={s.n} className="card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="badge">Шаг {s.n}</span>
               </div>
-              <h3 className="text-sm font-extrabold">{step.t}</h3>
-              <p className="mt-2 text-xs leading-5 text-[var(--text)]">{step.d}</p>
-            </article>
+              <div className="font-semibold text-sm">{s.t}</div>
+              <div className="text-xs text-[#6b7280] mt-1 leading-relaxed">
+                {s.d}
+              </div>
+            </div>
           ))}
         </div>
       </section>
 
-      <section className="container-x pb-4">
-        <div className="rounded-[1.5rem] bg-[var(--navy)] px-6 py-8 text-white sm:flex sm:items-center sm:justify-between sm:gap-8 sm:px-10">
-          <div>
-            <div className="text-xl font-extrabold text-white">Готовы разобрать реальную ситуацию?</div>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">Создайте закрытый черновик. Вы сами решите, какую редакцию и кому предъявлять.</p>
-          </div>
-          <Link href="/situations/new" className="btn btn-primary mt-5 shrink-0 sm:mt-0">Создать ситуацию</Link>
+      <section className="mt-16 card p-6 md:p-8 bg-gradient-to-br from-[var(--color-brand-50)] to-white">
+        <h2 className="text-xl font-bold">Архитектура знаний (ТЗ 6)</h2>
+        <p className="text-sm text-[#374151] mt-2">
+          4 слоя, не смешиваем назначение. Доступ через MCP-сервер чтения с
+          6 операциями и явным «не найдено».
+        </p>
+        <div className="grid md:grid-cols-4 gap-3 mt-5">
+          {[
+            { t: "FPF", d: "Типы, переходы, свидетельства, редакции." },
+            { t: "Pack-TOC", d: "Испаряющаяся туча, 4 профиля, предположения." },
+            { t: "PACK-adult-learning", d: "15 пилотных паттернов AL.P.001–015 · D/M/WP/FM/SC." },
+            { t: "Pack-ATB", d: "В будущих версиях — двусторонние трансформации." },
+          ].map((x) => (
+            <div key={x.t} className="bg-white border border-[#e5e7eb] rounded-lg p-4">
+              <div className="font-bold text-[var(--color-brand-700)] text-sm">{x.t}</div>
+              <div className="text-xs text-[#374151] mt-1 leading-relaxed">{x.d}</div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

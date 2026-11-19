@@ -1,0 +1,29 @@
+[Unit]
+Description=RBTE Pilot
+After=network.target postgresql.service
+[Service]
+Type=simple
+User=rbtepilot
+Group=rbtepilot
+WorkingDirectory=/opt/rbte-pilot/current/.next/standalone
+EnvironmentFile=/etc/rbte-pilot/pilot.env
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=8300
+Environment=NEXT_TELEMETRY_DISABLED=1
+ExecStart=/opt/rbte-pilot/node/bin/node server.js
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/var/lib/rbte-pilot /var/cache/rbte-pilot
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+[Install]
+WantedBy=multi-user.target
