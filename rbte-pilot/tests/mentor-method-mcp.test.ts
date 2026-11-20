@@ -51,9 +51,10 @@ test('personal dilemma reads its assistant documentation through the same verifi
       await writeFile(join(cache, source.sha256 + '.json'), JSON.stringify({ text, fetchedAt: '2026-11-14', origin: 'github' }));
     }
     const sources = await retrieveDilemmaAssistantMethods('cloud');
-    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ACCEPTANCE' && s.text.includes('ЛД-17')));
-    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.AI-ROLE' && s.text.includes('ИИ не должен')));
-    assert.ok(sources.some(s => s.id === 'TOC.M.006'));
+    assert.deepEqual(sources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.ASSISTANT-SKILL' && s.text.includes('помощник')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /не\s+повторяет требование по кругу/.test(s.text)));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('отдельный модуль называть не нужно')));
     assert.ok(sources.every(s => s.origin === 'verified-cache' && s.excerptSha256.length === 64));
   } finally {
     if (previous === undefined) delete process.env.MENTOR_KNOWLEDGE_CACHE;
