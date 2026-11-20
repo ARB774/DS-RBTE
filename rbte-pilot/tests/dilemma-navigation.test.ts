@@ -19,3 +19,11 @@ test('personal step numbering leaves other profile titles intact',()=>{
  assert.equal(definitionFor('cloud','CONFLICT')?.title,'2 · Построение грозовой тучи');
  assert.equal(definitionFor('actions','IMMUNITY'),undefined);
 });
+test('logic reason fields ask for the assumption that holds each cloud link',()=>{
+ const fields=definitionFor('logic','DILEMMA')!.fields;
+ const reasons=fields.filter(field=>field.key.endsWith('Reason'));
+ assert.equal(reasons.length,7);
+ assert.equal(reasons.find(field=>field.key==='abReason')?.label,'Исходное предположение: для того чтобы A, необходимо B, потому что…');
+ assert.equal(reasons.find(field=>field.key==='conflictReason')?.label,'Исходное предположение: D и D′ несовместимы, потому что…');
+ assert.ok(reasons.every(field=>field.label.startsWith('Исходное предположение:')&&field.label.endsWith('потому что…')));
+});

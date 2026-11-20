@@ -70,7 +70,8 @@ export const steps:Record<string,StepDefinition>={
 };
 function profileLinksAll():Field[]{
  const labels:Record<string,string>={ab:'Чтобы достичь A, необходимо B',bd:'Чтобы обеспечить B, необходимо D',ac:'Чтобы достичь A, необходимо C',cd:'Чтобы обеспечить C, необходимо D′',conflict:'D и D′ несовместимы в этих условиях',dc:'D ставит под угрозу C',db:'D′ ставит под угрозу B'};
- return Object.entries(labels).flatMap(([key,label])=>{const profiles=undefined;return [choice(key,label,verdict,profiles),text(key+'Reason','Обоснование: '+label,profiles)];});
+ const reasonLabels:Record<string,string>={ab:'Исходное предположение: для того чтобы A, необходимо B, потому что…',bd:'Исходное предположение: для того чтобы B, необходимо D, потому что…',ac:'Исходное предположение: для того чтобы A, необходимо C, потому что…',cd:'Исходное предположение: для того чтобы C, необходимо D′, потому что…',conflict:'Исходное предположение: D и D′ несовместимы, потому что…',dc:'Исходное предположение: D ставит под угрозу C, потому что…',db:'Исходное предположение: D′ ставит под угрозу B, потому что…'};
+ return Object.entries(labels).flatMap(([key,label])=>{const profiles=undefined;return [choice(key,label,verdict,profiles),text(key+'Reason',reasonLabels[key],profiles)];});
 }
 
 const cloudCheck=(key:string,label:string,profiles?:string[])=>choice(key,label,['Не проверено','Да','Нужно уточнить'],profiles);
