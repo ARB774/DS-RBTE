@@ -5,7 +5,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { join } from 'node:path';
 import { evaluateDilemmaCloud,dilemmaResponseSchema } from '../lib/dilemma-review-ai';
 import { z } from 'zod/v4';
-import { acceptedDilemmaRevisions,dilemmaLinkKeys,hasDilemmaSemanticReview,unresolvedDilemmaIssues } from '../lib/dilemma-review';
+import { acceptedDilemmaRevisions,dilemmaLinkKeys,hasDilemmaSemanticReview,priorDilemmaReview,unresolvedDilemmaIssues } from '../lib/dilemma-review';
 import { checkStep } from '../lib/workflow-check';
 import { dilemmaAssistantEvidence } from '../lib/value-proposition-evidence';
 import { createHash } from 'node:crypto';
@@ -117,6 +117,23 @@ test('participant reply is saved as review context and must be considered instea
  assert.match(body.instructions,/не повторяй его/);
  assert.match(body.instructions,/Окончательный выбор формулировки остаётся за участником/);
 });
+test('a confirmed unchanged link is carried forward and cannot be reopened on the next reply',async()=>{
+ const prior=JSON.stringify({mode:'ai',semantic:{status:'completed',links:links()}});
+ const checked=links();checked[1]={...checked[1],status:'issue',observation:'Повторная проверка ранее принятой связи.',question:'Почему снова нужно D для B?'};
+ const requests:any[]=[];
+ const report=await evaluate(situation,[{step:'cloud',fields:{...cloud,__priorReview:prior}}],{key:'test',model:'test'},provider({issues:[],links:checked,note:'Попытка открыть связь повторно.'},body=>requests.push(JSON.parse(body.input))));
+ assert.equal(requests.length,2);
+ assert.ok(requests[0].previouslyConfirmedLinks.some((link:any)=>link.key==='bd'&&link.status==='ok'));
+ assert.equal(report.semantic?.links.find(link=>link.key==='bd')?.status,'ok');
+ assert.equal(report.issues.some(issue=>issue.link==='bd'),false);
+ assert.equal(report.semantic?.verification?.passes,2);
+});
+test('a semantic review is carried to the next reply only while all cloud elements stay unchanged',()=>{
+ const check=JSON.stringify({mode:'ai',semantic:{status:'completed',links:links()}});
+ assert.equal(priorDilemmaReview({...cloud,__check:check},cloud),check);
+ assert.equal(priorDilemmaReview({...cloud,__check:check},{...cloud,needA:'Другая потребность'}),undefined);
+ assert.equal(priorDilemmaReview({...cloud,__check:'{"mode":"local"}'},cloud),undefined);
+});
 test('a proposed revision is returned separately and never silently replaces the cloud field',async()=>{
  const proposedValue='Передать отчёт сегодня без дополнительной проверки';
  const issue={field:'actionA',criterion:'Формулировка D',observation:cloud.actionA,question:'Сохраняет ли эта формулировка ваш смысл?',proposedValue,sourceIds:['DS-RBTE.DILEMMA.ASSISTANT-SPEC']};
@@ -134,8 +151,9 @@ test('only an accepted revision for a field with a participant reply can update 
 test('an accepted current revision cannot remain as a duplicate confirmation issue',()=>{
  const accepted=cloud.actionB;
  const duplicate={field:'actionB',criterion:'D′ должно быть предпочитаемым действием.',observation:'Формулировка уже принята.',question:'Оставляем эту формулировку?',proposedValue:accepted,sourceIds:['DS-RBTE.DILEMMA.ASSISTANT-SPEC']};
- const other={...duplicate,field:'needB',proposedValue:'Уточнённая потребность'};
- assert.deepEqual(unresolvedDilemmaIssues([duplicate,other],{actionB:accepted},cloud),[other]);
+ const repeatedWithoutProposal={...duplicate,proposedValue:'',question:'Почему этот элемент нужен в Туче?'};
+ const linkIssue={...duplicate,link:'cd',proposedValue:'',question:'Почему D′ необходимо для C?'};
+ assert.deepEqual(unresolvedDilemmaIssues([duplicate,repeatedWithoutProposal,linkIssue],{actionB:accepted},cloud),[linkIssue]);
 });
 test('personal dilemma cannot fall back to embedded method rules when assistant documentation is unavailable',async()=>{
  let providerCalled=false;

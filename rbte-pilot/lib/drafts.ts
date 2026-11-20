@@ -6,6 +6,7 @@ import { checkStep } from './workflow-check';
 import { hashBasis,contextOf } from './workflow-store';
 import { dilemmaCloudFlow } from './dilemma-cloud-flow';
 import { MANUAL_CLOUD_VERSION } from './cloud-entry';
+import { priorDilemmaReview } from './dilemma-review';
 // The caller must derive userId from authenticated portal identity.
 export async function persistDraft(database: any, userId: string, situationId: string, step: string, version: number, input: Record<string,unknown>, draftOnly=false) {
  if (!Number.isSafeInteger(version) || version<0) throw new Error('Некорректная версия');
@@ -28,6 +29,9 @@ export async function persistDraft(database: any, userId: string, situationId: s
   }
   if(draftOnly&&owner.profile==='DILEMMA')fields.__draft='true';
   const previous=drafts.find((draft:any)=>draft.step===step);
+  if(owner.profile==='DILEMMA'&&step==='cloud'&&previous){
+   const prior=priorDilemmaReview(previous.fields,fields);if(prior)fields.__priorReview=prior;
+  }
   if(previous&&!previous.fields.__basis)await recordWorkflowRevision(tx,owner,step,previous.fields,'Архив полей первой версии перед переходом на PILOT-2');
   const basis=hashBasis(step,owner.profile,contextOf(owner),[...drafts.filter((d:any)=>d.step!==step),{step,fields}]);
   if(step!=='explore'){fields.__check=JSON.stringify(checkStep(step,owner.profile,fields));fields.__basis=basis;}

@@ -11,6 +11,10 @@ export type LinkReview={key:DilemmaLink;status:'ok'|'issue'|'uncertain';observat
 export const dilemmaLinkLabels:Record<DilemmaLink,string>={ab:'A–B · необходимость B для A',bd:'B–D · необходимость D для B',ac:'A–C · необходимость C для A',cd:'C–D′ · необходимость D′ для C',conflict:'D–D′ · несовместимость действий',dc:'D–C · угроза C со стороны D',db:'D′–B · угроза B со стороны D′'};
 export const dilemmaLinkFields:Record<DilemmaLink,string[]>={ab:['goal','needA'],bd:['needA','actionA'],ac:['goal','needB'],cd:['needB','actionB'],conflict:['actionA','actionB'],dc:['actionA','needB'],db:['actionB','needA']};
 const dilemmaRevisionFields=['goal','needA','needB','actionA','actionB'] as const;
+export function priorDilemmaReview(previous:Record<string,string>|undefined,current:Record<string,string>){
+ if(!previous||!dilemmaRevisionFields.every(field=>previous[field]===current[field]))return undefined;
+ try{const report=JSON.parse(previous.__check||'');return report?.mode==='ai'&&report?.semantic?.status==='completed'?previous.__check:undefined;}catch{return undefined;}
+}
 export function acceptedDilemmaRevisions(report:WorkflowCheck,replies:DilemmaReviewReply[]){
  const repliedFields=new Set(replies.map(reply=>reply.field));
  return Object.fromEntries(dilemmaRevisionFields.flatMap(field=>{
@@ -21,7 +25,7 @@ export function acceptedDilemmaRevisions(report:WorkflowCheck,replies:DilemmaRev
 export function unresolvedDilemmaIssues(issues:MethodIssue[],accepted:Record<string,string>,fields:Record<string,string>){
  return issues.filter(issue=>{
   const value=accepted[issue.field]?.trim();
-  return !(value&&fields[issue.field]?.trim()===value&&issue.proposedValue?.trim()===value);
+  return !(value&&fields[issue.field]?.trim()===value&&!issue.link);
  });
 }
 export function hasDilemmaSemanticReview(report:WorkflowCheck|null){
