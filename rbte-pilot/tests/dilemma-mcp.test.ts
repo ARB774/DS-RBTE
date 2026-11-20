@@ -154,6 +154,7 @@ test('an accepted current revision cannot remain as a duplicate confirmation iss
  const repeatedWithoutProposal={...duplicate,proposedValue:'',question:'Почему этот элемент нужен в Туче?'};
  const linkIssue={...duplicate,link:'cd',proposedValue:'',question:'Почему D′ необходимо для C?'};
  assert.deepEqual(unresolvedDilemmaIssues([duplicate,repeatedWithoutProposal,linkIssue],{actionB:accepted},cloud),[linkIssue]);
+ assert.deepEqual(unresolvedDilemmaIssues([duplicate],{},cloud),[]);
 });
 test('personal dilemma cannot fall back to embedded method rules when assistant documentation is unavailable',async()=>{
  let providerCalled=false;

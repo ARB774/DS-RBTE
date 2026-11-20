@@ -24,8 +24,12 @@ export function acceptedDilemmaRevisions(report:WorkflowCheck,replies:DilemmaRev
 }
 export function unresolvedDilemmaIssues(issues:MethodIssue[],accepted:Record<string,string>,fields:Record<string,string>){
  return issues.filter(issue=>{
-  const value=accepted[issue.field]?.trim();
-  return !(value&&fields[issue.field]?.trim()===value&&!issue.link);
+  const currentValue=fields[issue.field]?.trim();
+  const acceptedValue=accepted[issue.field]?.trim();
+  const proposedValue=issue.proposedValue?.trim();
+  const repeatsCurrentValue=Boolean(currentValue&&proposedValue===currentValue);
+  const repeatsAcceptedValue=Boolean(currentValue&&acceptedValue===currentValue&&!issue.link);
+  return !(repeatsCurrentValue||repeatsAcceptedValue);
  });
 }
 export function hasDilemmaSemanticReview(report:WorkflowCheck|null){
