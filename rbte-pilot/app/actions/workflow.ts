@@ -12,6 +12,7 @@ import { evaluateDilemmaCloud } from '@/lib/dilemma-review-ai';
 import { acceptedDilemmaRevisions,mergeDilemmaIssues,unresolvedDilemmaIssues } from '@/lib/dilemma-review';
 import { readDilemmaReviewReplies } from '@/lib/dilemma-review-replies';
 import { reviewConfig } from '@/lib/review-openai';
+import { reviewDailyLimit } from '@/lib/review-store';
 export async function reviewWorkflow(id:string,step:string,version:number,consent:boolean):Promise<{version?:number;report?:WorkflowCheck;assistance?:string;error?:string}>{
  const me=await requireUser();
  if(!z.string().uuid().safeParse(id).success||!Number.isSafeInteger(version)||consent!==true)return {error:'Подтвердите проверку сохранённых данных через OpenAI.'};
@@ -25,7 +26,8 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    const now=new Date(),day=now.toISOString().slice(0,10);
    const [limit]=await tx.select().from(reviewLimits).where(eq(reviewLimits.userId,me.id)).limit(1);
    const count=limit?.day===day?limit.count:0;
-   if(count>=20)throw new Error('Достигнут лимит: 20 проверок за сутки UTC.');
+   const dailyLimit=reviewDailyLimit();
+   if(dailyLimit!==null&&count>=dailyLimit)throw new Error(`Достигнут лимит: ${dailyLimit} проверок за сутки UTC.`);
    const cooldown=situation.profile==='DILEMMA'&&step==='cloud'?3000:90000;
    if(limit&&now.getTime()-limit.lastAt.getTime()<cooldown)throw new Error('Подождите '+Math.ceil((cooldown-(now.getTime()-limit.lastAt.getTime()))/1000)+' секунд перед повторной проверкой ИИ.');
    await tx.insert(reviewLimits).values({userId:me.id,day,count:count+1,lastAt:now}).onConflictDoUpdate({target:reviewLimits.userId,set:{day,count:count+1,lastAt:now}});
