@@ -56,6 +56,8 @@ test('personal dilemma reads its assistant documentation through the same verifi
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /не\s+повторяет требование по\s+кругу/.test(s.text)));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('до явного перехода к разделу 6.5')));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /почему нельзя часть задач выполнять по\s+`D`/.test(s.text)));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('не требуется доказать объективную или')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('Одно исходное предположение может поддерживать несколько связей Тучи')));
     assert.ok(sources.every(s => s.origin === 'verified-cache' && s.excerptSha256.length === 64));
   } finally {
     if (previous === undefined) delete process.env.MENTOR_KNOWLEDGE_CACHE;
