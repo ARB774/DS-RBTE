@@ -31,7 +31,7 @@ async function document(source) {
       : `https://raw.githubusercontent.com/${source.repo}/${source.commit}/${path}`;
     if (privatePack && !process.env.GITHUB_READ_TOKEN) throw new Error('Private Pack-TOC requires configured GITHUB_READ_TOKEN');
     const headers = privatePack ? { Accept: 'application/vnd.github.raw+json', Authorization: `Bearer ${process.env.GITHUB_READ_TOKEN}`, 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'pilot-mentor-methods' } : {};
-    const response = await fetch(url, { headers, redirect: 'error', signal: AbortSignal.timeout(12000) });
+    const response = await fetch(url, { headers, redirect: 'error', signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw new Error('GitHub source unavailable');
     const raw = await response.text();
     if (raw.length > 700000) throw new Error('Source too large');

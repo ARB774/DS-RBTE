@@ -56,6 +56,8 @@ test('current mentor documentation carries the previously accepted pilot correct
     'Предложение ценности B2B/Карточка состояния наставника.md',
     'Предложение ценности B2B/Оперативный модуль работы с Тучей.md',
     'Предложение ценности B2B/Техническое задание на наставничество обучающегося по теме Разработка предложения ценности на B2B-рынке.md',
+    'WP-45/Общий навык помощников.md',
+    'WP-45/ТЗ помощника по построению личной дилеммы.md',
   ];
   const latestDocumentationCommit = execFileSync('git', ['log', '-1', '--format=%H', '--', ...canonical], { cwd: '..', encoding: 'utf8' }).trim();
   assert.equal(mentorDocumentationVersion.dsRbte, latestDocumentationCommit);

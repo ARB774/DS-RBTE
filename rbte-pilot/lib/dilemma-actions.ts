@@ -37,5 +37,5 @@ export function checkActions(value:string):MethodIssue[]{
  for(const [kind,label] of [['forced','вынужденное'],['preferred','предпочитаемое']] as const)if(filled.filter(r=>r.kind===kind&&r.selected).length!==1)errors.push('Выделите одно наиболее '+label+' действие в соответствующем столбце.');
  const selected=filled.filter(r=>r.selected);
  if(selected.length===2&&selected[0].text.trim().toLocaleLowerCase('ru')===selected[1].text.trim().toLocaleLowerCase('ru'))errors.push('Выберите два разных конфликтующих действия.');
- return errors.map(question=>({field:'actionRows',criterion:'Выбор действий D и D′',observation:'Таблица требует уточнения',question,sourceIds:['TOC.M.006']}));
+ return errors.map(question=>({field:'actionRows',criterion:'Поля выбора действий заполнены',observation:'Форма заполнена не полностью',question}));
 }

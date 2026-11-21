@@ -9,8 +9,10 @@ import { definitionFor } from '@/lib/steps';
 import { checkStep, type WorkflowCheck } from '@/lib/workflow-check';
 import { evaluateWorkflow } from '@/lib/workflow-ai';
 import { evaluateDilemmaCloud } from '@/lib/dilemma-review-ai';
-import { mergeDilemmaIssues } from '@/lib/dilemma-review';
+import { acceptedDilemmaRevisions,mergeDilemmaIssues,unresolvedDilemmaIssues } from '@/lib/dilemma-review';
+import { readDilemmaReviewReplies } from '@/lib/dilemma-review-replies';
 import { reviewConfig } from '@/lib/review-openai';
+import { reviewDailyLimit } from '@/lib/review-store';
 export async function reviewWorkflow(id:string,step:string,version:number,consent:boolean):Promise<{version?:number;report?:WorkflowCheck;assistance?:string;error?:string}>{
  const me=await requireUser();
  if(!z.string().uuid().safeParse(id).success||!Number.isSafeInteger(version)||consent!==true)return {error:'Подтвердите проверку сохранённых данных через OpenAI.'};
@@ -24,7 +26,8 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    const now=new Date(),day=now.toISOString().slice(0,10);
    const [limit]=await tx.select().from(reviewLimits).where(eq(reviewLimits.userId,me.id)).limit(1);
    const count=limit?.day===day?limit.count:0;
-   if(count>=20)throw new Error('Достигнут лимит: 20 проверок за сутки UTC.');
+   const dailyLimit=reviewDailyLimit();
+   if(dailyLimit!==null&&count>=dailyLimit)throw new Error(`Достигнут лимит: ${dailyLimit} проверок за сутки UTC.`);
    const cooldown=situation.profile==='DILEMMA'&&step==='cloud'?3000:90000;
    if(limit&&now.getTime()-limit.lastAt.getTime()<cooldown)throw new Error('Подождите '+Math.ceil((cooldown-(now.getTime()-limit.lastAt.getTime()))/1000)+' секунд перед повторной проверкой ИИ.');
    await tx.insert(reviewLimits).values({userId:me.id,day,count:count+1,lastAt:now}).onConflictDoUpdate({target:reviewLimits.userId,set:{day,count:count+1,lastAt:now}});
@@ -38,8 +41,12 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    const current=await ownedWorkflow(tx,me.id,id);
    const draft=current.drafts.find((d:any)=>d.step===step);
    if(!draft||draft.version!==version||hashBasis(step,current.situation.profile,contextOf(current.situation),current.drafts)!==job.basis)throw new Error('Записи изменились. Сохраните шаг и повторите проверку.');
-   const local=checkStep(step,current.situation.profile,draft.fields);
-   const fields:Record<string,string>={...draft.fields,__check:JSON.stringify({...report,issues:current.situation.profile==='DILEMMA'&&step==='cloud'?mergeDilemmaIssues(local.issues,report.issues):[...local.issues,...report.issues]})};
+   const accepted=current.situation.profile==='DILEMMA'&&step==='cloud'?acceptedDilemmaRevisions(report,readDilemmaReviewReplies(draft.fields.reviewReplies)):{};
+   const revisedFields={...draft.fields,...accepted};
+   const local=checkStep(step,current.situation.profile,revisedFields);
+   const persistedReport={...report,acceptedRevisions:accepted};
+   const semanticIssues=current.situation.profile==='DILEMMA'&&step==='cloud'?unresolvedDilemmaIssues(report.issues,accepted,revisedFields):report.issues;
+   const fields:Record<string,string>={...revisedFields,__check:JSON.stringify({...persistedReport,issues:current.situation.profile==='DILEMMA'&&step==='cloud'?mergeDilemmaIssues(local.issues,semanticIssues):[...local.issues,...semanticIssues]})};
    if(step==='practice')fields.assistance=fields.assistance==='Без содержательных подсказок'?'ИИ':fields.assistance==='ИИ'?'ИИ':'Несколько видов помощи';
    fields.__basis=hashBasis(step,current.situation.profile,contextOf(current.situation),[...current.drafts.filter((d:any)=>d.step!==step),{step,fields}]);
    const [saved]=await tx.update(stepDrafts).set({fields,version:version+1,updatedAt:new Date()}).where(and(eq(stepDrafts.situationId,id),eq(stepDrafts.step,step),eq(stepDrafts.version,version))).returning();
@@ -48,5 +55,13 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    return {version:saved.version,report:JSON.parse(fields.__check),assistance:step==='practice'?fields.assistance:undefined};
   });
   return result;
- }catch(error){const message=error instanceof Error?error.message:'';return {error:/^(Записи изменились|Достигнут лимит|Подождите \d+|ИИ-оценка ещё|Ситуация недоступна|Для проверки сократите|Поиск Pack-TOC через MCP)/.test(message)?message:'Смысловая проверка не выполнена. Черновик сохранён; проверьте подключение и повторите позже.'};}
+ }catch(error){
+  const message=error instanceof Error?error.message:'';
+  console.error('workflow-review-failed',JSON.stringify({
+   step,
+   errorName:error instanceof Error?error.name:'UnknownError',
+   message:message.slice(0,300),
+  }));
+  return {error:/^(Записи изменились|Достигнут лимит|Подождите \d+|ИИ-оценка ещё|Ситуация недоступна|Для проверки сократите|Поиск Pack-TOC через MCP|Методические источники через MCP)/.test(message)?message:'Смысловая проверка не выполнена. Черновик сохранён; проверьте подключение и повторите позже.'};
+ }
 }

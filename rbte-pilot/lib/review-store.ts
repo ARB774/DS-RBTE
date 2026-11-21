@@ -4,6 +4,11 @@ import { situations,stepDrafts,situationReviews,reviewLimits,users } from '@/db/
 import { reviewInput } from './review-input';
 import { checkedReport,type ReviewReport,type ReviewView } from './review-types';
 
+export function reviewDailyLimit(value=process.env.PILOT_REVIEW_DAILY_LIMIT){
+ const parsed=Number(value);
+ return value?.trim()&&Number.isSafeInteger(parsed)&&parsed>0?parsed:null;
+}
+
 export async function ownedReviewInput(database:any,userId:string,id:string){
  const [situation]=await database.select().from(situations).where(and(eq(situations.id,id),eq(situations.creatorId,userId))).limit(1);
  if(!situation||situation.locked)throw new Error('Ситуация недоступна');
@@ -34,7 +39,8 @@ export async function beginReview(database:any,userId:string,id:string,fingerpri
   if(prior?.fingerprint===fingerprint&&(prior.state==='ready'||prior.state==='pending'&&prior.expiresAt>now))return null;
   const [limit]=await tx.select().from(reviewLimits).where(eq(reviewLimits.userId,userId)).limit(1);
   const day=now.toISOString().slice(0,10),count=limit?.day===day?limit.count:0;
-  if(count>=20)throw new Error('Достигнут лимит: 20 новых оценок за сутки UTC. Сохранённые итоги доступны.');
+  const dailyLimit=reviewDailyLimit();
+  if(dailyLimit!==null&&count>=dailyLimit)throw new Error(`Достигнут лимит: ${dailyLimit} новых оценок за сутки UTC. Сохранённые итоги доступны.`);
   if(limit&&now.getTime()-limit.lastAt.getTime()<90000)throw new Error('Подождите 90 секунд между новыми оценками.');
   await tx.insert(reviewLimits).values({userId,day,count:count+1,lastAt:now}).onConflictDoUpdate({target:reviewLimits.userId,set:{day,count:count+1,lastAt:now}});
   const runId=randomUUID(),values={userId,runId,fingerprint,state:'pending',report:null,updatedAt:now,expiresAt:new Date(now.getTime()+120000)};

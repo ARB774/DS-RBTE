@@ -14,8 +14,8 @@ const paths = {
   state: base + 'Карточка состояния наставника.md',
   cloud: base + 'Оперативный модуль работы с Тучей.md',
   specification: base + 'Техническое задание на наставничество обучающегося по теме Разработка предложения ценности на B2B-рынке.md',
-  rbteSpecification: 'WP-45/ТЗ на первый вариант RBTE.md',
-  dilemmaAcceptance: 'WP-45/Критерии приёмки профиля Личная дилемма.md',
+  assistantSkill: 'WP-45/Общий навык помощников.md',
+  dilemmaAssistantSpecification: 'WP-45/ТЗ помощника по построению личной дилеммы.md',
 };
 const canonicalPaths = Object.values(paths);
 
@@ -61,21 +61,13 @@ function addSection(id, path, stages, startHeading, endHeading) {
 addFull('DS-RBTE.CORE', paths.core, ['*']);
 addFull('DS-RBTE.STATE', paths.state, ['*']);
 addFull('DS-RBTE.CLOUD-DISPLAY', paths.cloud, ['S5']);
-addFull('DS-RBTE.DILEMMA.ACCEPTANCE', paths.dilemmaAcceptance, [
+const dilemmaStages = [
   'DILEMMA.actions', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions',
   'DILEMMA.assumption-check', 'DILEMMA.decision', 'DILEMMA.trial',
   'DILEMMA.result', 'DILEMMA.feedback', 'DILEMMA.practice',
-]);
-addSection('DS-RBTE.DILEMMA.AI-ROLE', paths.rbteSpecification, [
-  'DILEMMA.actions', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions',
-  'DILEMMA.assumption-check', 'DILEMMA.decision', 'DILEMMA.trial',
-  'DILEMMA.result', 'DILEMMA.feedback', 'DILEMMA.practice',
-], '## 5. Роль ИИ', '## 6. Архитектура знаний');
-addSection('DS-RBTE.DILEMMA.KNOWLEDGE', paths.rbteSpecification, [
-  'DILEMMA.actions', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions',
-  'DILEMMA.assumption-check', 'DILEMMA.decision', 'DILEMMA.trial',
-  'DILEMMA.result', 'DILEMMA.feedback', 'DILEMMA.practice',
-], '### 6.7. Правила использования знания ИИ', '## 7. Данные');
+];
+addFull('DS-RBTE.ASSISTANT-SKILL', paths.assistantSkill, dilemmaStages);
+addFull('DS-RBTE.DILEMMA.ASSISTANT-SPEC', paths.dilemmaAssistantSpecification, dilemmaStages);
 
 const tz = paths.specification;
 addSection('DS-RBTE.SESSION', tz, ['*'], '### 10.1. Восстановить контекст', '### 10.2. Получить след действия');
@@ -99,9 +91,7 @@ addSection('DS-RBTE.S11', tz, ['S11'], '### `S11`. Отчёт о разрабо�
 
 const packManifest = JSON.parse(readFileSync(join(app, 'lib/pack-toc-sources.json'), 'utf8'));
 const packStages = [
-  ['TOC.M.003', ['S5', 'S6.1', 'S6.2', 'S6.3', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions', 'DILEMMA.assumption-check']],
-  ['TOC.M.006', ['DILEMMA.actions', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions', 'DILEMMA.assumption-check', 'DILEMMA.decision']],
-  ['TOCT.13', ['DILEMMA.actions', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions', 'DILEMMA.assumption-check', 'DILEMMA.decision']],
+  ['TOC.M.003', ['S5', 'S6.1', 'S6.2', 'S6.3']],
   ['TOC.M.004', ['S6.1', 'S6.2', 'S6.3']],
   ['TOCT.6', ['S6.1', 'S6.2', 'S6.3']],
   ['TOCT.7', ['S7', 'S8']],

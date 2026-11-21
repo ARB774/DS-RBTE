@@ -11,9 +11,9 @@ export async function saveDraft(id: string, step: string, version: number, field
  if (!z.string().uuid().safeParse(id).success) return {error:'Некорректный адрес ситуации'};
  try {
   const savedVersion=await persistDraft(db,me.id,id,step,version,fields,draftOnly);
-  if(step==='cloud'){
+  if(!draftOnly){
    const {situation}=await ownedWorkflow(db,me.id,id);
-   if(situation.profile==='DILEMMA'&&!draftOnly){
+   if(situation.profile==='DILEMMA'){
     const checked=await reviewWorkflow(id,step,savedVersion,true);
     return {version:checked.version??savedVersion,report:checked.report,reviewError:checked.error};
    }

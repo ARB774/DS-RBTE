@@ -40,9 +40,9 @@ export function valuePropositionEvidence(stage: ValuePropositionStage) {
 
 export function dilemmaAssistantEvidence(step: string) {
   const evidence = evidenceForStage(`DILEMMA.${step}`, false);
-  if (!evidence.some(source => source.id === 'DS-RBTE.DILEMMA.ACCEPTANCE') ||
-      !evidence.some(source => source.id === 'DS-RBTE.DILEMMA.AI-ROLE') ||
-      !evidence.some(source => source.id === 'DS-RBTE.DILEMMA.KNOWLEDGE')) {
+  if (!evidence.some(source => source.id === 'DS-RBTE.ASSISTANT-SKILL') ||
+      !evidence.some(source => source.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC') ||
+      evidence.some(source => source.repo === 'Victor57618/Pack-TOC')) {
     throw new Error('Документация ИИ-помощника по личной дилемме недоступна.');
   }
   return evidence;
