@@ -24,6 +24,8 @@ test('personal dilemma completion invokes the assistant without an optional chec
  assert.match(draftsAction,/if\(!draftOnly\)[\s\S]*situation\.profile==='DILEMMA'[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
  assert.doesNotMatch(workflowForm,/Дополнительно проверить смысл с ИИ/);
  assert.match(workflowForm,/personalReviewReady/);
+ assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
+ assert.match(workflowForm,/activeLogicKey=issueLogicKey\|\|\(personalLogic&&dirty\?logicLinkKeys\[logicCursor\]/);
 });
 test('personal dilemma adds actions; other profiles retain ten steps',()=>{
  assert.equal(stepOrder.filter(s=>definitionFor(s,'DILEMMA')).length+1,11);

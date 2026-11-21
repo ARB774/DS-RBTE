@@ -63,7 +63,7 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  const activeLogicIssue=personalLogic?currentReport?.issues[0]:undefined;
  const issueLogicKey=activeLogicIssue&&logicLinkKeys.find(key=>activeLogicIssue.field===key||activeLogicIssue.field===key+'Reason');
  const incompleteLogicKey=personalLogic?firstIncompleteLogicLink(fields,logicLinkKeys):undefined;
- const activeLogicKey=issueLogicKey||(incompleteLogicKey?logicLinkKeys[logicCursor]:undefined);
+ const activeLogicKey=issueLogicKey||(personalLogic&&dirty?logicLinkKeys[logicCursor]:undefined)||(incompleteLogicKey?logicLinkKeys[logicCursor]:undefined);
  const activeLogicIndex=activeLogicKey?logicLinkKeys.indexOf(activeLogicKey):-1;
  const visibleFormFields=personalLogic?activeLogicIssue?formFields.filter(field=>field.key===activeLogicIssue.field):activeLogicKey?formFields.filter(field=>field.key===activeLogicKey||field.key===activeLogicKey+'Reason'):[]:formFields;
  const displayedIssues=personalLogic&&currentReport?.issues.length?[currentReport.issues[0]]:currentReport?.issues||[];
@@ -80,7 +80,7 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  {!personalCloud&&!personalActions&&<>{!personal&&<p className="text-sm">Порядок: {tocOrderText(profile)}.</p>}
  {!personal&&<TocGuide profile={profile} step={step}/>}
  {personal&&<details className="card p-4"><summary>Помощь по этому шагу</summary><p className="my-3">{methodNotes[step]}</p><a href={material.pdf} target="_blank" rel="noreferrer">Методика · PDF</a><TocGuide profile={profile} step={step}/></details>}
- {outdated&&version>0&&<p className="workflow-warning" role="status">Записи изменились. Сохраните шаг и повторите проверку связанных утверждений.</p>}
+ {outdated&&version>0&&<aside className="workflow-warning flex flex-wrap items-center justify-between gap-3" role="status"><span>Записи изменились. Сохраните их, чтобы помощник повторил проверку связанных утверждений.</span><button type="submit" className="btn btn-primary" disabled={pending}>{pending?'Помощник проверяет…':'Сохранить изменения и повторить проверку'}</button></aside>}
   {legacyCloud&&<aside className="card p-4"><p>Начните с пустой Тучи. Прежние записи не подставляются в элементы Тучи и остаются доступны ниже и в истории.</p><details className="mt-3"><summary>Прежние формулировки</summary>{Object.entries(nodeFields).map(([node,key])=><p key={key}><strong>{node==='Dp'?'D′':node}:</strong> {initial[key]||'—'}</p>)}</details></aside>}
  {isCloud&&<button type="button" className="btn btn-ghost" disabled={pending} onClick={()=>{setFields(defaults());setDirty(true);setOutdated(true);setReport(null);setMessage('Туча пуста. Впишите собственные формулировки и сохраните. Прежние сохранённые версии доступны в истории.');}}>Начать с пустой тучи</button>}
  {step==='cloud'&&<details className="card p-4"><summary>Вопросы для самостоятельного заполнения</summary><p className="my-3">{methodNotes[step]}</p>{groups.flat().map(node=><p key={node} className="my-2"><strong>{node==='Dp'?'D′':node}:</strong> {profileQuestions[profile][node]}</p>)}<p className="text-sm mt-3"><a href={material.pdf} target="_blank" rel="noreferrer">Теория PDF</a> · <a href={material.ppt}>Тетрадь PPTX</a></p></details>}
