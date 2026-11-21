@@ -65,13 +65,16 @@ test('provider contract forbids the production failure: empty hint or sources an
 });
 test('an initial all-green hallucination is critically audited against assistant documentation',async()=>{
  let count=0;
+ const signals:AbortSignal[]=[];
  const wrong={...cloud,goal:'Купить велосипед',needA:cloud.actionA};
  const first=provider({issues:[],links:links(),note:'Всё согласовано.'});
  const checked=links();checked[0]={...checked[0],status:'uncertain',observation:'В описании отчёта нет основания связать срок сдачи с покупкой велосипеда.',question:'Как эта потребность необходима для указанной общей цели?'};
  const second=provider({issues:[{field:'goal',criterion:'Цель относится к ситуации',observation:wrong.goal,question:'Какой общий результат нужен в описанной ситуации?',sourceIds:['DS-RBTE.DILEMMA.ASSISTANT-SPEC']}],links:checked,note:'Предыдущий ответ придумал связь.'},body=>{assert.ok(JSON.parse(body.input).previousReview);assert.equal(body.model,'gpt-5.4');});
- const transport:typeof fetch=(...args)=>{count++;return (count===1?first:second)(...args);};
+ const transport:typeof fetch=(...args)=>{count++;signals.push(args[1]?.signal as AbortSignal);return (count===1?first:second)(...args);};
  const report=await evaluate(situation,[{step:'cloud',fields:wrong}],{key:'test',model:'gpt-4.1-mini',dilemmaModel:'gpt-5.4'},transport);
  assert.equal(count,2);assert.equal(report.semantic?.verification?.passes,2);
+ assert.notEqual(signals[0],signals[1]);
+ assert.ok(signals.every(signal=>signal&&!signal.aborted));
  assert.ok(report.issues.some(i=>i.field==='goal'));
  assert.equal(report.semantic?.links.find(l=>l.key==='ab')?.status,'uncertain');
 });

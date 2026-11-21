@@ -39,7 +39,6 @@ export async function evaluateDilemmaCloud(situation:{profile:string;signal:stri
  if(situation.profile!=='DILEMMA')throw new Error('Semantic MCP review is limited to personal dilemma');
  const cloud=drafts.find(d=>d.step==='cloud')?.fields;
  if(!cloud)throw new Error('Cloud draft missing');
- const deadline=AbortSignal.timeout(50000);
  const model=config.dilemmaModel||config.model;
  const retrievalContext=JSON.stringify({situation,drafts:drafts.map(draft=>({step:draft.step,fields:Object.fromEntries(Object.entries(draft.fields).filter(([key])=>!key.startsWith('__')))}))}).slice(0,12000);
  const assistantSources=await retrieveAssistant('cloud',retrievalContext);
@@ -58,7 +57,7 @@ export async function evaluateDilemmaCloud(situation:{profile:string;signal:stri
  const input=JSON.stringify(payload);
  if(input.length>140000)throw new Error('Для проверки сократите объём описания ситуации и элементов Тучи.');
  async function assess(candidate?:unknown){
- const response=await transport('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:deadline,headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},body:JSON.stringify({model,store:false,max_output_tokens:6500,...(model==='gpt-5.4'?{reasoning:{effort:'none'}}:{}),instructions:instructions+'\n'+fpfUsageInstructions+(candidate?'\n'+auditInstructions:''),input:candidate?JSON.stringify({...payload,previousReview:candidate}):input,text:{format:{type:'json_schema',name:'personal_dilemma_cloud_review',strict:true,schema:shape}}})});
+ const response=await transport('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:AbortSignal.timeout(120000),headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},body:JSON.stringify({model,store:false,max_output_tokens:6500,...(model==='gpt-5.4'?{reasoning:{effort:'none'}}:{}),instructions:instructions+'\n'+fpfUsageInstructions+(candidate?'\n'+auditInstructions:''),input:candidate?JSON.stringify({...payload,previousReview:candidate}):input,text:{format:{type:'json_schema',name:'personal_dilemma_cloud_review',strict:true,schema:shape}}})});
  if(!response.ok){await response.body?.cancel();throw new Error('Provider unavailable (HTTP '+response.status+')');}
  const reader=response.body?.getReader();if(!reader)throw new Error('Empty response');
  let size=0;const chunks:Uint8Array[]=[];
