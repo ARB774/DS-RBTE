@@ -106,7 +106,7 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
  if(step==='actions'&&profile!=='DILEMMA')return undefined;
  const d=steps[step];if(!d||!Object.hasOwn(tocProfiles,profile))return undefined;
  const p=profile as Profile;
- const sourceFields=step==='assumptions'&&profile==='DILEMMA'?logicLinkKeys.map(key=>text(key,dilemmaAssumptionLabels[key])):step==='assumption-check'&&profile==='DILEMMA'?[text('selected','Выбранное исходное предположение'),{...text('response','Ваш ответ помощнику'),required:false},{...text('dialogue','Диалог с помощником'),required:false}]:d.fields;
+ const sourceFields=step==='assumptions'&&profile==='DILEMMA'?logicLinkKeys.map(key=>text(key,dilemmaAssumptionLabels[key])):step==='assumption-check'&&profile==='DILEMMA'?[text('selected','Выбранное исходное предположение'),{...text('response','Ваш ответ помощнику'),required:false},{...text('dialogue','Диалог с помощником'),required:false},{...choice('completionConfirmed','Подтверждение предложенного результата',['false','true']),required:false}]:d.fields;
  return {...d,title:profile==='DILEMMA'?dilemmaTitle(step):d.title,fields:sourceFields.filter(f=>(!f.profiles||f.profiles.includes(profile))&&!(step==='cloud'&&profile==='DILEMMA'&&!['actionA','actionB','needA','needB','goal'].includes(f.key))).map(f=>{
   const node=({goal:'A',needA:'B',needB:'C',actionA:'D',actionB:'Dp'} as const)[f.key as 'goal'];
   const optionalAssumption=step==='assumptions'&&((profile==='IMMUNITY'&&!f.key.startsWith('cd'))||(profile==='CONFLICT'&&['ab','ac','abSource','acSource'].includes(f.key)));

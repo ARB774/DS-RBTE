@@ -5,7 +5,8 @@ import { definitionFor, stepOrder } from './steps';
 import { checkCloud, nodeFields, type Profile, type MethodIssue } from './cloud-method';
 export type AssistantMcpRetrieval={transport:'mcp-stdio';server:'pilot-mentor-methods';commit:string;sourceIds:string[]};
 export type DilemmaRevisionField='goal'|'needA'|'needB'|'actionA'|'actionB';
-export type WorkflowCheck={mode:'local'|'ai';issues:MethodIssue[];note:string;acceptedRevisions?:Partial<Record<DilemmaRevisionField,string>>;method?:{version:string;methodId:string;sourceIds:string[]};semantic?:{status:'completed';retrieval:AssistantMcpRetrieval;links:LinkReview[];verification?:{model:string;passes:number}}};
+export type AssumptionDialogue={status:'question'|'completion-proposed';result:'none'|'challenged'|'bounded'|'unknown';summary:string};
+export type WorkflowCheck={mode:'local'|'ai';issues:MethodIssue[];note:string;dialogue?:AssumptionDialogue;acceptedRevisions?:Partial<Record<DilemmaRevisionField,string>>;method?:{version:string;methodId:string;sourceIds:string[]};semantic?:{status:'completed';retrieval:AssistantMcpRetrieval;links:LinkReview[];verification?:{model:string;passes:number}}};
 function interfaceCloudIssues(fields:Record<string,string>):MethodIssue[]{
  return Object.entries(nodeFields).flatMap(([node,field])=>fields[field]?.trim()?[]:[{field,criterion:`Поле ${node==='Dp'?'D′':node} заполнено`,observation:'Поле пока пусто',question:'Введите формулировку или сохраните шаг как черновик.'}]);
 }
