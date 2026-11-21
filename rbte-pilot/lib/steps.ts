@@ -57,6 +57,12 @@ const regular=['DILEMMA','CONFLICT','LT_CLOUD'];
 const verdict=['Не проверено','Да','Нужно уточнить','Не знаю'];
 export const logicLinkKeys=['ab','bd','ac','cd','conflict','dc','db'] as const;
 export const assumptionLabels:Record<string,string>={ab:'A–B: почему для A необходимо B?',ac:'A–C: почему для A необходимо C?',bd:'B–D: почему без D нельзя обеспечить B?',cd:'C–D′: почему для C вы предпринимаете D′?',conflict:'D–D′: почему эти действия несовместимы?'};
+const dilemmaAssumptionLabels:Record<(typeof logicLinkKeys)[number],string>={ab:'A–B · Исходное предположение',bd:'B–D · Исходное предположение',ac:'A–C · Исходное предположение',cd:'C–D′ · Исходное предположение',conflict:'D–D′ · Исходное предположение несовместимости',dc:'D–C · Исходное предположение угрозы',db:'D′–B · Исходное предположение угрозы'};
+export function seedDilemmaAssumptions(initial:Record<string,string>,logic:Record<string,string>):Record<string,string>{
+ const seeded={...initial};
+ for(const key of logicLinkKeys)if(!seeded[key]?.trim()&&logic[key+'Reason']?.trim())seeded[key]=logic[key+'Reason'];
+ return seeded;
+}
 export const steps:Record<string,StepDefinition>={
  actions:{title:'Действия',fields:[text('actionRows','Возможные действия',['DILEMMA'])]},
  cloud:{title:'2 · Построение грозовой тучи',fields:[text('actionA','D · Действие'),text('actionB','D′ · Действие'),text('needA','B · Потребность'),text('needB','C · Потребность'),text('goal','A · Общая цель'),text('positionEvidence','Откуда известна позиция другой стороны? Что подтверждено, а что предполагается?',['CONFLICT']),text('recurrence','Как часто повторяется пожар? Какие эпизоды это подтверждают?',['LT_CLOUD'])]},
@@ -100,9 +106,10 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
  if(step==='actions'&&profile!=='DILEMMA')return undefined;
  const d=steps[step];if(!d||!Object.hasOwn(tocProfiles,profile))return undefined;
  const p=profile as Profile;
- return {...d,title:profile==='DILEMMA'?dilemmaTitle(step):d.title,fields:d.fields.filter(f=>(!f.profiles||f.profiles.includes(profile))&&!(step==='cloud'&&profile==='DILEMMA'&&!['actionA','actionB','needA','needB','goal'].includes(f.key))).map(f=>{
+ const sourceFields=step==='assumptions'&&profile==='DILEMMA'?logicLinkKeys.map(key=>text(key,dilemmaAssumptionLabels[key])):step==='assumption-check'&&profile==='DILEMMA'?[text('selected','Выбранное исходное предположение'),{...text('response','Ваш ответ помощнику'),required:false},{...text('dialogue','Диалог с помощником'),required:false}]:d.fields;
+ return {...d,title:profile==='DILEMMA'?dilemmaTitle(step):d.title,fields:sourceFields.filter(f=>(!f.profiles||f.profiles.includes(profile))&&!(step==='cloud'&&profile==='DILEMMA'&&!['actionA','actionB','needA','needB','goal'].includes(f.key))).map(f=>{
   const node=({goal:'A',needA:'B',needB:'C',actionA:'D',actionB:'Dp'} as const)[f.key as 'goal'];
-  const optionalAssumption=step==='assumptions'&&((profile==='IMMUNITY'&&!f.key.startsWith('cd'))||(['DILEMMA','CONFLICT'].includes(profile)&&['ab','ac','abSource','acSource'].includes(f.key)));
+  const optionalAssumption=step==='assumptions'&&((profile==='IMMUNITY'&&!f.key.startsWith('cd'))||(profile==='CONFLICT'&&['ab','ac','abSource','acSource'].includes(f.key)));
   return {...f,label:node&&['cloud','practice'].includes(step)?tocProfiles[p].labels[node]:f.label,required:optionalAssumption?false:f.required,sourceIds:tocSourceIds(p,step)};
  })};
 }

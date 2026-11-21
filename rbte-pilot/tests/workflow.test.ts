@@ -18,11 +18,27 @@ import { createHash } from 'node:crypto';
 import { readDilemmaReviewReplies,upsertDilemmaReviewReply } from '../lib/dilemma-review-replies';
 const cloud={goal:'Устойчиво выполнять свою работу',needA:'Сохранять сроки поставки',needB:'Сохранять качество продукции',actionA:'Отгрузить заказ сегодня',actionB:'Проверить все детали до отгрузки'};
 const dilemmaDocs=async(step:string)=>dilemmaAssistantEvidence(step).map(source=>({...source,origin:'verified-cache' as const,fetchedAt:'2026-11-14',excerptSha256:createHash('sha256').update(source.text).digest('hex')}));
-test('personal dilemma completion invokes the assistant without an optional checkbox',async()=>{
+test('personal dilemma completion invokes the assistant except while transferring assumptions',async()=>{
  const draftsAction=await readFile(new URL('../app/actions/drafts.ts',import.meta.url),'utf8');
  const workflowForm=await readFile(new URL('../app/components/workflow-form.tsx',import.meta.url),'utf8');
- assert.match(draftsAction,/if\(!draftOnly\)[\s\S]*situation\.profile==='DILEMMA'[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
+ const assistantSpecification=await readFile(new URL('../../WP-45/ТЗ помощника по построению личной дилеммы.md',import.meta.url),'utf8');
+ assert.match(draftsAction,/situation\.profile==='DILEMMA'&&step!=='assumptions'[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
  assert.doesNotMatch(workflowForm,/Дополнительно проверить смысл с ИИ/);
+ assert.match(workflowForm,/assistantReviewRequired=personal&&!personalAssumptions/);
+ assert.match(workflowForm,/personalAssumptions\?checkStep\(step,profile,entry\):personalAssumptionCheck\?null:storedReport/);
+ assert.match(workflowForm,/Исходные предположения сохранены без оспаривания/);
+ assert.match(workflowForm,/!personalCloud&&!personalAssumptions&&!personalAssumptionCheck&&currentReport/);
+ assert.match(workflowForm,/assumptionChoices\.map\(choice=>/);
+ assert.match(workflowForm,/Помощник получит выбранную формулировку и задаст один вопрос по ТЗ/);
+ assert.match(workflowForm,/appendAssumptionExchange/);
+ assert.match(workflowForm,/hasAssumptionExchange/);
+ assert.match(workflowForm,/Предположение только выбрано\. Работа ещё не завершена/);
+ assert.match(workflowForm,/assumptionExchangeComplete&&currentReport\?\.mode==='ai'/);
+ assert.match(workflowForm,/className="field"><label htmlFor="response"/);
+ assert.match(workflowForm,/Введите ответ — кнопка «Ответить помощнику» станет активной/);
+ assert.match(assistantSpecification,/Выбор предположения уже означает согласие участника/);
+ assert.match(assistantSpecification,/запрещено ещё раз спрашивать о готовности/);
+ assert.match(assistantSpecification,/Первый вопрос должен фактически проверять предположение/);
  assert.match(workflowForm,/personalReviewReady/);
  assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
  assert.match(workflowForm,/activeLogicKey=issueLogicKey\|\|\(personalLogic&&dirty\?logicLinkKeys\[logicCursor\]/);
@@ -93,6 +109,15 @@ test('personal dilemma sends the current work to the MCP source selector',async(
  await evaluateWorkflow('logic',{profile:'DILEMMA',signal:'Выбор способа разработки WA-SCM'},[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да',abReason:'Конкуренты используют ИИ'}}],{key:'fake',model:'fake'},transport as typeof fetch,retrieve);
  assert.match(retrievalContext,/Выбор способа разработки WA-SCM/);
  assert.match(retrievalContext,/Конкуренты используют ИИ/);
+});
+test('selecting an assumption requires the assistant to ask a first question',async()=>{
+ let firstBody:any;
+ const emptyReport=async(_url:any,init:any)=>{firstBody=JSON.parse(String(init.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Выбор принят.'})}]}]}));};
+ await assert.rejects(()=>evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields:{selected:'db',response:'',dialogue:''}}],{key:'fake',model:'fake'},emptyReport as typeof fetch,dilemmaDocs),/first assumption question/);
+ assert.equal(firstBody.text.format.schema.properties.issues.minItems,1);
+ let continuedBody:any;
+ await evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields:{selected:'db',response:'',dialogue:JSON.stringify([{question:'Что делает предположение сомнительным?',answer:'Есть исключение.'}])}}],{key:'fake',model:'fake'},(async(_url,init)=>{continuedBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Диалог завершён.'})}]}]}));}) as typeof fetch,dilemmaDocs);
+ assert.equal(continuedBody.text.format.schema.properties.issues.minItems,undefined);
 });
 test('personal dilemma workflow stops before the provider when assistant documentation is unavailable',async()=>{
  let providerCalled=false;

@@ -36,7 +36,7 @@ body {
 .cloud-Dp { grid-column:3; grid-row:2; }
 .cloud-active { border-color:#4f46e5; box-shadow:0 0 0 4px #e0e7ff; background:#f5f7ff; }
 .workflow-warning { background:#fffbeb; border-left:3px solid #d97706; padding:.8rem 1rem; }
-button:disabled { cursor:wait; opacity:.6; }
+button:disabled { cursor:not-allowed; opacity:.6; }
 @media(max-width:640px) { .cloud-diagram {gap:1rem .6rem; min-height:280px;} .cloud-node {padding:.7rem .35rem; border-radius:20px; min-height:110px;} .cloud-node strong,.cloud-node span {font-size:.75rem;} }
 
 body {

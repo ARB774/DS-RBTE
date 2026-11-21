@@ -17,11 +17,15 @@ export async function evaluateWorkflow(step:string,situation:{profile:Profile;si
  const responseFieldValues=situation.profile==='DILEMMA'?fieldKeys.map(key=>fieldReferences[key]):fieldKeys;
  const toc=situation.profile==='DILEMMA'?null:tocContext(situation.profile,step);
  const context=drafts.filter(d=>stepOrder.indexOf(d.step)>=0&&stepOrder.indexOf(d.step)<=stepOrder.indexOf(step)).map(d=>({...d,fields:Object.fromEntries(Object.entries(d.fields).filter(([k])=>!k.startsWith('__')))}));
+ const currentFields=context.find(d=>d.step===step)?.fields||{};
+ let assumptionExchangeCount=0;
+ if(situation.profile==='DILEMMA'&&step==='assumption-check')try{const dialogue=JSON.parse(currentFields.dialogue||'[]');if(Array.isArray(dialogue))assumptionExchangeCount=dialogue.filter(item=>item&&typeof item.question==='string'&&item.question.trim()&&typeof item.answer==='string'&&item.answer.trim()).length;}catch{/* Invalid legacy transcript means no completed exchange. */}
+ const firstAssumptionQuestionRequired=situation.profile==='DILEMMA'&&step==='assumption-check'&&assumptionExchangeCount===0;
  const retrievalContext=JSON.stringify({situation:situation.signal,step,currentAndPreviousSteps:context}).slice(0,12000);
  const assistantSources=situation.profile==='DILEMMA'?await retrieveAssistant(step,retrievalContext):[];
  const sourceIds=[...new Set(situation.profile==='DILEMMA'?assistantSources.map(s=>s.id):toc!.sources.map(s=>s.id))];
  const evidence=situation.profile==='DILEMMA'?[]:await getTocEvidence(situation.profile,step);
- const shape={type:'object',additionalProperties:false,required:['issues','note'],properties:{issues:{type:'array',items:{type:'object',additionalProperties:false,required:['field','criterion','observation','question','sourceIds'],properties:{field:{type:'string',enum:responseFieldValues},criterion:{type:'string'},observation:{type:'string'},question:{type:'string'},sourceIds:{type:'array',items:{type:'string',enum:sourceIds}}}}},note:{type:'string'}}};
+ const shape={type:'object',additionalProperties:false,required:['issues','note'],properties:{issues:{type:'array',...(firstAssumptionQuestionRequired?{minItems:1}:{}),items:{type:'object',additionalProperties:false,required:['field','criterion','observation','question','sourceIds'],properties:{field:{type:'string',enum:responseFieldValues},criterion:{type:'string'},observation:{type:'string'},question:{type:'string'},sourceIds:{type:'array',items:{type:'string',enum:sourceIds}}}}},note:{type:'string'}}};
  const embeddedGuidance=situation.profile==='DILEMMA'?{}:{questions:profileQuestions[situation.profile],links:profileLinks(situation.profile),method:methodNotes[step],learningCriteria:methodRules,toc,evidence};
  const interfaceDefinition=situation.profile==='DILEMMA'?{fields:definition.fields.map(field=>({key:field.key,label:field.label,issueField:fieldReferences[field.key]}))}:definition;
  const input=JSON.stringify({step,profile:situation.profile,situation:situation.signal,definition:interfaceDefinition,context,...embeddedGuidance,methodEvidence:assistantSources.map(source=>({id:source.id,commit:source.commit,path:source.path,origin:source.origin,text:source.text}))});
@@ -36,6 +40,7 @@ export async function evaluateWorkflow(step:string,situation:{profile:Profile;si
  const output=(data.output||[]).filter((x:any)=>x.type==='message').flatMap((x:any)=>x.content||[]);
  if(output.some((x:any)=>x.type==='refusal'))throw new Error('Refusal');
  const report=schema.parse(JSON.parse(output.filter((x:any)=>x.type==='output_text').map((x:any)=>x.text).join('')));
+ if(firstAssumptionQuestionRequired&&!report.issues.length)throw new Error('Assistant did not ask the first assumption question');
  const issues=report.issues.map(issue=>{const field=situation.profile==='DILEMMA'?fieldKeys.find(key=>fieldReferences[key]===issue.field):issue.field;if(!field)throw new Error('Invalid field');return {...issue,field};});
  if(issues.some(i=>!fieldKeys.includes(i.field)||i.sourceIds.some(id=>!sourceIds.includes(id))))throw new Error('Invalid field');
  return {...report,issues,mode:'ai',method:{version:assistantSources.length?`DS-RBTE ${assistantSources[0].commit}`:TOC_VERSION,methodId:situation.profile==='DILEMMA'?'DS-RBTE.DILEMMA.ASSISTANT-SPEC':tocProfiles[situation.profile].method,sourceIds}};

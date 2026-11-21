@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dilemmaResume,dilemmaReady,firstIncompleteLogicLink } from '../lib/dilemma-navigation';
-import { definitionFor,logicLinkKeys } from '../lib/steps';
+import { definitionFor,logicLinkKeys,seedDilemmaAssumptions } from '../lib/steps';
 import { checkStep } from '../lib/workflow-check';
 const fields={actionRows:JSON.stringify([{text:'Сообщить руководителю',kind:'forced',selected:true},{text:'Не сообщать руководителю',kind:'preferred',selected:true}])};
 const saved={...fields,__check:JSON.stringify(checkStep('actions','DILEMMA',fields))};
@@ -36,4 +36,19 @@ test('completed logic links do not reopen the last saved yes answer',()=>{
  const completed=Object.fromEntries(logicLinkKeys.flatMap(key=>[[key,'Да'],[key+'Reason','Принятое исходное предположение']]));
  assert.equal(firstIncompleteLogicLink(completed,logicLinkKeys),undefined);
  assert.equal(firstIncompleteLogicLink({...completed,cdReason:''},logicLinkKeys),'cd');
+});
+test('assumptions reuse all seven accepted logic reasons without asking for sources again',()=>{
+ const logic=Object.fromEntries(logicLinkKeys.map(key=>[key+'Reason','Исходное предположение '+key]));
+ const definition=definitionFor('assumptions','DILEMMA')!;
+ assert.deepEqual(definition.fields.map(field=>field.key),logicLinkKeys);
+ assert.ok(definition.fields.every(field=>field.label.includes('Исходное предположение')));
+ const seeded=seedDilemmaAssumptions({},logic);
+ for(const key of logicLinkKeys)assert.equal(seeded[key],logic[key+'Reason']);
+ assert.equal(seedDilemmaAssumptions({ab:'Уточнённая формулировка'},logic).ab,'Уточнённая формулировка');
+});
+test('personal assumption challenge contains only interface fields, not a hardcoded method questionnaire',()=>{
+ const fields=definitionFor('assumption-check','DILEMMA')!.fields;
+ assert.deepEqual(fields.map(field=>field.key),['selected','response','dialogue']);
+ assert.ok(fields.filter(field=>field.key!=='selected').every(field=>field.required===false));
+ assert.ok(fields.every(field=>!/факты|исключения|условия|неизвестно/iu.test(field.label)));
 });
