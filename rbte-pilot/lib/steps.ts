@@ -55,6 +55,7 @@ const text=(key:string,label:string,profiles?:string[]):Field=>({key,label,profi
 const choice=(key:string,label:string,options:string[],profiles?:string[]):Field=>({key,label,options,profiles,required:true});
 const regular=['DILEMMA','CONFLICT','LT_CLOUD'];
 const verdict=['Не проверено','Да','Нужно уточнить','Не знаю'];
+export const logicLinkKeys=['ab','bd','ac','cd','conflict','dc','db'] as const;
 export const assumptionLabels:Record<string,string>={ab:'A–B: почему для A необходимо B?',ac:'A–C: почему для A необходимо C?',bd:'B–D: почему без D нельзя обеспечить B?',cd:'C–D′: почему для C вы предпринимаете D′?',conflict:'D–D′: почему эти действия несовместимы?'};
 export const steps:Record<string,StepDefinition>={
  actions:{title:'Действия',fields:[text('actionRows','Возможные действия',['DILEMMA'])]},

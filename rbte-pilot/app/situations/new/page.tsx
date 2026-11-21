@@ -13,7 +13,7 @@ export default async function NewSituation() {
           <div className="badge mb-2">Шаг 1 · Описание ситуации</div>
           <h1 className="text-2xl font-bold">Новая закрытая ситуация</h1>
           <p className="text-sm text-[#6b7280] mt-1 max-w-2xl">
-            Опишите один конкретный эпизод. Затем вы самостоятельно построите грозовую тучу для выбранного профиля.
+            Опишите ситуацию своими словами. Приложение сохранит материал и откроет выбранный маршрут работы.
           </p>
         </div>
         <Link href="/help" className="btn btn-ghost text-sm">

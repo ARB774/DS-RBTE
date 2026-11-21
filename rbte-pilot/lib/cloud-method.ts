@@ -18,7 +18,7 @@ export const logicLinks=[
 export function profileLinks(profile:Profile){return logicLinks;}
 export const assumptionLinks=['ab','ac','bd','cd','conflict'] as const;
 export function activeAssumptions(profile:Profile){return profile==='IMMUNITY'?['cd']: [...assumptionLinks];}
-export type MethodIssue={field:string;criterion:string;observation:string;question:string;sourceIds?:string[];link?:string};
+export type MethodIssue={field:string;criterion:string;observation:string;question:string;proposedValue?:string;sourceIds?:string[];link?:string};
 const normalize=(s:string)=>s.toLocaleLowerCase('ru').replace(/[^\p{L}\p{N}]/gu,'');
 export function checkCloud(profile:Profile,fields:Record<string,string>):MethodIssue[]{
  const issues:MethodIssue[]=[];

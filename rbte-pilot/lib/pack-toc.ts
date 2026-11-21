@@ -6,10 +6,10 @@ export const tocSources:Record<string,{id:string;title:string;path:string;status
 export type TocCriterion={id:string;text:string;sourceIds:string[]};
 export type TocProfile={method:string;pattern:string;order:CloudNode[];scope:string;labels:Record<CloudNode,string>;questions:Record<CloudNode,string>;criteria:TocCriterion[]};
 export const tocProfiles:Record<Profile,TocProfile>={
- DILEMMA:{method:'TOC.M.006',pattern:'TOCT.13',order:['D','Dp','C','B','A'],scope:'Один человек и недавний конкретный эпизод выбора между вынужденным и предпочитаемым действием.',
+ DILEMMA:{method:'TOC.M.006',pattern:'TOCT.13',order:['D','Dp','C','B','A'],scope:'Профиль личной дилеммы.',
   labels:{A:'A · Общая цель',B:'B · Потребность за вынужденным действием',C:'C · Потребность за предпочитаемым действием',D:'D · Вынужденное действие',Dp:'D′ · Предпочитаемое действие'},
-  questions:{D:'Что вы сделали или считали вынужденным сделать в этом эпизоде? Назовите само действие.',Dp:'Что вы предпочли бы сделать в том же эпизоде?',C:'Что важное для вас обеспечивает предпочитаемое действие D′?',B:'Что важное вы сохраняете вынужденным действием D?',A:'Какой конкретной общей цели в этой ситуации служат обе ваши потребности B и C?'},
-  criteria:[{id:'personal-episode',text:'Действия принадлежат одному человеку; обстоятельства вынужденности названы, а предпочитаемый вариант действительно входил в выбор.',sourceIds:['TOC.M.006','TOCT.13']},{id:'personal-ownership',text:'Обе потребности и формулировки собственных убеждений подтверждает сам человек; внешнее требование не объявляется желанием системы.',sourceIds:['TOCT.13','TOC.D.008']}]},
+  questions:{D:'Введите формулировку D.',Dp:'Введите формулировку D′.',C:'Введите формулировку C.',B:'Введите формулировку B.',A:'Введите формулировку A.'},
+  criteria:[]},
  CONFLICT:{method:'TOC.M.007',pattern:'TOCT.14',order:['D','Dp','B','C','A'],scope:'Две взаимозависимые стороны; их действия несовместимы, а общую цель необходимо проверить с обеими сторонами.',
   labels:{A:'A · Общая цель сторон',B:'B · Потребность другой стороны',C:'C · Наша потребность',D:'D · Действие другой стороны',Dp:'D′ · Наше действие'},
   questions:{D:'На каком конкретном действии настаивает другая сторона?',Dp:'Какое конкретное действие предлагаете вы или ваша сторона?',B:'Какую потребность защищает другая сторона действием D? Откуда вам это известно?',C:'Какую вашу потребность защищает D′?',A:'Какой результат важен обеим сторонам и требует обеспечения B и C?'},
@@ -29,6 +29,7 @@ const common:TocCriterion[]=[
  {id:'cloud-goal',text:'Цель достаточно конкретна для данной ситуации, не сводится к абстрактному успеху и не повторяет одну из потребностей.',sourceIds:['TOC.FM.002','TOC.M.003']}
 ];
 export function tocCriteriaForStep(profile:Profile,step:string):TocCriterion[]{
+ if(profile==='DILEMMA')return [];
  const specific=tocProfiles[profile].criteria;
  if(['cloud','practice'].includes(step))return [...common,...specific];
  if(step==='logic')return [{id:'seven-readings',text:'Отдельно проверяются четыре связи необходимости, несовместимость D/D′ в названных условиях и две перекрёстные угрозы. Для каждого ответа есть основание; согласие не заменяет факты.',sourceIds:['TOC.M.003','TOC.WP.004']},...specific];

@@ -18,6 +18,13 @@ import { createHash } from 'node:crypto';
 import { readDilemmaReviewReplies,upsertDilemmaReviewReply } from '../lib/dilemma-review-replies';
 const cloud={goal:'Устойчиво выполнять свою работу',needA:'Сохранять сроки поставки',needB:'Сохранять качество продукции',actionA:'Отгрузить заказ сегодня',actionB:'Проверить все детали до отгрузки'};
 const dilemmaDocs=async(step:string)=>dilemmaAssistantEvidence(step).map(source=>({...source,origin:'verified-cache' as const,fetchedAt:'2026-11-14',excerptSha256:createHash('sha256').update(source.text).digest('hex')}));
+test('personal dilemma completion invokes the assistant without an optional checkbox',async()=>{
+ const draftsAction=await readFile(new URL('../app/actions/drafts.ts',import.meta.url),'utf8');
+ const workflowForm=await readFile(new URL('../app/components/workflow-form.tsx',import.meta.url),'utf8');
+ assert.match(draftsAction,/if\(!draftOnly\)[\s\S]*situation\.profile==='DILEMMA'[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
+ assert.doesNotMatch(workflowForm,/Дополнительно проверить смысл с ИИ/);
+ assert.match(workflowForm,/personalReviewReady/);
+});
 test('personal dilemma adds actions; other profiles retain ten steps',()=>{
  assert.equal(stepOrder.filter(s=>definitionFor(s,'DILEMMA')).length+1,11);
  assert.equal(stepOrder.filter(s=>definitionFor(s,'CONFLICT')).length+1,10);
@@ -31,10 +38,9 @@ test('full Pack-TOC immunity map retains D and asks for a missing desired action
  assert.ok(checkCloud('IMMUNITY',{...cloud,actionA:''}).some(i=>i.field==='actionA'));
  assert.deepEqual(checkCloud('IMMUNITY',fields),[]);
 });
-test('formulation checks ask about repetitions and placeholders',()=>{
- assert.ok(checkCloud('DILEMMA',{...cloud,needA:cloud.actionA}).some(i=>i.field==='needA'));
- assert.ok(checkCloud('DILEMMA',{...cloud,actionB:cloud.actionA}).some(i=>i.field==='actionB'));
- assert.ok(checkCloud('DILEMMA',{...cloud,goal:'не знаю'}).some(i=>i.field==='goal'));
+test('personal dilemma application checks only interface completeness',()=>{
+ assert.deepEqual(checkStep('cloud','DILEMMA',{...cloud,needA:cloud.actionA,actionB:cloud.actionA,goal:'не знаю'}).issues,[]);
+ assert.ok(checkStep('cloud','DILEMMA',{...cloud,actionA:''}).issues.some(i=>i.field==='actionA'));
 });
 test('current step checks do not require future decisions or results',()=>{
  assert.deepEqual(checkStep('cloud','DILEMMA',{...cloud,actionsCheck:'Да',needsCheck:'Да',goalCheck:'Да'}).issues,[]);
@@ -54,7 +60,7 @@ test('invalid fields and option values are rejected; caller cannot forge check m
  assert.throws(()=>parseStepFields('logic',{ab:'incorrect'},'DILEMMA'));
  assert.throws(()=>parseStepFields('cloud',{goal:'x'.repeat(4001)},'DILEMMA'));
  assert.equal(parseStepFields('cloud',{...cloud,__basis:'forged'},'DILEMMA').__basis,undefined);
- const issue={field:'actionA',criterion:'Конкретное действие',observation:cloud.actionA,question:'Какой эпизод описан?',sourceIds:['TOC.M.003']};
+ const issue={field:'actionA',criterion:'Формулировка D',observation:cloud.actionA,question:'Нужно ли уточнить формулировку?',sourceIds:['DS-RBTE.DILEMMA.ASSISTANT-SPEC']};
  const reviewReplies=upsertDilemmaReviewReply(undefined,issue,'Эпизод 18 ноября.');
  assert.equal(readDilemmaReviewReplies(parseStepFields('cloud',{...cloud,reviewReplies},'DILEMMA').reviewReplies)[0].reply,'Эпизод 18 ноября.');
  assert.throws(()=>parseStepFields('cloud',{...cloud,reviewReplies:'[{"reply":"подмена"}]'},'DILEMMA'),/некорректный ответ/);
@@ -66,12 +72,25 @@ test('semantic review sends only current/earlier content and validates field ref
  assert.equal(report.mode,'ai');assert.equal(body.store,false);
  assert.ok(!body.input.includes('FUTURE_SECRET'));assert.ok(!body.input.includes('LEGACY_SECRET'));
  let dilemmaBody:any;
- await evaluateWorkflow('logic',{profile:'DILEMMA',signal:'эпизод'},[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да'}}],{key:'fake',model:'fake'},(async(_url,init)=>{dilemmaBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
+ await evaluateWorkflow('logic',{profile:'DILEMMA',signal:'эпизод'},[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да'}}],{key:'fake',model:'fake',dilemmaModel:'gpt-5.4'},(async(_url,init)=>{dilemmaBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
  const dilemmaInput=JSON.parse(dilemmaBody.input);
- assert.ok(dilemmaInput.methodEvidence.some((source:any)=>source.id==='DS-RBTE.DILEMMA.ACCEPTANCE'));
+ assert.deepEqual(dilemmaInput.methodEvidence.map((source:any)=>source.id).sort(),['DS-RBTE.ASSISTANT-SKILL','DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
+ assert.equal(dilemmaBody.model,'gpt-5.4');
+ assert.deepEqual(dilemmaInput.definition.fields.find((field:any)=>field.key==='acReason'),{key:'acReason',label:'Исходное предположение: для того чтобы A, необходимо C, потому что…',issueField:'acReason — Исходное предположение: для того чтобы A, необходимо C, потому что…'});
  assert.equal(dilemmaInput.questions,undefined);assert.equal(dilemmaInput.learningCriteria,undefined);assert.equal(dilemmaInput.toc,undefined);assert.equal(dilemmaInput.evidence,undefined);
  assert.doesNotMatch(dilemmaBody.instructions,/D — конкретное|бездействие — тоже действие/);
+ const acReference=dilemmaInput.definition.fields.find((field:any)=>field.key==='acReason').issueField;
+ const mapped=await evaluateWorkflow('logic',{profile:'DILEMMA',signal:'эпизод'},[{step:'logic',fields:{ac:'Да',acReason:'Продавать можно только готовый продукт'}}],{key:'fake',model:'fake'},(async()=>new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[{field:acReference,criterion:'Связь A–C',observation:'Наблюдение',question:'Вопрос',sourceIds:['DS-RBTE.DILEMMA.ASSISTANT-SPEC']}],note:'Проверено.'})}]}]}))) as typeof fetch,dilemmaDocs);
+ assert.equal(mapped.issues[0].field,'acReason');
  await assert.rejects(()=>evaluateWorkflow('cloud',{profile:'DILEMMA',signal:'эпизод'},[],{key:'fake',model:'fake'},(async()=>new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[{field:'trial.action',criterion:'x',observation:'x',question:'x'}],note:'x'})}]}]}))) as typeof fetch,dilemmaDocs));
+});
+test('personal dilemma sends the current work to the MCP source selector',async()=>{
+ let retrievalContext='';
+ const retrieve=async(step:string,context?:string)=>{retrievalContext=context||'';return dilemmaDocs(step);};
+ const transport=async()=>new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));
+ await evaluateWorkflow('logic',{profile:'DILEMMA',signal:'Выбор способа разработки WA-SCM'},[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да',abReason:'Конкуренты используют ИИ'}}],{key:'fake',model:'fake'},transport as typeof fetch,retrieve);
+ assert.match(retrievalContext,/Выбор способа разработки WA-SCM/);
+ assert.match(retrievalContext,/Конкуренты используют ИИ/);
 });
 test('personal dilemma workflow stops before the provider when assistant documentation is unavailable',async()=>{
  let providerCalled=false;
@@ -111,7 +130,6 @@ test('database persistence: four profiles, history, ownership, locked situations
 
 
     await persistDraft(database,userId,id,'actions',0,{actionRows:JSON.stringify([{text:cloud.actionA,kind:'forced',selected:true},{text:cloud.actionB,kind:'preferred',selected:true}])});
-    await assert.rejects(()=>persistDraft(database,userId,id,'cloud',0,{...cloud,needA:cloud.actionA}),/повторили действие/);
    }
    const first=await persistDraft(database,userId,id,'cloud',0,cloud);assert.equal(first,1);
    const [draft]=await database.select().from(stepDrafts).where(eq(stepDrafts.situationId,id));

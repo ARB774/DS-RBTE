@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dilemmaResume,dilemmaReady } from '../lib/dilemma-navigation';
-import { definitionFor } from '../lib/steps';
+import { definitionFor,logicLinkKeys } from '../lib/steps';
 import { checkStep } from '../lib/workflow-check';
 const fields={actionRows:JSON.stringify([{text:'Сообщить руководителю',kind:'forced',selected:true},{text:'Не сообщать руководителю',kind:'preferred',selected:true}])};
 const saved={...fields,__check:JSON.stringify(checkStep('actions','DILEMMA',fields))};
@@ -26,4 +26,9 @@ test('logic reason fields ask for the assumption that holds each cloud link',()=
  assert.equal(reasons.find(field=>field.key==='abReason')?.label,'Исходное предположение: для того чтобы A, необходимо B, потому что…');
  assert.equal(reasons.find(field=>field.key==='conflictReason')?.label,'Исходное предположение: D и D′ несовместимы, потому что…');
  assert.ok(reasons.every(field=>field.label.startsWith('Исходное предположение:')&&field.label.endsWith('потому что…')));
+});
+test('logic screen has a stable seven-link sequence for one-link-at-a-time navigation',()=>{
+ assert.deepEqual(logicLinkKeys,['ab','bd','ac','cd','conflict','dc','db']);
+ const keys=definitionFor('logic','DILEMMA')!.fields.map(field=>field.key);
+ for(const key of logicLinkKeys)assert.deepEqual(keys.filter(field=>field===key||field===key+'Reason'),[key,key+'Reason']);
 });

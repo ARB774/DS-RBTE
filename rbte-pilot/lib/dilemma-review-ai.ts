@@ -34,17 +34,20 @@ previouslyConfirmedLinks содержит связи, уже подтвержд�
 Отсутствие замечаний не доказывает истинность жизненных обстоятельств, освоение метода или рабочий эффект. Отвечай по-русски.`;
 const auditInstructions=`Независимо перепроверь предыдущий ответ по фактическому тексту участника и methodEvidence. Не соглашайся с прежним ответом автоматически. Любой положительный вывод без основания в данных и источниках замени на issue или uncertain с одним вопросом. Не добавляй замечания ради количества и не переписывай рабочий продукт за участника. Верни тот же полный формат.`;
 
-export async function evaluateDilemmaCloud(situation:{profile:string;signal:string;task?:string|null;desiredChange?:string|null},drafts:Array<{step:string;fields:Record<string,string>}>,config:{key:string;model:string;dilemmaModel?:string},transport:typeof fetch=fetch,retrieveAssistant:(step:string)=>Promise<MentorMethodSource[]>=retrieveDilemmaAssistantMethods):Promise<WorkflowCheck>{
+const fpfUsageInstructions='Источники FPF в methodEvidence не заменяют ТЗ и Pack-TOC и не создают дополнительного вопроса сами по себе. Применяй паттерн FPF только если он меняет проверку, объяснение, границу вывода или следующий ход в текущей ситуации. Не переноси примеры FPF в ситуацию участника.';
+export async function evaluateDilemmaCloud(situation:{profile:string;signal:string;task?:string|null;desiredChange?:string|null},drafts:Array<{step:string;fields:Record<string,string>}>,config:{key:string;model:string;dilemmaModel?:string},transport:typeof fetch=fetch,retrieveAssistant:(step:string,context?:string)=>Promise<MentorMethodSource[]>=retrieveDilemmaAssistantMethods):Promise<WorkflowCheck>{
  if(situation.profile!=='DILEMMA')throw new Error('Semantic MCP review is limited to personal dilemma');
  const cloud=drafts.find(d=>d.step==='cloud')?.fields;
  if(!cloud)throw new Error('Cloud draft missing');
  const deadline=AbortSignal.timeout(50000);
  const model=config.dilemmaModel||config.model;
- const assistantSources=await retrieveAssistant('cloud');
+ const retrievalContext=JSON.stringify({situation,drafts:drafts.map(draft=>({step:draft.step,fields:Object.fromEntries(Object.entries(draft.fields).filter(([key])=>!key.startsWith('__')))}))}).slice(0,12000);
+ const assistantSources=await retrieveAssistant('cloud',retrievalContext);
  const evidence=assistantSources.map(source=>({id:source.id,title:source.path,url:source.url,path:source.path,sha256:source.excerptSha256,excerpt:source.text}));
  const ids=evidence.map(e=>e.id);
- const commit=assistantSources[0]?.commit||'unknown';
- if(commit==='unknown'||assistantSources.some(source=>source.commit!==commit))throw new Error('Assistant documentation revision mismatch');
+ const assistantDocumentation=assistantSources.filter(source=>source.id.startsWith('DS-RBTE.'));
+ const commit=assistantDocumentation[0]?.commit||'unknown';
+ if(commit==='unknown'||assistantDocumentation.some(source=>source.commit!==commit))throw new Error('Assistant documentation revision mismatch');
  const retrieval={transport:'mcp-stdio' as const,server:'pilot-mentor-methods' as const,commit,sourceIds:ids};
  const schema=dilemmaResponseSchema(ids);
  const {$schema,...shape}=z.toJSONSchema(schema);
@@ -55,7 +58,7 @@ export async function evaluateDilemmaCloud(situation:{profile:string;signal:stri
  const input=JSON.stringify(payload);
  if(input.length>140000)throw new Error('Для проверки сократите объём описания ситуации и элементов Тучи.');
  async function assess(candidate?:unknown){
- const response=await transport('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:deadline,headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},body:JSON.stringify({model,store:false,max_output_tokens:6500,...(model==='gpt-5.4'?{reasoning:{effort:'none'}}:{}),instructions:instructions+(candidate?'\n'+auditInstructions:''),input:candidate?JSON.stringify({...payload,previousReview:candidate}):input,text:{format:{type:'json_schema',name:'personal_dilemma_cloud_review',strict:true,schema:shape}}})});
+ const response=await transport('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:deadline,headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},body:JSON.stringify({model,store:false,max_output_tokens:6500,...(model==='gpt-5.4'?{reasoning:{effort:'none'}}:{}),instructions:instructions+'\n'+fpfUsageInstructions+(candidate?'\n'+auditInstructions:''),input:candidate?JSON.stringify({...payload,previousReview:candidate}):input,text:{format:{type:'json_schema',name:'personal_dilemma_cloud_review',strict:true,schema:shape}}})});
  if(!response.ok){await response.body?.cancel();throw new Error('Provider unavailable (HTTP '+response.status+')');}
  const reader=response.body?.getReader();if(!reader)throw new Error('Empty response');
  let size=0;const chunks:Uint8Array[]=[];

@@ -51,7 +51,7 @@ test('assumption focus does not impose all links or a fixed number of beliefs',(
  const immunity=definitionFor('assumptions','IMMUNITY')!;
  assert.equal(immunity.fields.find(f=>f.key==='cd')?.required,true);
  assert.equal(immunity.fields.find(f=>f.key==='ab')?.required,false);
- assert.ok(checkStep('assumptions','DILEMMA',{bd:'Потому что поставка возможна только сегодня'}).issues.some(i=>i.field==='bd'&&i.sourceIds?.includes('TOC.WP.003')));
+ assert.ok(!checkStep('assumptions','DILEMMA',{bd:'Потому что поставка возможна только сегодня'}).issues.some(i=>i.sourceIds?.includes('TOC.WP.003')));
  assert.ok(basisData('cloud','IMMUNITY','episode',[]).includes(TOC_VERSION));
 });
 test('runtime retrieval reads authenticated-source snapshots instead of a repository placeholder',async()=>{
