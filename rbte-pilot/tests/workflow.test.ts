@@ -38,7 +38,10 @@ test('personal dilemma completion invokes the assistant except while transferrin
  assert.match(workflowForm,/Введите ответ — кнопка «Ответить помощнику» станет активной/);
  assert.match(assistantSpecification,/Выбор предположения уже означает согласие участника/);
  assert.match(assistantSpecification,/запрещено ещё раз спрашивать о готовности/);
- assert.match(assistantSpecification,/Первый вопрос должен фактически проверять предположение/);
+ assert.match(assistantSpecification,/Первый вопрос должен фактически\s+проверять предположение/);
+ assert.match(assistantSpecification,/не\s+выдаёт отсутствие известных фактов за опровержение и не завершает шаг/);
+ assert.match(assistantSpecification,/Сценарий 15\. Участник не знает подтверждающих фактов/);
+ assert.match(assistantSpecification,/не\s+переводя участника\s+к решению автоматически/);
  assert.match(workflowForm,/personalReviewReady/);
  assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
  assert.match(workflowForm,/activeLogicKey=issueLogicKey\|\|\(personalLogic&&dirty\?logicLinkKeys\[logicCursor\]/);
