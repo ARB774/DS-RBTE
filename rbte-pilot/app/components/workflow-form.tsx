@@ -1,6 +1,7 @@
 'use client';
 import { DilemmaCloud } from './dilemma-cloud';
 import { dilemmaSteps,dilemmaTitle } from '@/lib/dilemma-route';
+import { firstIncompleteLogicLink } from '@/lib/dilemma-navigation';
 import { hasDilemmaSemanticReview } from '@/lib/dilemma-review';
 import { ActionsTable } from './dilemma-actions';
 import { seedCloudActions } from '@/lib/dilemma-actions';
@@ -31,7 +32,7 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  const initialReviewMissing=personal&&initialVersion>0&&entry.__draft!=='true'&&initialReport?.mode!=='ai';
  const [attempt,setAttempt]=useState(0),[submitted,setSubmitted]=useState(initial.__cloudReview==='submitted'||initialReport?.mode==='ai'),[reviewFailed,setReviewFailed]=useState(initialReviewMissing);
  const [fields,setFields]=useState<Record<string,string>>(()=>seedCloudActions({...defaults(),...entry},actionChoices,personalCloud?initialVersion:1)),[version,setVersion]=useState(initialVersion),[dirty,setDirty]=useState(false),[pending,start]=useTransition(),[message,setMessage]=useState(personal&&initial.__draft==='true'?'Сохранён черновик.':initialReviewMissing?'Шаг сохранён. Проверка помощником не завершена. Повторите проверку.':''),[active,setActive]=useState<CloudNode[]>([]),[consent,setConsent]=useState(false),[showHelp,setShowHelp]=useState(step!=='practice'&&step!=='cloud'),[report,setReport]=useState<WorkflowCheck|null>(personalCloud&&(entry.__draft==='true'||(initialReport?.mode!=='ai'&&entry.__cloudReview!=='submitted'))?null:initialReport),[outdated,setOutdated]=useState(stale||initialReviewMissing);
- const [logicCursor,setLogicCursor]=useState(()=>{const first=logicLinkKeys.findIndex(key=>fields[key]!=='Да'||!fields[key+'Reason']?.trim());return first<0?logicLinkKeys.length-1:first;});
+ const [logicCursor,setLogicCursor]=useState(()=>{const first=firstIncompleteLogicLink(fields,logicLinkKeys);return first?logicLinkKeys.indexOf(first):0;});
  useEffect(()=>{const warn=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[dirty]);
  useEffect(()=>{setOutdated(stale||initialReviewMissing);},[stale,initialReviewMissing]);
  useEffect(()=>{if(!personal)return;const guard=(event:MouseEvent)=>{const link=(event.target as Element)?.closest?.('a');if(!dirty||!link||link.target==='_blank'||event.ctrlKey||event.metaKey||link.getAttribute('href')?.startsWith('#'))return;if(!window.confirm('Есть несохранённые изменения. Уйти без сохранения?')){event.preventDefault();event.stopPropagation();}};document.addEventListener('click',guard,true);return()=>document.removeEventListener('click',guard,true);},[dirty,personal]);
@@ -61,11 +62,12 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  const personalReviewReady=currentReport?.mode==='ai'&&(!personalCloud||hasDilemmaSemanticReview(currentReport));
  const activeLogicIssue=personalLogic?currentReport?.issues[0]:undefined;
  const issueLogicKey=activeLogicIssue&&logicLinkKeys.find(key=>activeLogicIssue.field===key||activeLogicIssue.field===key+'Reason');
- const activeLogicKey=issueLogicKey||logicLinkKeys[logicCursor];
- const activeLogicIndex=Math.max(0,logicLinkKeys.indexOf(activeLogicKey));
- const visibleFormFields=personalLogic?formFields.filter(field=>field.key===activeLogicKey||field.key===activeLogicKey+'Reason'):formFields;
+ const incompleteLogicKey=personalLogic?firstIncompleteLogicLink(fields,logicLinkKeys):undefined;
+ const activeLogicKey=issueLogicKey||(incompleteLogicKey?logicLinkKeys[logicCursor]:undefined);
+ const activeLogicIndex=activeLogicKey?logicLinkKeys.indexOf(activeLogicKey):-1;
+ const visibleFormFields=personalLogic?activeLogicIssue?formFields.filter(field=>field.key===activeLogicIssue.field):activeLogicKey?formFields.filter(field=>field.key===activeLogicKey||field.key===activeLogicKey+'Reason'):[]:formFields;
  const displayedIssues=personalLogic&&currentReport?.issues.length?[currentReport.issues[0]]:currentReport?.issues||[];
- const currentLogicComplete=fields[activeLogicKey]==='Да'&&Boolean(fields[activeLogicKey+'Reason']?.trim());
+ const currentLogicComplete=Boolean(activeLogicKey&&fields[activeLogicKey]==='Да'&&fields[activeLogicKey+'Reason']?.trim());
  async function save(draftOnly=false,values=fields,preserveReport=false){
   if(!draftOnly&&personalCloud&&!sequenceComplete){setAttempt(a=>a+1);setMessage('Подтвердите текущий ответ клавишей Enter.');return;}
   if(!draftOnly&&personalCloud){setSubmitted(true);setReviewFailed(false);}
@@ -88,6 +90,7 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  {personalCloud?<DilemmaCloud fields={fields} onChange={change} onReply={replyToIssue} onApplyRevision={applyIssueRevision} onProgress={progress} onComplete={setSequenceComplete} disabled={pending} reviewPending={pending} attempt={attempt} references={actionChoices} reviewReplies={fields.reviewReplies} reviewNote={report?.note} issues={submitted&&!reviewFailed&&report?report.issues:undefined}/>:personalActions?<ActionsTable value={fields.actionRows||''} onChange={v=>change('actionRows',v)} disabled={pending}/>:<CloudDiagram issues={personalCloud&&(!outdated||report?.mode==='local')?report?.issues:undefined} onSequenceComplete={setSequenceComplete} sequential={personalCloud} profile={profile} fields={diagramFields} onChange={isCloud?change:undefined} disabled={pending} active={active} onSelect={node=>{setActive([node]);if(!isCloud)document.getElementById(nodeFields[node])?.focus();}}/>}
  {!personalActions&&!isCloud&&cloud.goal===undefined&&<p className="workflow-warning">Исходная туча ещё не сохранена. <Link href={'/situations/'+id+'/cloud'}>Перейти к построению</Link></p>}
  {step==='decision'&&fields.choice!=='Отказ от выбора'&&<aside className="card p-4" style={{borderRadius:0}}><strong>{personal?'Предлагаемое решение':'Предлагаемая инъекция D*'}</strong><p className="whitespace-pre-wrap">{fields[fields.choice==='Вариант 2'?'optionB':fields.choice==='Дополнительный вариант'?'optionC':'optionA']||'Опишите вариант решения ниже.'}</p></aside>}
+ {personalLogic&&!activeLogicIssue&&!activeLogicKey&&<section className="card p-6 space-y-2"><strong>Проверка всех семи связей завершена.</strong><p className="text-sm text-slate-700">Повторно подтверждать ответы «Да» не нужно. Если помощник найдёт замечание, здесь появится только один вопрос, который требует ответа.</p></section>}
  {!personalCloud&&!personalActions&&visibleFormFields.length>0&&<fieldset disabled={pending} className="card p-6 space-y-5">
  {step==='practice'&&<p>Постройте тучу для другого эпизода. После сохранения объясните связи и проверьте исходную посылку.</p>}
  {personalLogic&&<div className="flex flex-wrap items-center justify-between gap-3"><strong>Связь {activeLogicIndex+1} из {logicLinkKeys.length}</strong>{currentReport?.issues.length?<span className="text-sm text-red-700">Замечание 1 из {currentReport.issues.length}</span>:<span className="text-sm text-slate-600">Один вопрос — один ответ</span>}</div>}

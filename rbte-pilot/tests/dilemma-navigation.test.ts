@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dilemmaResume,dilemmaReady } from '../lib/dilemma-navigation';
+import { dilemmaResume,dilemmaReady,firstIncompleteLogicLink } from '../lib/dilemma-navigation';
 import { definitionFor,logicLinkKeys } from '../lib/steps';
 import { checkStep } from '../lib/workflow-check';
 const fields={actionRows:JSON.stringify([{text:'Сообщить руководителю',kind:'forced',selected:true},{text:'Не сообщать руководителю',kind:'preferred',selected:true}])};
@@ -31,4 +31,9 @@ test('logic screen has a stable seven-link sequence for one-link-at-a-time navig
  assert.deepEqual(logicLinkKeys,['ab','bd','ac','cd','conflict','dc','db']);
  const keys=definitionFor('logic','DILEMMA')!.fields.map(field=>field.key);
  for(const key of logicLinkKeys)assert.deepEqual(keys.filter(field=>field===key||field===key+'Reason'),[key,key+'Reason']);
+});
+test('completed logic links do not reopen the last saved yes answer',()=>{
+ const completed=Object.fromEntries(logicLinkKeys.flatMap(key=>[[key,'Да'],[key+'Reason','Принятое исходное предположение']]));
+ assert.equal(firstIncompleteLogicLink(completed,logicLinkKeys),undefined);
+ assert.equal(firstIncompleteLogicLink({...completed,cdReason:''},logicLinkKeys),'cd');
 });
