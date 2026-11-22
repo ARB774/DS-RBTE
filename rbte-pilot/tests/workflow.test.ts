@@ -6,7 +6,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { eq } from 'drizzle-orm';
 import { checkCloud,cloudGroups,profileLinks,type Profile } from '../lib/cloud-method';
-import { definitionFor,parseStepFields,stepOrder } from '../lib/steps';
+import { definitionFor,parseStepFields,personalDecisionConditionLabel,readSelectedDecisionKeys,stepOrder } from '../lib/steps';
 import { allAssumptionInjectionsComplete,checkStep,basisData,readInjections } from '../lib/workflow-check';
 import { evaluateWorkflow } from '../lib/workflow-ai';
 import { contextOf,hashBasis } from '../lib/workflow-store';
@@ -57,6 +57,7 @@ test('personal dilemma forms one injection for every assumption before choosing'
  assert.match(assistantSpecification,/не требует сохранить заменённое условие/);
  assert.doesNotMatch(assistantSpecification,/Почему вы решили поставить под сомнение это\s+убеждение/);
  assert.match(workflowForm,/personalReviewReady/);
+ assert.match(workflowForm,/personalDecisionConditionLabel\(field\.key,selectedDecisionKeys\)/);
  assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
  assert.match(workflowForm,/activeLogicKey=issueLogicKey\|\|\(personalLogic&&dirty\?logicLinkKeys\[logicCursor\]/);
 });
@@ -99,6 +100,16 @@ test('invalid fields and option values are rejected; caller cannot forge check m
  const reviewReplies=upsertDilemmaReviewReply(undefined,issue,'Эпизод 18 ноября.');
  assert.equal(readDilemmaReviewReplies(parseStepFields('cloud',{...cloud,reviewReplies},'DILEMMA').reviewReplies)[0].reply,'Эпизод 18 ноября.');
  assert.throws(()=>parseStepFields('cloud',{...cloud,reviewReplies:'[{"reply":"подмена"}]'},'DILEMMA'),/некорректный ответ/);
+});
+test('personal decision replaces B or C labels when their necessity assumption is challenged',async()=>{
+ assert.deepEqual(readSelectedDecisionKeys('["ab"]'),['ab']);
+ assert.equal(personalDecisionConditionLabel('ensureB',['ab']),'Какое новое необходимое условие B* заменяет B и как решение обеспечивает B*?');
+ assert.equal(personalDecisionConditionLabel('ensureC',['ab']),'Как решение обеспечивает необходимое условие C?');
+ let body:any;
+ await evaluateWorkflow('decision',{profile:'DILEMMA',signal:'эпизод'},[{step:'decision',fields:{selected:'["ab"]',finalInjection:'Новое решение',reason:'Меняет условие'}}],{key:'fake',model:'fake'},(async(_url,init)=>{body=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
+ const input=JSON.parse(body.input);
+ assert.equal(input.definition.fields.find((field:any)=>field.key==='ensureB').label,'Какое новое необходимое условие B* заменяет B и как решение обеспечивает B*?');
+ assert.equal(input.definition.fields.find((field:any)=>field.key==='ensureC').label,'Как решение обеспечивает необходимое условие C?');
 });
 test('assumption step is complete only after every recorded assumption has an injection',()=>{
  const base={assumptionKeys:'["ab","db"]',selected:'ab',injections:'{}'};
