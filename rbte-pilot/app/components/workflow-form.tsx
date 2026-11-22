@@ -16,7 +16,7 @@ import { reviewWorkflow } from '@/app/actions/workflow';
 import { AssistantHelpPanel } from './assistant-help-panel';
 import { cloudGroups,nodeFields,profileQuestions,profileLinks,methodNotes,type Profile,type CloudNode,type MethodIssue } from '@/lib/cloud-method';
 import { upsertDilemmaReviewReply } from '@/lib/dilemma-review-replies';
-import { logicLinkKeys,personalDecisionConditionLabel,readSelectedDecisionKeys,type StepDefinition,stepOrder,steps } from '@/lib/steps';
+import { isCurrentDecisionReviewVersion,logicLinkKeys,personalDecisionConditionLabel,readSelectedDecisionKeys,type StepDefinition,stepOrder,steps } from '@/lib/steps';
 import { allAssumptionInjectionsComplete,checkStep,readInjections,type WorkflowCheck } from '@/lib/workflow-check';
 import { CloudDiagram } from './cloud-diagram';
 type History={number:number;createdAt:string;fields:Record<string,string>;comment:string};
@@ -33,7 +33,8 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  const legacyCloud=entry!==initial&&Object.values(nodeFields).some(key=>initial[key]);
  const defaults=()=>Object.fromEntries(definition.fields.map(f=>[f.key,f.options?.[0]??'']));
  const storedReport=(()=>{try{return entry.__check?JSON.parse(entry.__check) as WorkflowCheck:null;}catch{return null;}})();
- const initialReport=personalAssumptions?checkStep(step,profile,entry):personalAssumptionCheck&&storedReport?.mode!=='ai'?checkStep(step,profile,entry):storedReport;
+ const obsoleteDecisionReview=personalDecision&&storedReport?.mode==='ai'&&!isCurrentDecisionReviewVersion(storedReport.method?.version);
+ const initialReport=obsoleteDecisionReview?null:personalAssumptions?checkStep(step,profile,entry):personalAssumptionCheck&&storedReport?.mode!=='ai'?checkStep(step,profile,entry):storedReport;
  const initialReviewMissing=assistantReviewRequired&&initialVersion>0&&entry.__draft!=='true'&&initialReport?.mode!=='ai';
  const [attempt,setAttempt]=useState(0),[submitted,setSubmitted]=useState(initial.__cloudReview==='submitted'||initialReport?.mode==='ai'),[reviewFailed,setReviewFailed]=useState(initialReviewMissing);
  const [fields,setFields]=useState<Record<string,string>>(()=>seedCloudActions({...defaults(),...entry},actionChoices,personalCloud?initialVersion:1)),[version,setVersion]=useState(initialVersion),[dirty,setDirty]=useState(false),[pending,start]=useTransition(),[message,setMessage]=useState(personal&&initial.__draft==='true'?'Сохранён черновик.':initialReviewMissing?'Шаг сохранён. Проверка помощником не завершена. Повторите проверку.':''),[active,setActive]=useState<CloudNode[]>([]),[consent,setConsent]=useState(false),[showHelp,setShowHelp]=useState(step!=='practice'&&step!=='cloud'),[report,setReport]=useState<WorkflowCheck|null>(personalCloud&&(entry.__draft==='true'||(initialReport?.mode!=='ai'&&entry.__cloudReview!=='submitted'))?null:initialReport),[outdated,setOutdated]=useState(stale||initialReviewMissing);

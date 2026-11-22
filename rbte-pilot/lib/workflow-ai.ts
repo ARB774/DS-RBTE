@@ -1,7 +1,7 @@
 import { tocContext,TOC_VERSION,tocProfiles } from './pack-toc';
 import { getTocEvidence } from './pack-toc-reader';
 import { z } from 'zod';
-import { definitionFor,personalDecisionConditionLabel,readSelectedDecisionKeys,stepOrder } from './steps';
+import { definitionFor,dilemmaDecisionReviewVersion,personalDecisionConditionLabel,readSelectedDecisionKeys,stepOrder } from './steps';
 import { profileQuestions,profileLinks,methodNotes,type Profile } from './cloud-method';
 import type { WorkflowCheck } from './workflow-check';
 import { methodRules } from './review-local';
@@ -43,5 +43,6 @@ export async function evaluateWorkflow(step:string,situation:{profile:Profile;si
  const report=schema.parse(rawReport);
  const issues=report.issues.map(issue=>{const field=situation.profile==='DILEMMA'?fieldKeys.find(key=>fieldReferences[key]===issue.field):issue.field;if(!field)throw new Error('Invalid field');return {...issue,field};});
  if(issues.some(i=>!fieldKeys.includes(i.field)||i.sourceIds.some(id=>!sourceIds.includes(id))))throw new Error('Invalid field');
- return {...report,issues,mode:'ai',method:{version:assistantSources.length?`DS-RBTE ${assistantSources[0].commit}`:TOC_VERSION,methodId:situation.profile==='DILEMMA'?'DS-RBTE.DILEMMA.ASSISTANT-SPEC':tocProfiles[situation.profile].method,sourceIds}};
+ const methodVersion=assistantSources.length?`DS-RBTE ${assistantSources[0].commit}`:TOC_VERSION;
+ return {...report,issues,mode:'ai',method:{version:methodVersion+(situation.profile==='DILEMMA'&&step==='decision'?' / '+dilemmaDecisionReviewVersion:''),methodId:situation.profile==='DILEMMA'?'DS-RBTE.DILEMMA.ASSISTANT-SPEC':tocProfiles[situation.profile].method,sourceIds}};
 }
