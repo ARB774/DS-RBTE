@@ -39,11 +39,12 @@ test('personal dilemma forms one injection for every assumption before choosing'
  assert.match(workflowForm,/Выберите одно лучшее решение или несколько решений для комбинации/);
  assert.match(workflowForm,/Сохранить черновик/);
  assert.match(assistantSpecification,/Для каждого принятого участником предположения активная роль помогает\s+сформулировать инъекцию `D\*`/);
- assert.match(assistantSpecification,/Вопросы о\s+подтверждающих фактах, контрпримерах, готовности поставить убеждение под сомнение\s+и причине такого выбора на этом этапе запрещены/);
+ assert.match(assistantSpecification,/Вопросы о подтверждающих\s+фактах, контрпримерах и готовности поставить убеждение под сомнение на этом этапе\s+запрещены/);
  assert.match(assistantSpecification,/Этап\s+завершается, когда решение-кандидат записано\s+для каждого предположения/);
  assert.match(assistantSpecification,/одновременно показывает все пары в таблице/);
  assert.match(assistantSpecification,/Инъекция имеет право быть\s+фантастической или пока нереализуемой/);
- assert.match(assistantSpecification,/Единственный критерий этой проверки:[\s\S]*действительно ли исходное убеждение становится неверным/);
+ assert.match(assistantSpecification,/Проверка допускает два независимых основания:[\s\S]*убеждение либо становится неверным[\s\S]*отказывается руководствоваться им в будущем/);
+ assert.match(assistantSpecification,/Во втором\s+случае помощник не требует снизить риск/);
  assert.match(workflowForm,/Сохранить и проверить/);
  assert.match(workflowForm,/Помощник подтвердил: каждая инъекция опровергает соответствующее убеждение/);
  assert.match(assistantSpecification,/Сценарий 15\. Помощник не возвращает участника к проверке убеждения/);
@@ -126,7 +127,7 @@ test('personal dilemma sends the current work to the MCP source selector',async(
  assert.match(retrievalContext,/Выбор способа разработки WA-SCM/);
  assert.match(retrievalContext,/Конкуренты используют ИИ/);
 });
-test('assistant checks whether each injection refutes its belief without an interface proposal dialogue',async()=>{
+test('assistant checks both grounds for removing a belief constraint without an interface proposal dialogue',async()=>{
  let reviewBody:any;
  const fields={assumptionKeys:'["db"]',injections:'{"db":"Мы купим собственный безопасный ИИ на Луне"}'};
  const accepted=await evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields}],{key:'fake',model:'fake'},(async(_url,init)=>{reviewBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Инъекция опровергает убеждение; реализуемость на этом шаге не оценивалась.'})}]}]}));}) as typeof fetch,dilemmaDocs);
@@ -136,7 +137,7 @@ test('assistant checks whether each injection refutes its belief without an inte
  assert.doesNotMatch(reviewBody.instructions,/фактах|контрпримерах|поставить его под сомнение|фантастическ|реализуемост/);
  assert.equal(accepted.issues.length,0);
  const injectionsReference=reviewBody.text.format.schema.properties.issues.items.properties.field.enum.find((value:string)=>value.startsWith('injections —'));
- const rejected=await evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields}],{key:'fake',model:'fake'},(async()=>new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[{field:injectionsReference,criterion:'Инъекция должна опровергать убеждение',observation:'Мы просто не будем бояться',question:'Какое условие изменится так, что убеждение станет неверным?',sourceIds:['DS-RBTE.DILEMMA.ASSISTANT-SPEC']}],note:'Одна запись не опровергает убеждение.'})}]}]}))) as typeof fetch,dilemmaDocs);
+ const rejected=await evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields}],{key:'fake',model:'fake'},(async()=>new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[{field:injectionsReference,criterion:'Инъекция должна снять ограничивающую силу убеждения',observation:'Мы надеемся, что всё получится',question:'Какое новое правило выбора заменит прежнее убеждение?',sourceIds:['DS-RBTE.DILEMMA.ASSISTANT-SPEC']}],note:'Запись не делает убеждение неверным и не задаёт нового правила выбора.'})}]}]}))) as typeof fetch,dilemmaDocs);
  assert.equal(rejected.issues[0].field,'injections');
  assert.equal(rejected.issues.length,1);
 });
