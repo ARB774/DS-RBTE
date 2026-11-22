@@ -16,7 +16,7 @@ import { reviewWorkflow } from '@/app/actions/workflow';
 import { AssistantHelpPanel } from './assistant-help-panel';
 import { cloudGroups,nodeFields,profileQuestions,profileLinks,methodNotes,type Profile,type CloudNode,type MethodIssue } from '@/lib/cloud-method';
 import { upsertDilemmaReviewReply } from '@/lib/dilemma-review-replies';
-import { logicLinkKeys,type StepDefinition,stepOrder,steps } from '@/lib/steps';
+import { logicLinkKeys,personalDecisionConditionLabel,readSelectedDecisionKeys,type StepDefinition,stepOrder,steps } from '@/lib/steps';
 import { allAssumptionInjectionsComplete,checkStep,readInjections,type WorkflowCheck } from '@/lib/workflow-check';
 import { CloudDiagram } from './cloud-diagram';
 type History={number:number;createdAt:string;fields:Record<string,string>;comment:string};
@@ -73,7 +73,7 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
   if(!value)delete next[key];
   change('injections',JSON.stringify(next));
  }
- let selectedDecisionKeys:string[]=[];try{const parsed:unknown=JSON.parse(fields.selected||'[]');if(Array.isArray(parsed))selectedDecisionKeys=parsed.filter((key):key is string=>typeof key==='string'&&injectionChoices.some(choice=>choice.key===key));}catch{/* Invalid legacy selection is shown as empty. */}
+ const selectedDecisionKeys=readSelectedDecisionKeys(fields.selected).filter(key=>injectionChoices.some(choice=>choice.key===key));
  function toggleDecisionInjection(key:string){
   const next=selectedDecisionKeys.includes(key)?selectedDecisionKeys.filter(value=>value!==key):[...selectedDecisionKeys,key];
   const combined=injectionChoices.filter(choice=>next.includes(choice.key)).map(choice=>choice.injection).join('\n\n');
@@ -144,7 +144,7 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
   const node=(Object.keys(nodeFields) as CloudNode[]).find(n=>nodeFields[n]===field.key);
   const link=step==='logic'?profileLinks(profile).find(l=>l.key===field.key||l.key+'Reason'===field.key):undefined;
   const issue=displayedIssues.find(i=>i.field===field.key);
-  const prompt=isCloud&&node&&showHelp?profileQuestions[profile][node]:field.label;
+  const prompt=personalDecision&&(field.key==='ensureB'||field.key==='ensureC')?personalDecisionConditionLabel(field.key,selectedDecisionKeys):isCloud&&node&&showHelp?profileQuestions[profile][node]:field.label;
   return <div className="field" key={field.key}>
    <label htmlFor={field.key}>{prompt}</label>
    {link&&<p className="text-sm text-slate-600 mb-2">{(link.from==='Dp'?'D′':link.from)+': '+(cloud[nodeFields[link.from]]||'…')} · {(link.to==='Dp'?'D′':link.to)+': '+(cloud[nodeFields[link.to]]||'…')}</p>}

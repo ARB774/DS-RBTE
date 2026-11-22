@@ -5,6 +5,13 @@ import { normalizeDilemmaReviewReplies } from './dilemma-review-replies';
 export type Field = { key: string; label: string; profiles?: string[]; required?: boolean; sourceIds?:string[]; hint?: string; options?: string[] };
 export type StepDefinition = { title: string; fields: Field[]; note?: string };
 export const dilemmaInjectionRouteVersion='toc-m-006-injections-v1';
+export function readSelectedDecisionKeys(value:string|undefined){
+ try{const parsed:unknown=JSON.parse(value||'[]');return Array.isArray(parsed)?parsed.filter((key):key is string=>typeof key==='string'):[];}catch{return [];}
+}
+export function personalDecisionConditionLabel(field:'ensureB'|'ensureC',selectedKeys:string[]){
+ const isB=field==='ensureB',replaced=selectedKeys.includes(isB?'ab':'ac'),condition=isB?'B':'C';
+ return replaced?`Какое новое необходимое условие ${condition}* заменяет ${condition} и как решение обеспечивает ${condition}*?`:`Как решение обеспечивает необходимое условие ${condition}?`;
+}
 const legacySteps: Record<string, StepDefinition> = {
  explore: { title: '4.2 · Исследование', fields: [
   {key:'observations',label:'Наблюдения и источники'}, {key:'explanations',label:'Объяснения и альтернативные объяснения'},
@@ -120,8 +127,8 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
      text('selected','Выбранные решения-кандидаты'),
      text('finalInjection','Выбранное решение или комбинация решений'),
      text('reason','Почему выбрано это решение или сочетание?'),
-     text('ensureB','Как решение сохраняет потребность B?'),
-     text('ensureC','Как решение сохраняет потребность C?'),
+     text('ensureB',personalDecisionConditionLabel('ensureB',[])),
+     text('ensureC',personalDecisionConditionLabel('ensureC',[])),
     ]
     :d.fields;
  return {...d,title:profile==='DILEMMA'?dilemmaTitle(step):d.title,fields:sourceFields.filter(f=>(!f.profiles||f.profiles.includes(profile))&&!(step==='cloud'&&profile==='DILEMMA'&&!['actionA','actionB','needA','needB','goal'].includes(f.key))).map(f=>{
