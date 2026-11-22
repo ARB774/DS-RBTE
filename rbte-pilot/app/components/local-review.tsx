@@ -29,7 +29,7 @@ export function LocalReviewPanel({id}:{id:string}){
    {data.report.issues.length===0&&<><p>Ниже — ваши сохранённые ответы, без смысловой оценки и дополнений ИИ.</p>
     {data.report.summary.map(s=><section key={s.title}><h3 className="font-bold">{s.title}</h3>
      {s.values.map(v=><p key={v.key} className="whitespace-pre-wrap"><strong>{fieldLabels[v.key]}: </strong>{v.text}</p>)}
-     {s.title==='Результат'&&!data.report.done&&<p>Проба не отмечена выполненной. Эффект не установлен.</p>}
+     {s.title==='Результат'&&!data.report.done&&<p>Проверка решения не отмечена выполненной. Эффект не установлен.</p>}
     </section>)}
    </>}
    <h3 className="font-bold">Вопросы для самостоятельной проверки выводов</h3>

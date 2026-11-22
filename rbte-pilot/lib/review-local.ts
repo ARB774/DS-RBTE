@@ -7,7 +7,7 @@ export const METHOD_VERSION='pilot2-packtoc-836c4058-al-20261020';
 // Presence is not semantic validity. No heuristic interprets free text as proof.
 export const methodRules = [
  ['AL.P.002:4','Помощь без подмены действия','Сохранять первую версию тучи до содержательной помощи; давать вопросы, сохранять выбор за участником.'],
- ['AL.P.003:4','Обратная связь для следующей пробы','Связать наблюдение с критерием, назвать разрыв и следующий шаг; человек может принять, изменить или отклонить рекомендацию.'],
+ ['AL.P.003:4','Обратная связь для следующей проверки','Связать наблюдение с критерием, назвать разрыв и следующий шаг; человек может принять, изменить или отклонить рекомендацию.'],
  ['AL.P.008:4','Границы вывода об эффекте','Различать наблюдение и причинность. Нужны исходная точка, сравнение и источники; альтернативные объяснения ограничивают вывод.'],
  ['AL.WP.005','Критерии и доказательства','Разделять выполнение, самостоятельную способность, перенос и эффект; учитывать помощь ИИ и право человека пересмотреть оценку.'],
 ] as const;
@@ -35,10 +35,10 @@ export function localReview(snapshot:ReviewSnapshot){
  if(!selected[choice]&&choice!=='Отказ от выбора')issues.push({fields:['decision.choice'],source:'AL.P.002:4',question:'Какое решение вы принимаете?',impact:'Система не выбирает решение за участника.'});
  if(selected[choice]){
   need([selected[choice]],'AL.WP.005','Что именно будете делать и за счёт чего ожидаете изменение?','Выбранный вариант должен быть описан.');
-  need(['trial.hypothesis','trial.action','trial.supportIndicator','trial.weakenIndicator'],'AL.P.003:4','Что проверите, каким действием и какие наблюдения поддержат или ослабят предположение?','Без этих сведений трудно спланировать проверяемую следующую пробу.');
-  need(['trial.status'],'AL.P.008:4','На какой стадии находится проба?','План и выполненное действие требуют разных оснований.');
+  need(['trial.hypothesis','trial.action','trial.supportIndicator','trial.weakenIndicator'],'AL.P.003:4','Что проверите, каким действием и какие наблюдения поддержат или ослабят предположение?','Без этих сведений трудно спланировать следующую проверку.');
+  need(['trial.status'],'AL.P.008:4','На какой стадии находится проверка решения?','План и выполненное действие требуют разных оснований.');
  }
- if(['HIGH','CRITICAL'].includes(f['creation.sensitivity']))need(['trial.authority','trial.protection'],'AL.P.002:4','Кто уполномочен разрешить пробу и какие меры защиты предусмотрены?','При повышенном риске наличие текста не является допуском к действию.');
+ if(['HIGH','CRITICAL'].includes(f['creation.sensitivity']))need(['trial.authority','trial.protection'],'AL.P.002:4','Кто уполномочен разрешить действие и какие меры защиты предусмотрены?','При повышенном риске наличие текста не является допуском к действию.');
  const done=f['trial.status']==='Выполнена';
  if(done){
   need(['result.actual','result.observed','result.interpretation'],'AL.P.008:4','Что сделали, что наблюдали и какие есть альтернативные объяснения?','Отметка «Выполнена» сама по себе не подтверждает результат.');
@@ -48,7 +48,7 @@ export function localReview(snapshot:ReviewSnapshot){
   {title:'Проблема',fields:['creation.signal','creation.task']},
   {title:'Противоречие',fields:cloudKeys},
   {title:'Выбранное решение',fields:['decision.choice',...(selected[choice]?[selected[choice]]:[]),'decision.reason']},
-  {title:'Рабочая проба',fields:['trial.status','trial.hypothesis','trial.action']},
+  {title:'Проверка решения на практике',fields:['trial.status','trial.hypothesis','trial.action']},
   {title:'Результат',fields:done?['result.actual','result.observed','result.interpretation','result.effect','result.next']:[]},
  ].map(section=>({...section,values:section.fields.map(key=>({key,text:f[key]||'Не заполнено'}))}));
  return {version:METHOD_VERSION,issues,summary,done,notes:[
