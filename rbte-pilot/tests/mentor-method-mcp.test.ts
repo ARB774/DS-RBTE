@@ -53,8 +53,13 @@ test('personal dilemma reads its assistant documentation through the same verifi
     const sources = await retrieveDilemmaAssistantMethods('cloud');
     assert.deepEqual(sources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
     assert.ok(sources.some(s => s.id === 'DS-RBTE.ASSISTANT-SKILL' && s.text.includes('помощник')));
-    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /не\s+повторяет требование по кругу/.test(s.text)));
-    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('отдельный модуль называть не нужно')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /Для каждого принятого участником предположения активная роль помогает\s+сформулировать инъекцию `D\*`/.test(s.text)));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /Единственный критерий этой проверки:[\s\S]*действительно ли исходное убеждение становится неверным/.test(s.text)));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /Инъекция имеет право быть\s+фантастической или пока нереализуемой/.test(s.text)));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('на этом этапе запрещены')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /почему нельзя часть задач выполнять по\s+`D`/.test(s.text)));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('выбрать наилучшую инъекцию либо их комбинацию')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('Одно исходное предположение может поддерживать несколько связей Тучи')));
     assert.ok(sources.every(s => s.origin === 'verified-cache' && s.excerptSha256.length === 64));
   } finally {
     if (previous === undefined) delete process.env.MENTOR_KNOWLEDGE_CACHE;

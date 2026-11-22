@@ -7,7 +7,7 @@ import { drizzle } from 'drizzle-orm/pglite';
 import { eq } from 'drizzle-orm';
 import { checkCloud,cloudGroups,profileLinks,type Profile } from '../lib/cloud-method';
 import { definitionFor,parseStepFields,stepOrder } from '../lib/steps';
-import { checkStep,basisData } from '../lib/workflow-check';
+import { allAssumptionInjectionsComplete,checkStep,basisData,readInjections } from '../lib/workflow-check';
 import { evaluateWorkflow } from '../lib/workflow-ai';
 import { contextOf,hashBasis } from '../lib/workflow-store';
 import { persistDraft } from '../lib/drafts';
@@ -18,12 +18,40 @@ import { createHash } from 'node:crypto';
 import { readDilemmaReviewReplies,upsertDilemmaReviewReply } from '../lib/dilemma-review-replies';
 const cloud={goal:'Устойчиво выполнять свою работу',needA:'Сохранять сроки поставки',needB:'Сохранять качество продукции',actionA:'Отгрузить заказ сегодня',actionB:'Проверить все детали до отгрузки'};
 const dilemmaDocs=async(step:string)=>dilemmaAssistantEvidence(step).map(source=>({...source,origin:'verified-cache' as const,fetchedAt:'2026-11-14',excerptSha256:createHash('sha256').update(source.text).digest('hex')}));
-test('personal dilemma completion invokes the assistant without an optional checkbox',async()=>{
+test('personal dilemma forms one injection for every assumption before choosing',async()=>{
  const draftsAction=await readFile(new URL('../app/actions/drafts.ts',import.meta.url),'utf8');
  const workflowForm=await readFile(new URL('../app/components/workflow-form.tsx',import.meta.url),'utf8');
- assert.match(draftsAction,/if\(!draftOnly\)[\s\S]*situation\.profile==='DILEMMA'[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
+ const assistantSpecification=await readFile(new URL('../../WP-45/ТЗ помощника по построению личной дилеммы.md',import.meta.url),'utf8');
+ assert.match(draftsAction,/situation\.profile==='DILEMMA'&&step!=='assumptions'[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
+ assert.doesNotMatch(draftsAction,/step==='assumption-check'[\s\S]*return \{version:savedVersion,report:checkStep/);
  assert.doesNotMatch(workflowForm,/Дополнительно проверить смысл с ИИ/);
+ assert.match(workflowForm,/assistantReviewRequired=personal&&!personalAssumptions/);
+ assert.match(workflowForm,/Исходные предположения сохранены без оспаривания/);
+ assert.match(workflowForm,/!personalCloud&&!personalAssumptions&&!personalAssumptionCheck&&currentReport/);
+ assert.match(workflowForm,/assumptionChoices\.map\(\(choice,index\)=>/);
+ assert.match(workflowForm,/<table className="w-full border-collapse">/);
+ assert.match(workflowForm,/Исходное убеждение<\/th><th[\s\S]*Инъекция, опровергающая убеждение/);
+ assert.match(workflowForm,/textarea id=\{'injection-'\+choice\.key\}/);
+ assert.match(workflowForm,/changeInjection\(choice\.key,event\.target\.value\)/);
+ assert.match(workflowForm,/allAssumptionInjectionsComplete/);
+ assert.doesNotMatch(workflowForm,/Помощник предлагает решение-кандидат/);
+ assert.doesNotMatch(workflowForm,/Принимаю эту формулировку как решение-кандидат/);
+ assert.match(workflowForm,/Выберите одно лучшее решение или несколько решений для комбинации/);
+ assert.match(workflowForm,/Сохранить черновик/);
+ assert.match(assistantSpecification,/Для каждого принятого участником предположения активная роль помогает\s+сформулировать инъекцию `D\*`/);
+ assert.match(assistantSpecification,/Вопросы о\s+подтверждающих фактах, контрпримерах, готовности поставить убеждение под сомнение\s+и причине такого выбора на этом этапе запрещены/);
+ assert.match(assistantSpecification,/Этап\s+завершается, когда решение-кандидат записано\s+для каждого предположения/);
+ assert.match(assistantSpecification,/одновременно показывает все пары в таблице/);
+ assert.match(assistantSpecification,/Инъекция имеет право быть\s+фантастической или пока нереализуемой/);
+ assert.match(assistantSpecification,/Единственный критерий этой проверки:[\s\S]*действительно ли исходное убеждение становится неверным/);
+ assert.match(workflowForm,/Сохранить и проверить/);
+ assert.match(workflowForm,/Помощник подтвердил: каждая инъекция опровергает соответствующее убеждение/);
+ assert.match(assistantSpecification,/Сценарий 15\. Помощник не возвращает участника к проверке убеждения/);
+ assert.match(assistantSpecification,/выбрать наилучшую инъекцию либо их комбинацию/);
+ assert.doesNotMatch(assistantSpecification,/Почему вы решили поставить под сомнение это\s+убеждение/);
  assert.match(workflowForm,/personalReviewReady/);
+ assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
+ assert.match(workflowForm,/activeLogicKey=issueLogicKey\|\|\(personalLogic&&dirty\?logicLinkKeys\[logicCursor\]/);
 });
 test('personal dilemma adds actions; other profiles retain ten steps',()=>{
  assert.equal(stepOrder.filter(s=>definitionFor(s,'DILEMMA')).length+1,11);
@@ -45,7 +73,7 @@ test('personal dilemma application checks only interface completeness',()=>{
 test('current step checks do not require future decisions or results',()=>{
  assert.deepEqual(checkStep('cloud','DILEMMA',{...cloud,actionsCheck:'Да',needsCheck:'Да',goalCheck:'Да'}).issues,[]);
  assert.ok(checkStep('logic','DILEMMA',{ab:'Не знаю'}).issues.some(i=>i.field==='ab'));
- assert.deepEqual(checkStep('decision','DILEMMA',{choice:'Отказ от выбора',reason:'Нужны сведения о доступных ресурсах',risks:'Нет полномочий менять процедуру'}).issues,[]);
+ assert.deepEqual(checkStep('decision','DILEMMA',{selected:'["ab"]',finalInjection:'Изолировать передаваемый фрагмент кода',reason:'Сохраняет скорость без передачи всей разработки',ensureB:'Секреты остаются внутри контура',ensureC:'ИИ ускоряет изолированную задачу'}).issues,[]);
 });
 test('freshness ignores check metadata and future steps but tracks upstream edits',()=>{
  const original=[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да'}}];
@@ -64,6 +92,12 @@ test('invalid fields and option values are rejected; caller cannot forge check m
  const reviewReplies=upsertDilemmaReviewReply(undefined,issue,'Эпизод 18 ноября.');
  assert.equal(readDilemmaReviewReplies(parseStepFields('cloud',{...cloud,reviewReplies},'DILEMMA').reviewReplies)[0].reply,'Эпизод 18 ноября.');
  assert.throws(()=>parseStepFields('cloud',{...cloud,reviewReplies:'[{"reply":"подмена"}]'},'DILEMMA'),/некорректный ответ/);
+});
+test('assumption step is complete only after every recorded assumption has an injection',()=>{
+ const base={assumptionKeys:'["ab","db"]',selected:'ab',injections:'{}'};
+ assert.equal(allAssumptionInjectionsComplete(base),false);
+ assert.deepEqual(readInjections('{"ab":"Изолировать код"}'),{ab:'Изолировать код'});
+ assert.equal(allAssumptionInjectionsComplete({...base,injections:'{"ab":"Изолировать код","db":"Передавать только обезличенный фрагмент"}'}),true);
 });
 test('semantic review sends only current/earlier content and validates field references',async()=>{
  let body:any;
@@ -91,6 +125,20 @@ test('personal dilemma sends the current work to the MCP source selector',async(
  await evaluateWorkflow('logic',{profile:'DILEMMA',signal:'Выбор способа разработки WA-SCM'},[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да',abReason:'Конкуренты используют ИИ'}}],{key:'fake',model:'fake'},transport as typeof fetch,retrieve);
  assert.match(retrievalContext,/Выбор способа разработки WA-SCM/);
  assert.match(retrievalContext,/Конкуренты используют ИИ/);
+});
+test('assistant checks whether each injection refutes its belief without an interface proposal dialogue',async()=>{
+ let reviewBody:any;
+ const fields={assumptionKeys:'["db"]',injections:'{"db":"Мы купим собственный безопасный ИИ на Луне"}'};
+ const accepted=await evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields}],{key:'fake',model:'fake'},(async(_url,init)=>{reviewBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Инъекция опровергает убеждение; реализуемость на этом шаге не оценивалась.'})}]}]}));}) as typeof fetch,dilemmaDocs);
+ assert.equal(reviewBody.text.format.schema.properties.dialogue,undefined);
+ assert.equal(reviewBody.text.format.schema.properties.issues.minItems,undefined);
+ assert.match(reviewBody.instructions,/используй только маршрут и критерии из methodEvidence/);
+ assert.doesNotMatch(reviewBody.instructions,/фактах|контрпримерах|поставить его под сомнение|фантастическ|реализуемост/);
+ assert.equal(accepted.issues.length,0);
+ const injectionsReference=reviewBody.text.format.schema.properties.issues.items.properties.field.enum.find((value:string)=>value.startsWith('injections —'));
+ const rejected=await evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields}],{key:'fake',model:'fake'},(async()=>new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[{field:injectionsReference,criterion:'Инъекция должна опровергать убеждение',observation:'Мы просто не будем бояться',question:'Какое условие изменится так, что убеждение станет неверным?',sourceIds:['DS-RBTE.DILEMMA.ASSISTANT-SPEC']}],note:'Одна запись не опровергает убеждение.'})}]}]}))) as typeof fetch,dilemmaDocs);
+ assert.equal(rejected.issues[0].field,'injections');
+ assert.equal(rejected.issues.length,1);
 });
 test('personal dilemma workflow stops before the provider when assistant documentation is unavailable',async()=>{
  let providerCalled=false;

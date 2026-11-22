@@ -9,6 +9,10 @@ export function reviewDailyLimit(value=process.env.PILOT_REVIEW_DAILY_LIMIT){
  return value?.trim()&&Number.isSafeInteger(parsed)&&parsed>0?parsed:null;
 }
 
+export function reviewCooldownMs(profile:string){
+ return profile==='DILEMMA'?3000:90000;
+}
+
 export async function ownedReviewInput(database:any,userId:string,id:string){
  const [situation]=await database.select().from(situations).where(and(eq(situations.id,id),eq(situations.creatorId,userId))).limit(1);
  if(!situation||situation.locked)throw new Error('Ситуация недоступна');
