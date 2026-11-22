@@ -6,7 +6,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { eq } from 'drizzle-orm';
 import { checkCloud,cloudGroups,profileLinks,type Profile } from '../lib/cloud-method';
-import { definitionFor,parseStepFields,personalDecisionConditionLabel,readSelectedDecisionKeys,stepOrder } from '../lib/steps';
+import { definitionFor,dilemmaDecisionReviewVersion,isCurrentDecisionReviewVersion,parseStepFields,personalDecisionConditionLabel,readSelectedDecisionKeys,stepOrder } from '../lib/steps';
 import { allAssumptionInjectionsComplete,checkStep,basisData,readInjections } from '../lib/workflow-check';
 import { evaluateWorkflow } from '../lib/workflow-ai';
 import { contextOf,hashBasis } from '../lib/workflow-store';
@@ -58,6 +58,7 @@ test('personal dilemma forms one injection for every assumption before choosing'
  assert.doesNotMatch(assistantSpecification,/Почему вы решили поставить под сомнение это\s+убеждение/);
  assert.match(workflowForm,/personalReviewReady/);
  assert.match(workflowForm,/personalDecisionConditionLabel\(field\.key,selectedDecisionKeys\)/);
+ assert.match(workflowForm,/obsoleteDecisionReview=personalDecision&&storedReport\?\.mode==='ai'&&!isCurrentDecisionReviewVersion/);
  assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
  assert.match(workflowForm,/activeLogicKey=issueLogicKey\|\|\(personalLogic&&dirty\?logicLinkKeys\[logicCursor\]/);
 });
@@ -106,10 +107,13 @@ test('personal decision replaces B or C labels when their necessity assumption i
  assert.equal(personalDecisionConditionLabel('ensureB',['ab']),'Какое новое необходимое условие B* заменяет B и как решение обеспечивает B*?');
  assert.equal(personalDecisionConditionLabel('ensureC',['ab']),'Как решение обеспечивает необходимое условие C?');
  let body:any;
- await evaluateWorkflow('decision',{profile:'DILEMMA',signal:'эпизод'},[{step:'decision',fields:{selected:'["ab"]',finalInjection:'Новое решение',reason:'Меняет условие'}}],{key:'fake',model:'fake'},(async(_url,init)=>{body=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
+ const report=await evaluateWorkflow('decision',{profile:'DILEMMA',signal:'эпизод'},[{step:'decision',fields:{selected:'["ab"]',finalInjection:'Новое решение',reason:'Меняет условие'}}],{key:'fake',model:'fake'},(async(_url,init)=>{body=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
  const input=JSON.parse(body.input);
  assert.equal(input.definition.fields.find((field:any)=>field.key==='ensureB').label,'Какое новое необходимое условие B* заменяет B и как решение обеспечивает B*?');
  assert.equal(input.definition.fields.find((field:any)=>field.key==='ensureC').label,'Как решение обеспечивает необходимое условие C?');
+ assert.equal(report.method?.version.endsWith(' / '+dilemmaDecisionReviewVersion),true);
+ assert.equal(isCurrentDecisionReviewVersion(report.method?.version),true);
+ assert.equal(isCurrentDecisionReviewVersion('DS-RBTE old-commit'),false);
 });
 test('assumption step is complete only after every recorded assumption has an injection',()=>{
  const base={assumptionKeys:'["ab","db"]',selected:'ab',injections:'{}'};

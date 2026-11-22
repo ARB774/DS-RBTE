@@ -5,6 +5,8 @@ import { normalizeDilemmaReviewReplies } from './dilemma-review-replies';
 export type Field = { key: string; label: string; profiles?: string[]; required?: boolean; sourceIds?:string[]; hint?: string; options?: string[] };
 export type StepDefinition = { title: string; fields: Field[]; note?: string };
 export const dilemmaInjectionRouteVersion='toc-m-006-injections-v1';
+export const dilemmaDecisionReviewVersion='decision-conditions-v2';
+export function isCurrentDecisionReviewVersion(version:string|undefined){return Boolean(version?.endsWith(' / '+dilemmaDecisionReviewVersion));}
 export function readSelectedDecisionKeys(value:string|undefined){
  try{const parsed:unknown=JSON.parse(value||'[]');return Array.isArray(parsed)?parsed.filter((key):key is string=>typeof key==='string'):[];}catch{return [];}
 }
