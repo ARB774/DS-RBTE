@@ -39,12 +39,13 @@ test('personal dilemma forms one injection for every assumption before choosing'
  assert.match(workflowForm,/Выберите одно лучшее решение или несколько решений для комбинации/);
  assert.match(workflowForm,/Сохранить черновик/);
  assert.match(assistantSpecification,/Для каждого принятого участником предположения активная роль помогает\s+сформулировать инъекцию `D\*`/);
- assert.match(assistantSpecification,/Вопросы о подтверждающих\s+фактах, контрпримерах и готовности поставить убеждение под сомнение на этом этапе\s+запрещены/);
+ assert.match(assistantSpecification,/Вопросы о подтверждающих\s+фактах, контрпримерах и готовности поставить убеждение\s+под сомнение на этом этапе запрещены/);
  assert.match(assistantSpecification,/Этап\s+завершается, когда решение-кандидат записано\s+для каждого предположения/);
  assert.match(assistantSpecification,/одновременно показывает все пары в таблице/);
  assert.match(assistantSpecification,/Инъекция имеет право быть\s+фантастической или пока нереализуемой/);
- assert.match(assistantSpecification,/Проверка допускает два независимых основания:[\s\S]*убеждение либо становится неверным[\s\S]*отказывается руководствоваться им в будущем/);
- assert.match(assistantSpecification,/Во втором\s+случае помощник не требует снизить риск/);
+ assert.match(assistantSpecification,/Проверка допускает два независимых основания:[\s\S]*убеждение либо становится неверным[\s\S]*новое условие, способность, действие или правило делает прежнее действие\s+необязательным/);
+ assert.match(assistantSpecification,/Явный отказ руководствоваться убеждением[\s\S]*частным случаем второго основания/);
+ assert.match(assistantSpecification,/Мы сами научимся достаточно быстро разрабатывать и\s+тестировать без ИИ/);
  assert.match(workflowForm,/Сохранить и проверить/);
  assert.match(workflowForm,/Помощник подтвердил: каждая инъекция опровергает соответствующее убеждение/);
  assert.match(assistantSpecification,/Сценарий 15\. Помощник не возвращает участника к проверке убеждения/);
@@ -127,10 +128,10 @@ test('personal dilemma sends the current work to the MCP source selector',async(
  assert.match(retrievalContext,/Выбор способа разработки WA-SCM/);
  assert.match(retrievalContext,/Конкуренты используют ИИ/);
 });
-test('assistant checks both grounds for removing a belief constraint without an interface proposal dialogue',async()=>{
+test('assistant accepts an alternative capability that makes a true belief non-binding',async()=>{
  let reviewBody:any;
- const fields={assumptionKeys:'["db"]',injections:'{"db":"Мы купим собственный безопасный ИИ на Луне"}'};
- const accepted=await evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields}],{key:'fake',model:'fake'},(async(_url,init)=>{reviewBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Инъекция опровергает убеждение; реализуемость на этом шаге не оценивалась.'})}]}]}));}) as typeof fetch,dilemmaDocs);
+ const fields={assumptionKeys:'["cd"]',injections:'{"cd":"Мы сами научимся достаточно быстро разрабатывать и тестировать без ИИ"}'};
+ const accepted=await evaluateWorkflow('assumption-check',{profile:'DILEMMA',signal:'эпизод'},[{step:'assumption-check',fields}],{key:'fake',model:'fake'},(async(_url,init)=>{reviewBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Убеждение может оставаться верным, но новая способность делает использование ИИ необязательным; реализуемость не оценивалась.'})}]}]}));}) as typeof fetch,dilemmaDocs);
  assert.equal(reviewBody.text.format.schema.properties.dialogue,undefined);
  assert.equal(reviewBody.text.format.schema.properties.issues.minItems,undefined);
  assert.match(reviewBody.instructions,/используй только маршрут и критерии из methodEvidence/);
