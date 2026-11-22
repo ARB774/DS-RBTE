@@ -19,10 +19,11 @@ import { upsertDilemmaReviewReply } from '@/lib/dilemma-review-replies';
 import { isCurrentDecisionReviewVersion,logicLinkKeys,personalDecisionConditionLabel,readSelectedDecisionKeys,type StepDefinition,stepOrder,steps } from '@/lib/steps';
 import { allAssumptionInjectionsComplete,checkStep,readInjections,type WorkflowCheck } from '@/lib/workflow-check';
 import { CloudDiagram } from './cloud-diagram';
+import { SolutionDiagram } from './solution-diagram';
 type History={number:number;createdAt:string;fields:Record<string,string>;comment:string};
 type AssumptionChoice={key:string;label:string;value:string};
 type InjectionChoice=AssumptionChoice&{injection:string};
-export function WorkflowForm({id,step,profile,definition,initial,initialVersion,cloud,stale,history,material,actionChoices={},assumptionChoices=[],injectionChoices=[]}:{actionChoices?:{D?:string;Dp?:string};assumptionChoices?:AssumptionChoice[];injectionChoices?:InjectionChoice[];id:string;step:string;profile:Profile;definition:StepDefinition;initial:Record<string,string>;initialVersion:number;cloud:Record<string,string>;stale:boolean;history:History[];material:{pdf:string;ppt:string;pages:string}}){
+export function WorkflowForm({id,step,profile,definition,initial,initialVersion,cloud,decision={},stale,history,material,actionChoices={},assumptionChoices=[],injectionChoices=[]}:{actionChoices?:{D?:string;Dp?:string};assumptionChoices?:AssumptionChoice[];injectionChoices?:InjectionChoice[];id:string;step:string;profile:Profile;definition:StepDefinition;initial:Record<string,string>;initialVersion:number;cloud:Record<string,string>;decision?:Record<string,string>;stale:boolean;history:History[];material:{pdf:string;ppt:string;pages:string}}){
  const router=useRouter();
  const personal=profile==='DILEMMA';
  const personalCloud=profile==='DILEMMA'&&step==='cloud',personalActions=profile==='DILEMMA'&&step==='actions',personalLogic=profile==='DILEMMA'&&step==='logic',personalAssumptions=profile==='DILEMMA'&&step==='assumptions',personalAssumptionCheck=profile==='DILEMMA'&&step==='assumption-check',personalDecision=profile==='DILEMMA'&&step==='decision';
@@ -62,7 +63,14 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  }
  const groups=cloudGroups(profile),isCloud=step==='cloud'||step==='practice';
  const diagramFields=isCloud?fields:cloud;
- const formFields=definition.fields.filter(f=>(!isCloud||!Object.values(nodeFields).includes(f.key))&&!personalAssumptionCheck&&!(personalDecision&&f.key==='selected'));
+ const selectedDecisionKeys=readSelectedDecisionKeys(fields.selected).filter(key=>injectionChoices.some(choice=>choice.key===key));
+ const solutionFields=personalDecision?fields:decision;
+ const solutionSelectedKeys=readSelectedDecisionKeys(solutionFields.selected);
+ const bChanged=solutionSelectedKeys.includes('ab'),cChanged=solutionSelectedKeys.includes('ac');
+ const showSolution=personal&&['decision','trial','result','feedback'].includes(step)&&Boolean(solutionFields.finalInjection?.trim());
+ const showDecisionEdit=personal&&!personalDecision&&['trial','result','feedback'].includes(step);
+ const decisionIssues=showDecisionEdit?checkStep('decision','DILEMMA',solutionFields).issues:[];
+ const formFields=definition.fields.filter(f=>(!isCloud||!Object.values(nodeFields).includes(f.key))&&!personalAssumptionCheck&&!(personalDecision&&f.key==='selected')&&!(personalDecision&&f.key==='conditionB'&&!selectedDecisionKeys.includes('ab'))&&!(personalDecision&&f.key==='conditionC'&&!selectedDecisionKeys.includes('ac')));
  const route=personal?dilemmaSteps.map(([key])=>String(key)):stepOrder;
  const next=route[route.indexOf(step)+1],previous=route[route.indexOf(step)-1];
  const currentReport=report&&!dirty&&!outdated&&fields.__draft!=='true'?report:null;
@@ -74,7 +82,6 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
   if(!value)delete next[key];
   change('injections',JSON.stringify(next));
  }
- const selectedDecisionKeys=readSelectedDecisionKeys(fields.selected).filter(key=>injectionChoices.some(choice=>choice.key===key));
  function toggleDecisionInjection(key:string){
   const next=selectedDecisionKeys.includes(key)?selectedDecisionKeys.filter(value=>value!==key):[...selectedDecisionKeys,key];
   const combined=injectionChoices.filter(choice=>next.includes(choice.key)).map(choice=>choice.injection).join('\n\n');
@@ -131,7 +138,8 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  {showHelp&&!personal&&<aside className="card p-4"><p>{methodNotes[step]}</p><p className="text-sm mt-2"><a href={material.pdf} target="_blank" rel="noreferrer">Теория PDF</a> · <a href={material.ppt}>Тетрадь PPTX</a> · {material.pages}</p></aside>}
  {step==='practice'&&!showHelp&&<p className="workflow-warning">Сначала сохраните самостоятельную версию новой тучи. Подсказки станут доступны после сохранения.</p>}
  </>}
- {personalCloud?<DilemmaCloud fields={fields} onChange={change} onReply={replyToIssue} onApplyRevision={applyIssueRevision} onProgress={progress} onComplete={setSequenceComplete} disabled={pending} reviewPending={pending} attempt={attempt} references={actionChoices} reviewReplies={fields.reviewReplies} reviewNote={report?.note} issues={submitted&&!reviewFailed&&report?report.issues:undefined}/>:personalActions?<ActionsTable value={fields.actionRows||''} onChange={v=>change('actionRows',v)} disabled={pending}/>:<CloudDiagram issues={personalCloud&&(!outdated||report?.mode==='local')?report?.issues:undefined} onSequenceComplete={setSequenceComplete} sequential={personalCloud} profile={profile} fields={diagramFields} onChange={isCloud?change:undefined} disabled={pending} active={active} onSelect={node=>{setActive([node]);if(!isCloud)document.getElementById(nodeFields[node])?.focus();}}/>}
+ {showDecisionEdit&&<aside className={decisionIssues.length?'workflow-warning':'card p-4'}><strong>Решение D* и необходимые условия</strong><p className="text-sm my-2">{decisionIssues.length?'Решение нужно дополнить: отдельно запишите актуальное условие B* или C* и причины связей с D*.':'Здесь можно изменить D*, актуальные условия и причины связей.'}</p><Link className="btn btn-ghost" href={'/situations/'+id+'/decision'}>Изменить B*, C* и решение D* →</Link></aside>}
+ {showSolution?<SolutionDiagram goal={cloud.goal||''} conditionB={bChanged?solutionFields.conditionB||'':cloud.needA||''} conditionC={cChanged?solutionFields.conditionC||'':cloud.needB||''} solution={solutionFields.finalInjection||''} reasonB={solutionFields.ensureB||''} reasonC={solutionFields.ensureC||''} bChanged={bChanged} cChanged={cChanged}/>:personalCloud?<DilemmaCloud fields={fields} onChange={change} onReply={replyToIssue} onApplyRevision={applyIssueRevision} onProgress={progress} onComplete={setSequenceComplete} disabled={pending} reviewPending={pending} attempt={attempt} references={actionChoices} reviewReplies={fields.reviewReplies} reviewNote={report?.note} issues={submitted&&!reviewFailed&&report?report.issues:undefined}/>:personalActions?<ActionsTable value={fields.actionRows||''} onChange={v=>change('actionRows',v)} disabled={pending}/>:<CloudDiagram issues={personalCloud&&(!outdated||report?.mode==='local')?report?.issues:undefined} onSequenceComplete={setSequenceComplete} sequential={personalCloud} profile={profile} fields={diagramFields} onChange={isCloud?change:undefined} disabled={pending} active={active} onSelect={node=>{setActive([node]);if(!isCloud)document.getElementById(nodeFields[node])?.focus();}}/>}
  {!personalActions&&!isCloud&&cloud.goal===undefined&&<p className="workflow-warning">Исходная туча ещё не сохранена. <Link href={'/situations/'+id+'/cloud'}>Перейти к построению</Link></p>}
  {step==='decision'&&!personalDecision&&fields.choice!=='Отказ от выбора'&&<aside className="card p-4" style={{borderRadius:0}}><strong>Предлагаемая инъекция D*</strong><p className="whitespace-pre-wrap">{fields[fields.choice==='Вариант 2'?'optionB':fields.choice==='Дополнительный вариант'?'optionC':'optionA']||'Опишите вариант решения ниже.'}</p></aside>}
  {personalLogic&&!activeLogicIssue&&!activeLogicKey&&<section className="card p-6 space-y-2"><strong>Ответы по всем семи связям заполнены.</strong><p className="text-sm text-slate-700">Повторно подтверждать ответы «Да» не нужно. Смысловая проверка завершится после ответа помощника; если он найдёт замечание, здесь появится только один вопрос.</p></section>}
@@ -164,7 +172,7 @@ export function WorkflowForm({id,step,profile,definition,initial,initialVersion,
  </fieldset>}
  {personal?<div className="sticky bottom-0 bg-white border-t p-4 space-y-2" style={{zIndex:20}}>
  <div className="flex flex-wrap gap-3 items-center">
- <Link className="btn btn-ghost" href={'/situations/'+id+'/'+(previous||'details')}>← Назад</Link>
+ <Link className="btn btn-ghost" href={'/situations/'+id+'/'+(previous||'details')}>← {dilemmaSteps.find(([key])=>key===(previous||'details'))?.[1]||'Назад'}</Link>
  <button type="button" className="btn btn-ghost" disabled={pending} onClick={()=>start(()=>save(true))}>Сохранить черновик</button>
  <button className={personalStepComplete?'btn btn-ghost':'btn btn-primary'} disabled={pending||(personalAssumptionCheck&&!allAssumptionInjectionsComplete(fields))}>{pending?(personalAssumptions?'Сохраняю…':personalAssumptionCheck?'Помощник проверяет инъекции…':'Помощник проверяет…'):personalAssumptionCheck?'Сохранить и проверить':reviewFailed?'Повторить проверку':'Сохранить шаг'}</button>
  {personalStepComplete?<Link className="btn btn-primary ml-auto" href={'/situations/'+id+'/'+(next||'summary')}>{next?'Далее: '+dilemmaSteps.find(([key])=>key===next)?.[1]+' →':'Завершить разбор →'}</Link>:<button type="button" className="btn btn-ghost ml-auto" disabled>{next?'Далее: '+dilemmaSteps.find(([key])=>key===next)?.[1]:'Завершить разбор'}</button>}

@@ -15,7 +15,7 @@ export async function evaluateWorkflow(step:string,situation:{profile:Profile;si
  const definition=definitionFor(step,situation.profile);if(!definition)throw new Error('Unknown step');
  const context=drafts.filter(d=>stepOrder.indexOf(d.step)>=0&&stepOrder.indexOf(d.step)<=stepOrder.indexOf(step)).map(d=>({...d,fields:Object.fromEntries(Object.entries(d.fields).filter(([k])=>!k.startsWith('__')))}));
  const selectedDecisionKeys=situation.profile==='DILEMMA'&&step==='decision'?readSelectedDecisionKeys(context.find(d=>d.step==='decision')?.fields.selected):[];
- const reviewFields=definition.fields.map(field=>({...field,label:situation.profile==='DILEMMA'&&step==='decision'&&(field.key==='ensureB'||field.key==='ensureC')?personalDecisionConditionLabel(field.key,selectedDecisionKeys):field.label}));
+ const reviewFields=definition.fields.filter(field=>!(situation.profile==='DILEMMA'&&step==='decision'&&((field.key==='conditionB'&&!selectedDecisionKeys.includes('ab'))||(field.key==='conditionC'&&!selectedDecisionKeys.includes('ac'))))).map(field=>({...field,label:situation.profile==='DILEMMA'&&step==='decision'&&(field.key==='ensureB'||field.key==='ensureC')?personalDecisionConditionLabel(field.key,selectedDecisionKeys):field.label}));
  const fieldKeys=reviewFields.map(f=>f.key);
  const fieldReferences=Object.fromEntries(reviewFields.map(field=>[field.key,`${field.key} — ${field.label}`]));
  const responseFieldValues=situation.profile==='DILEMMA'?fieldKeys.map(key=>fieldReferences[key]):fieldKeys;
