@@ -57,3 +57,13 @@ test('personal injection step contains only interface state, not a hardcoded met
 test('personal decision compares accepted injections instead of asking for new variants',()=>{
  assert.deepEqual(definitionFor('decision','DILEMMA')!.fields.map(field=>field.key),['selected','finalInjection','reason','conditionB','ensureB','conditionC','ensureC']);
 });
+test('personal practice check uses direct action language from its own route',()=>{
+ const trial=definitionFor('trial','DILEMMA')!;
+ assert.equal(trial.fields.find(field=>field.key==='selectedAssumption')?.label,'Какую посылку или решение проверяет это действие?');
+ assert.equal(trial.fields.find(field=>field.key==='transfer')?.label,'Как это действие связано с реальной рабочей ситуацией?');
+ assert.equal(trial.fields.find(field=>field.key==='repeat')?.label,'При каких условиях нужно повторить или изменить проверку?');
+ assert.ok(trial.fields.every(field=>!field.label.toLocaleLowerCase('ru').includes('проб')));
+ const result=definitionFor('result','DILEMMA')!;
+ assert.ok(result.fields.find(field=>field.key==='next')?.options?.includes('Повторить проверку на практике'));
+ assert.ok(result.fields.every(field=>!field.options?.some(option=>option.toLocaleLowerCase('ru').includes('проб'))));
+});

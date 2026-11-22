@@ -32,5 +32,5 @@ test('repeated notices are collapsed without removing learner answers or changin
   const turns = [{id:'p1',authorRole:'PARTICIPANT',content:'мало заявок через интернет'},...['e1','e2','e3'].map(id=>({id,authorRole:'SERVICE',content}))];
   assert.deepEqual(visibleMentorTurns(turns).map(t=>t.id), ['p1','e3']);
   assert.equal(turns.length,4);
-  assert.deepEqual(visibleMentorTurns([...turns,{id:'m1',authorRole:'MENTOR',content:'Новая самостоятельная проба'}]).map(t=>t.id), ['p1','m1']);
+  assert.deepEqual(visibleMentorTurns([...turns,{id:'m1',authorRole:'MENTOR',content:'Новая самостоятельная проверка'}]).map(t=>t.id), ['p1','m1']);
 });

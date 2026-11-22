@@ -55,7 +55,7 @@ export function ReviewControl({id,initial,compact=false,disabled=false}:{id:stri
     <p>{gap.impact}</p><p><strong>Вопрос для самопроверки: </strong>{gap.question}</p>
    </div>)}
    {blocking.length>0?<p>Откройте поля по ссылкам, дополните данные, нажмите «Сохранить шаг» и вернитесь к кнопке «Запросить разбор OpenAI». Повторная проверка использует новые записи.</p>:<>
-    {Object.entries({problem:'Проблема',contradiction:'Противоречие',decision:'Выбранное решение',trial:'Рабочая проба',result:'Результат'}).map(([key,label])=><section key={key}><h3 className="text-lg font-bold">{label}</h3><p className="whitespace-pre-wrap">{report.summary[key as keyof typeof report.summary]}</p></section>)}
+    {Object.entries({problem:'Проблема',contradiction:'Противоречие',decision:'Выбранное решение',trial:'Проверка решения на практике',result:'Результат'}).map(([key,label])=><section key={key}><h3 className="text-lg font-bold">{label}</h3><p className="whitespace-pre-wrap">{report.summary[key as keyof typeof report.summary]}</p></section>)}
     <section><h3 className="text-lg font-bold">Содержательная оценка решения</h3><p>{report.assessment.conclusion}</p>
     {(['strengths','risks','recommendations'] as const).map((key,i)=><div key={key} className="mt-4"><h4 className="font-semibold">{['Сильные стороны','Ограничения и риски','Что улучшить'][i]}</h4><ul className="list-disc pl-5">{report.assessment[key].map((text,n)=><li key={n}>{text}</li>)}</ul></div>)}</section>
    </>}

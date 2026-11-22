@@ -35,14 +35,14 @@ const legacySteps: Record<string, StepDefinition> = {
   {key:'preserve',label:'Что необходимо сохранить'},{key:'risks',label:'Риски, неизвестное и меры защиты'},
   {key:'choice',label:'Выбор',options:['Не выбран','Вариант 1','Вариант 2','Дополнительный вариант','Отказ от выбора']},
   {key:'reason',label:'Обоснование выбора или отказа'}]},
- trial:{title:'4.5 · Рабочая проба',fields:[
+ trial:{title:'4.5 · Проверка решения на практике',fields:[
   {key:'hypothesis',label:'Гипотеза: если действие X, то ожидаю Y, потому что Z'},
   {key:'action',label:'Действие: кто, что, где и когда'},
   {key:'authority',label:'Граница полномочий'},{key:'protection',label:'Допустимый риск и меры защиты'},
   {key:'supportIndicator',label:'Что поддержит гипотезу'},{key:'weakenIndicator',label:'Что ослабит гипотезу'},
   {key:'deadline',label:'Когда вернуться с результатом'},{key:'support',label:'Необходимые условия и поддержка'},
-  {key:'transfer',label:'Чем рабочая проба отличается от учебного упражнения'},
-  {key:'repeat',label:'Условия следующей или повторной пробы'},
+  {key:'transfer',label:'Как это действие связано с реальной рабочей ситуацией'},
+  {key:'repeat',label:'Условия следующей или повторной проверки'},
   {key:'status',label:'Состояние',options:['Запланирована','Нужны полномочия','Есть препятствие','Выполнена']},
   {key:'obstacle',label:'Препятствие или причина невозможности'}]},
  result:{title:'4.6 · Результат',fields:[
@@ -52,7 +52,7 @@ const legacySteps: Record<string, StepDefinition> = {
   {key:'method',label:'Способ: что изменилось в действиях'},
   {key:'transfer',label:'Перенос: применение в рабочей ситуации'},
   {key:'effect',label:'Эффект: изменения в работе и основания вывода'},
-  {key:'next',label:'Следующий шаг',options:['Наблюдать','Изменить пробу','Вернуться к исследованию','Завершить']},
+  {key:'next',label:'Следующий шаг',options:['Наблюдать','Изменить проверку','Вернуться к исследованию','Завершить']},
   {key:'reason',label:'Почему выбран этот следующий шаг'}]},
  feedback:{title:'4.7 · Подготовка обратной связи',
  note:'Это ваш закрытый план обратной связи. Сохранение не отправляет его другим людям. Совместный доступ в этой версии ещё не включён.',
@@ -80,8 +80,8 @@ export const steps:Record<string,StepDefinition>={
  assumptions:{title:'4 · Выявление исходных посылок',fields:['ab','ac','bd','cd','conflict'].flatMap(key=>[text(key,assumptionLabels[key],undefined),text(key+'Source','На чём основаны посылки: наблюдения, правила, предположения?',undefined)])},
  'assumption-check':{title:'5 · Проверка исходных посылок',fields:[text('selected','Какую посылку и связь проверяете?'),text('support','Какие факты поддерживают посылку?'),text('counter','Какие есть исключения или противоречащие наблюдения?'),text('conditions','В каких условиях посылка верна, а в каких требует пересмотра?'),text('unknown','Что неизвестно и как это проверить?'),choice('state','Состояние посылки',['Не проверено','Есть основания','Есть основания сомневаться','Недостаточно данных']),text('behavior','Что вы замечаете в текущем поведении?',['IMMUNITY']),text('history','Когда возникло убеждение и применимо ли оно сейчас?',['IMMUNITY'])]},
  decision:{...legacySteps.decision,title:'6 · Поиск и обоснование решения',fields:[...legacySteps.decision.fields.map(f=>({...f,required:!['optionB','optionC'].includes(f.key)})),text('link','Какую связь и исходную посылку меняет решение?'),text('ensureB','D* обеспечит B, потому что…'),text('ensureC','D* обеспечит C, потому что…'),text('ensureA','Как сохранение B и C помогает достичь A?')]},
- trial:{...legacySteps.trial,title:'7 · План рабочей пробы',fields:[text('selectedAssumption','Какую посылку или решение проверяет проба?'),...legacySteps.trial.fields.map(f=>({...f,required:f.key!=='obstacle'})),text('partner','С кем обсудите достаточность и допустимость испытания?',['IMMUNITY'])]},
- result:{...legacySteps.result,title:'8 · Результат и пересмотр',fields:[...legacySteps.result.fields.map(f=>({...f,required:true,options:f.key==='next'?['Наблюдать','Повторить пробу','Изменить решение','Пересмотреть посылку','Вернуться к туче','Завершить']:f.options})),text('needB','Что произошло с потребностью B?'),text('needC','Что произошло с потребностью C?'),text('goal','Как изменилось достижение A?'),text('assumption','Что выяснилось о выбранной посылке?')]},
+ trial:{...legacySteps.trial,title:'7 · План проверки решения на практике',fields:[text('selectedAssumption','Какую посылку или решение проверяет это действие?'),...legacySteps.trial.fields.map(f=>({...f,required:f.key!=='obstacle'})),text('partner','С кем обсудите достаточность и допустимость испытания?',['IMMUNITY'])]},
+ result:{...legacySteps.result,title:'8 · Результат и пересмотр',fields:[...legacySteps.result.fields.map(f=>({...f,required:true,options:f.key==='next'?['Наблюдать','Повторить проверку на практике','Изменить решение','Пересмотреть посылку','Вернуться к туче','Завершить']:f.options})),text('needB','Что произошло с потребностью B?'),text('needC','Что произошло с потребностью C?'),text('goal','Как изменилось достижение A?'),text('assumption','Что выяснилось о выбранной посылке?')]},
  feedback:{...legacySteps.feedback,title:'9 · Обратная связь',fields:[...legacySteps.feedback.fields,text('target','К какому элементу Тучи, связи, посылке или результату относится замечание?'),text('evidence','Какое наблюдение послужило основанием?'),text('criterion','Какой критерий применён и в чём затруднение?'),text('question','Какой вопрос или следующее действие предлагается?'),choice('response','Ваше решение',['Не выбрано','Принять','Изменить','Обоснованно отклонить']),text('reason','Почему выбрано это решение?')]},
  practice:{title:'10 · Самостоятельное построение новой тучи',fields:[text('episode','Другой эпизод: кто, что, когда, где?'),text('actionA','D · Действие'),text('actionB','D′ · Действие'),text('needA','B · Потребность'),text('needB','C · Потребность'),text('goal','A · Общая цель'),text('logic','Объясните необходимость связей и конфликт (для иммунитета — угрозу B со стороны D′)'),text('assumption','Выявите исходную посылку и предложите её проверку'),choice('assistance','Какую помощь использовали?',['Без содержательных подсказок','Подсказки сервиса','Партнёр или преподаватель','ИИ','Несколько видов помощи']),text('reflection','Что удалось объяснить самостоятельно, а что пока вызывает затруднения?')]}
 };
@@ -122,8 +122,18 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
    ?[
     {...text('injections','Принятые решения для предположений'),required:false},
     {...text('assumptionKeys','Список предположений в работе'),required:false},
-    {...text('routeVersion','Версия маршрута работы с предположениями'),required:false},
+   {...text('routeVersion','Версия маршрута работы с предположениями'),required:false},
    ]
+   :step==='trial'&&profile==='DILEMMA'
+    ?d.fields.map(field=>field.key==='selectedAssumption'
+     ?{...field,label:'Какую посылку или решение проверяет это действие?'}
+     :field.key==='transfer'
+      ?{...field,label:'Как это действие связано с реальной рабочей ситуацией?'}
+      :field.key==='repeat'
+       ?{...field,label:'При каких условиях нужно повторить или изменить проверку?'}
+       :field)
+   :step==='result'&&profile==='DILEMMA'
+    ?d.fields
    :step==='decision'&&profile==='DILEMMA'
     ?[
      text('selected','Выбранные решения-кандидаты'),

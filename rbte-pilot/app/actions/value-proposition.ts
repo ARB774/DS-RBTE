@@ -45,7 +45,7 @@ export async function createValuePropositionProjectAction(formData: FormData): P
     nextStep: stageOpening(parsed.data.startState),
     openGap: parsed.data.existingContext
       ? "Восстановить последний принятый рабочий продукт и один открытый разрыв из контекста продолжения."
-      : "Получить первую самостоятельную пробу по критерию этапа.",
+      : "Получить первый результат самостоятельной проверки по критерию этапа.",
     stopOrReturnCondition: "Вернуться к владельцу входа, если новая версия противоречит ранее принятому рабочему продукту.",
   });
   if (parsed.data.existingContext) {

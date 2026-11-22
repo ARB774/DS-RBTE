@@ -70,7 +70,7 @@ export default async function Dashboard() {
                       4.3 Туча
                     </Link>
                     <Link href={`/situations/${r.id}/trial`} className="btn btn-ghost text-sm">
-                      4.5 Проба
+                      4.5 Проверка решения
                     </Link></>}
                   </div>
                 </div>

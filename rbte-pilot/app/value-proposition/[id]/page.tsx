@@ -109,7 +109,7 @@ export default async function ValuePropositionProjectPage({ params, searchParams
           <div className="mt-4 space-y-3">
           <dl className="text-sm space-y-3">
             <div><dt className="text-[#6b7280]">Что учится делать участник</dt><dd>{project.model || stageDefinition.workProduct}</dd></div>
-            <div><dt className="text-[#6b7280]">Критерий текущей пробы</dt><dd>{project.assessment || stageDefinition.acceptance}</dd></div>
+            <div><dt className="text-[#6b7280]">Критерий текущей проверки</dt><dd>{project.assessment || stageDefinition.acceptance}</dd></div>
             <div><dt className="text-[#6b7280]">Главный открытый разрыв</dt><dd>{project.openGap}</dd></div>
             <div><dt className="text-[#6b7280]">Следующий ход</dt><dd>{project.nextStep}</dd></div>
           </dl>
