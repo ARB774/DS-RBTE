@@ -25,9 +25,19 @@ export function checkStep(step:string,profile:Profile,fields:Record<string,strin
  for(const f of definition?.fields||[]){
   if(['cloud','practice'].includes(step)&&['goal','needA','needB','actionA','actionB'].includes(f.key))continue;
   if(step==='decision'&&fields.choice==='Отказ от выбора'&&!['choice','reason','risks'].includes(f.key))continue;
+  if(profile==='DILEMMA'&&step==='trial'){
+   const stage=fields.stage;
+   if(stage==='Действие уже выполнено'&&f.key!=='stage')continue;
+   if(stage==='Готовлю ближайшее выполнение'&&!['stage','situationAction','expectation','riskLevel','riskBoundary'].includes(f.key))continue;
+   if(stage==='Готовлю ближайшее выполнение'&&f.key==='riskBoundary'&&fields.riskLevel!=='Есть ограниченный риск')continue;
+   if(stage==='Сначала нужно изменить условия'&&!['stage','conditionChange'].includes(f.key))continue;
+   if(!stage&&f.key!=='stage')continue;
+  }
   const value=fields[f.key]?.trim();
   if(f.required&&(!value||['Не проверено','Не выбран','Не выбрано','Нужно уточнить','Не знаю'].includes(value)))issues.push({field:f.key,criterion:f.label,observation:value||'Ответ пока не записан',question:'Уточните: '+f.label,sourceIds:f.sourceIds});
  }
+ if(profile==='DILEMMA'&&step==='trial'&&fields.stage==='Готовлю ближайшее выполнение'&&fields.riskLevel==='Есть ограниченный риск'&&!fields.riskBoundary?.trim())issues.push({field:'riskBoundary',criterion:'Для указанного риска задана наблюдаемая граница остановки',observation:'Граница риска пока не записана',question:'При каком наблюдаемом признаке действие нужно остановить?'});
+ if(profile==='DILEMMA'&&step==='trial'&&fields.stage==='Сначала нужно изменить условия'&&!fields.conditionChange?.trim())issues.push({field:'conditionChange',criterion:'Названо условие, которое необходимо изменить до действия',observation:'Условие пока не записано',question:'Что именно нужно изменить до выполнения выбранного решения?'});
  if(profile==='DILEMMA'&&step==='assumption-check'){
   const keys=readAssumptionKeys(fields.assumptionKeys),injections=readInjections(fields.injections);
   if(!keys.length)issues.push({field:'assumptionKeys',criterion:'Есть исходные предположения для работы',observation:'Список предположений не передан',question:'Вернитесь к предыдущему шагу и сохраните исходные предположения.'});
