@@ -47,9 +47,14 @@ test('personal dilemma forms one injection for every assumption before choosing'
  assert.match(assistantSpecification,/Явный отказ руководствоваться убеждением[\s\S]*частным случаем второго основания/);
  assert.match(assistantSpecification,/Мы сами научимся достаточно быстро разрабатывать и\s+тестировать без ИИ/);
  assert.match(workflowForm,/Сохранить и проверить/);
+ assert.match(workflowForm,/personalStepComplete\?'btn btn-ghost':'btn btn-primary'/);
+ assert.match(workflowForm,/personalStepComplete\?<Link className="btn btn-primary ml-auto"/);
  assert.match(workflowForm,/Помощник подтвердил: каждая инъекция опровергает соответствующее убеждение/);
  assert.match(assistantSpecification,/Сценарий 15\. Помощник не возвращает участника к проверке убеждения/);
  assert.match(assistantSpecification,/выбрать наилучшую инъекцию либо их комбинацию/);
+ assert.match(assistantSpecification,/после снятия её исходной\s+посылки участник формулирует `C\*`/);
+ assert.match(assistantSpecification,/Выбранное `D\*` должно обеспечивать актуальную пару условий:[\s\S]*`B\*` и `C`[\s\S]*`B` и `C\*`[\s\S]*`B\*` и `C\*`/);
+ assert.match(assistantSpecification,/не требует сохранить заменённое условие/);
  assert.doesNotMatch(assistantSpecification,/Почему вы решили поставить под сомнение это\s+убеждение/);
  assert.match(workflowForm,/personalReviewReady/);
  assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
