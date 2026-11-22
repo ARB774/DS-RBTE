@@ -12,13 +12,14 @@ const input={step:'logic',stepTitle:'4 · Проверка связей',questio
 
 test('separate assistant window answers from MCP evidence without checking or changing the step',async()=>{
  let body:any;
- const result=await answerDilemmaAssistantHelp(input,{key:'fake',model:'fake',dilemmaModel:'gpt-5.4'},(async(_url,init)=>{
+ const result=await answerDilemmaAssistantHelp(input,{key:'fake',model:'fake',dilemmaModel:'gpt-5.6'},(async(_url,init)=>{
   body=JSON.parse(String(init?.body));
   return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({answer:'Объясните каждую связь конструкцией «для того чтобы — необходимо — потому что».',sourceIds:[methodSource.id]})}]}]}));
  }) as typeof fetch,async()=>[methodSource as any]);
  assert.match(body.instructions,/отдельном справочном окне/);
  assert.match(body.instructions,/не является формальной проверкой/);
  assert.doesNotMatch(body.instructions,/проверен успешно|измени поле/);
+ assert.deepEqual(body.reasoning,{effort:'none'});
  const sent=JSON.parse(body.input);
  assert.equal(sent.question,input.question);
  assert.equal(sent.currentFields.abReason,'Потому что…');
