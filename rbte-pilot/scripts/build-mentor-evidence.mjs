@@ -62,7 +62,7 @@ addFull('DS-RBTE.CORE', paths.core, ['*']);
 addFull('DS-RBTE.STATE', paths.state, ['*']);
 addFull('DS-RBTE.CLOUD-DISPLAY', paths.cloud, ['S5']);
 const dilemmaStages = [
-  'DILEMMA.actions', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions',
+  'DILEMMA.details', 'DILEMMA.actions', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions',
   'DILEMMA.assumption-check', 'DILEMMA.decision', 'DILEMMA.trial',
   'DILEMMA.result', 'DILEMMA.feedback', 'DILEMMA.practice',
 ];

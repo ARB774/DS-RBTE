@@ -43,6 +43,7 @@
     "sha256": "8577a41b4635f8980f1c61e3992868e5c734e19a2e7a82d46d86739112fbf1fc",
     "range": "full",
     "stages": [
+      "DILEMMA.details",
       "DILEMMA.actions",
       "DILEMMA.cloud",
       "DILEMMA.logic",
@@ -64,6 +65,7 @@
     "sha256": "220b7c4ff6670729c5d3377e0380492f1a9f14ff9b21b8c4e9b2cd16ae451ba0",
     "range": "full",
     "stages": [
+      "DILEMMA.details",
       "DILEMMA.actions",
       "DILEMMA.cloud",
       "DILEMMA.logic",

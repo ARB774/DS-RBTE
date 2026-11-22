@@ -51,7 +51,9 @@ test('personal dilemma reads its assistant documentation through the same verifi
       await writeFile(join(cache, source.sha256 + '.json'), JSON.stringify({ text, fetchedAt: '2026-11-14', origin: 'github' }));
     }
     const sources = await retrieveDilemmaAssistantMethods('cloud');
+    const detailsSources = await retrieveDilemmaAssistantMethods('details');
     assert.deepEqual(sources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
+    assert.deepEqual(detailsSources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
     assert.ok(sources.some(s => s.id === 'DS-RBTE.ASSISTANT-SKILL' && s.text.includes('помощник')));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /Для каждого принятого участником предположения активная роль помогает\s+сформулировать инъекцию `D\*`/.test(s.text)));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /Единственный критерий этой проверки:[\s\S]*действительно ли исходное убеждение становится неверным/.test(s.text)));
