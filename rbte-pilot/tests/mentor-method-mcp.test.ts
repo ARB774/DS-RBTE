@@ -53,10 +53,10 @@ test('personal dilemma reads its assistant documentation through the same verifi
     const sources = await retrieveDilemmaAssistantMethods('cloud');
     assert.deepEqual(sources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
     assert.ok(sources.some(s => s.id === 'DS-RBTE.ASSISTANT-SKILL' && s.text.includes('помощник')));
-    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /не\s+повторяет требование по\s+кругу/.test(s.text)));
-    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('до явного перехода к разделу 6.5')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /Для каждого\s+предположения она помогает сформулировать инъекцию `D\*`/.test(s.text)));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('на этом этапе запрещены')));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /почему нельзя часть задач выполнять по\s+`D`/.test(s.text)));
-    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('не требуется доказать объективную или')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('выбрать наилучшую инъекцию либо их комбинацию')));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('Одно исходное предположение может поддерживать несколько связей Тучи')));
     assert.ok(sources.every(s => s.origin === 'verified-cache' && s.excerptSha256.length === 64));
   } finally {
