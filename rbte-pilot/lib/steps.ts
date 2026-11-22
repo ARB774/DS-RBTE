@@ -4,6 +4,7 @@ import type { Profile } from './cloud-method';
 import { normalizeDilemmaReviewReplies } from './dilemma-review-replies';
 export type Field = { key: string; label: string; profiles?: string[]; required?: boolean; sourceIds?:string[]; hint?: string; options?: string[] };
 export type StepDefinition = { title: string; fields: Field[]; note?: string };
+export const dilemmaInjectionRouteVersion='toc-m-006-injections-v1';
 const legacySteps: Record<string, StepDefinition> = {
  explore: { title: '4.2 · Исследование', fields: [
   {key:'observations',label:'Наблюдения и источники'}, {key:'explanations',label:'Объяснения и альтернативные объяснения'},
@@ -106,7 +107,28 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
  if(step==='actions'&&profile!=='DILEMMA')return undefined;
  const d=steps[step];if(!d||!Object.hasOwn(tocProfiles,profile))return undefined;
  const p=profile as Profile;
- const sourceFields=step==='assumptions'&&profile==='DILEMMA'?logicLinkKeys.map(key=>text(key,dilemmaAssumptionLabels[key])):step==='assumption-check'&&profile==='DILEMMA'?[text('selected','Выбранное исходное предположение'),{...text('response','Ваш ответ помощнику'),required:false},{...text('dialogue','Диалог с помощником'),required:false},{...choice('completionConfirmed','Подтверждение предложенного результата',['false','true']),required:false}]:d.fields;
+ const sourceFields=step==='assumptions'&&profile==='DILEMMA'
+  ?logicLinkKeys.map(key=>text(key,dilemmaAssumptionLabels[key]))
+  :step==='assumption-check'&&profile==='DILEMMA'
+   ?[
+    {...text('selected','Текущее исходное предположение'),required:false},
+    {...text('response','Ваш ответ помощнику'),required:false},
+    {...text('dialogue','Диалог о решении для текущего предположения'),required:false},
+    {...text('candidate','Текущая формулировка решения-кандидата'),required:false},
+    {...text('injections','Принятые решения для предположений'),required:false},
+    {...text('assumptionKeys','Список предположений в работе'),required:false},
+    {...text('routeVersion','Версия маршрута работы с предположениями'),required:false},
+    {...choice('completionConfirmed','Подтверждение решения-кандидата',['false','true']),required:false},
+   ]
+   :step==='decision'&&profile==='DILEMMA'
+    ?[
+     text('selected','Выбранные решения-кандидаты'),
+     text('finalInjection','Выбранное решение или комбинация решений'),
+     text('reason','Почему выбрано это решение или сочетание?'),
+     text('ensureB','Как решение сохраняет потребность B?'),
+     text('ensureC','Как решение сохраняет потребность C?'),
+    ]
+    :d.fields;
  return {...d,title:profile==='DILEMMA'?dilemmaTitle(step):d.title,fields:sourceFields.filter(f=>(!f.profiles||f.profiles.includes(profile))&&!(step==='cloud'&&profile==='DILEMMA'&&!['actionA','actionB','needA','needB','goal'].includes(f.key))).map(f=>{
   const node=({goal:'A',needA:'B',needB:'C',actionA:'D',actionB:'Dp'} as const)[f.key as 'goal'];
   const optionalAssumption=step==='assumptions'&&((profile==='IMMUNITY'&&!f.key.startsWith('cd'))||(profile==='CONFLICT'&&['ab','ac','abSource','acSource'].includes(f.key)));

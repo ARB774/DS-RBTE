@@ -16,6 +16,8 @@ test('personal step numbering leaves other profile titles intact',()=>{
  assert.equal(definitionFor('cloud','DILEMMA')?.title,'3 · Туча');
  assert.equal(definitionFor('logic','DILEMMA')?.title,'4 · Проверка связей');
  assert.equal(definitionFor('practice','DILEMMA')?.title,'11 · Самостоятельная практика');
+ assert.equal(definitionFor('assumption-check','DILEMMA')?.title,'6 · Решения для предположений');
+ assert.equal(definitionFor('decision','DILEMMA')?.title,'7 · Выбор решения');
  assert.equal(definitionFor('cloud','CONFLICT')?.title,'2 · Построение грозовой тучи');
  assert.equal(definitionFor('actions','IMMUNITY'),undefined);
 });
@@ -46,9 +48,12 @@ test('assumptions reuse all seven accepted logic reasons without asking for sour
  for(const key of logicLinkKeys)assert.equal(seeded[key],logic[key+'Reason']);
  assert.equal(seedDilemmaAssumptions({ab:'Уточнённая формулировка'},logic).ab,'Уточнённая формулировка');
 });
-test('personal assumption challenge contains only interface fields, not a hardcoded method questionnaire',()=>{
+test('personal injection step contains only interface state, not a hardcoded method questionnaire',()=>{
  const fields=definitionFor('assumption-check','DILEMMA')!.fields;
- assert.deepEqual(fields.map(field=>field.key),['selected','response','dialogue']);
- assert.ok(fields.filter(field=>field.key!=='selected').every(field=>field.required===false));
+ assert.deepEqual(fields.map(field=>field.key),['selected','response','dialogue','candidate','injections','assumptionKeys','routeVersion','completionConfirmed']);
+ assert.ok(fields.every(field=>field.required===false));
  assert.ok(fields.every(field=>!/факты|исключения|условия|неизвестно/iu.test(field.label)));
+});
+test('personal decision compares accepted injections instead of asking for new variants',()=>{
+ assert.deepEqual(definitionFor('decision','DILEMMA')!.fields.map(field=>field.key),['selected','finalInjection','reason','ensureB','ensureC']);
 });
