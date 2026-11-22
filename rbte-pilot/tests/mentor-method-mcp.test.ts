@@ -60,6 +60,8 @@ test('personal dilemma reads its assistant documentation through the same verifi
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /почему нельзя часть задач выполнять по\s+`D`/.test(s.text)));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('выбрать наилучшую инъекцию либо их комбинацию')));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('Одно исходное предположение может поддерживать несколько связей Тучи')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('### 6.8. Справочный диалог с помощником')));
+    assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && s.text.includes('не запускает и не завершает проверку шага')));
     assert.ok(sources.every(s => s.origin === 'verified-cache' && s.excerptSha256.length === 64));
   } finally {
     if (previous === undefined) delete process.env.MENTOR_KNOWLEDGE_CACHE;
