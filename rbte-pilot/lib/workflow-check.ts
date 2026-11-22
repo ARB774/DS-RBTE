@@ -1,7 +1,7 @@
 import { checkActions } from './dilemma-actions';
 import type { LinkReview } from './dilemma-review';
 import { TOC_VERSION,tocProfiles,tocSourceIds } from './pack-toc';
-import { definitionFor, stepOrder } from './steps';
+import { definitionFor, readSelectedDecisionKeys, stepOrder } from './steps';
 import { checkCloud, nodeFields, type Profile, type MethodIssue } from './cloud-method';
 export type AssistantMcpRetrieval={transport:'mcp-stdio';server:'pilot-mentor-methods';commit:string;sourceIds:string[]};
 export type DilemmaRevisionField='goal'|'needA'|'needB'|'actionA'|'actionB';
@@ -34,8 +34,10 @@ export function checkStep(step:string,profile:Profile,fields:Record<string,strin
   else if(keys.some(key=>!injections[key]))issues.push({field:'injections',criterion:'Для каждого исходного убеждения записана инъекция',observation:`Заполнено ${keys.filter(key=>Boolean(injections[key])).length} из ${keys.length}`,question:'Запишите инъекцию в правой колонке напротив каждого исходного убеждения.'});
  }
  if(profile==='DILEMMA'&&step==='decision'){
-  let selected:string[]=[];try{const parsed:unknown=JSON.parse(fields.selected||'[]');if(Array.isArray(parsed)&&parsed.every(value=>typeof value==='string'))selected=parsed;}catch{/* The issue below explains the invalid interface value. */}
+  const selected=readSelectedDecisionKeys(fields.selected);
   if(!selected.length)issues.push({field:'selected',criterion:'Выбрано хотя бы одно решение-кандидат',observation:'Решение пока не выбрано',question:'Выберите лучшее решение либо несколько решений для комбинации.'});
+  if(selected.includes('ab')&&!fields.conditionB?.trim())issues.push({field:'conditionB',criterion:'Сформулировано новое необходимое условие B*',observation:'Новое условие B* пока не записано',question:'Какое необходимое условие B* заменяет прежнее B после того, как исходная посылка A–B поставлена под сомнение?'});
+  if(selected.includes('ac')&&!fields.conditionC?.trim())issues.push({field:'conditionC',criterion:'Сформулировано новое необходимое условие C*',observation:'Новое условие C* пока не записано',question:'Какое необходимое условие C* заменяет прежнее C после того, как исходная посылка A–C поставлена под сомнение?'});
  }
  if(profile!=='DILEMMA'&&step==='assumptions')for(const key of ['ab','ac','bd','cd','conflict']){
   if((fields[key]||'').split('\n').some(line=>/^\s*потому\s+что(?=\s|[.,:]|$)/iu.test(line)))issues.push({field:key,criterion:'Самостоятельная запись исходной посылки',observation:fields[key],question:'Оставьте само проверяемое утверждение без префикса «потому что». Объясняет ли оно связь обоих элементов?',sourceIds:['TOC.M.004','TOC.WP.003']});

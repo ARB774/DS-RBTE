@@ -5,14 +5,14 @@ import { normalizeDilemmaReviewReplies } from './dilemma-review-replies';
 export type Field = { key: string; label: string; profiles?: string[]; required?: boolean; sourceIds?:string[]; hint?: string; options?: string[] };
 export type StepDefinition = { title: string; fields: Field[]; note?: string };
 export const dilemmaInjectionRouteVersion='toc-m-006-injections-v1';
-export const dilemmaDecisionReviewVersion='decision-conditions-v2';
+export const dilemmaDecisionReviewVersion='decision-solution-diagram-v3';
 export function isCurrentDecisionReviewVersion(version:string|undefined){return Boolean(version?.endsWith(' / '+dilemmaDecisionReviewVersion));}
 export function readSelectedDecisionKeys(value:string|undefined){
  try{const parsed:unknown=JSON.parse(value||'[]');return Array.isArray(parsed)?parsed.filter((key):key is string=>typeof key==='string'):[];}catch{return [];}
 }
 export function personalDecisionConditionLabel(field:'ensureB'|'ensureC',selectedKeys:string[]){
  const isB=field==='ensureB',replaced=selectedKeys.includes(isB?'ab':'ac'),condition=isB?'B':'C';
- return replaced?`Какое новое необходимое условие ${condition}* заменяет ${condition} и как решение обеспечивает ${condition}*?`:`Как решение обеспечивает необходимое условие ${condition}?`;
+ return `Почему решение D* приводит к необходимому условию ${condition}${replaced?'*':''}?`;
 }
 const legacySteps: Record<string, StepDefinition> = {
  explore: { title: '4.2 · Исследование', fields: [
@@ -129,7 +129,9 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
      text('selected','Выбранные решения-кандидаты'),
      text('finalInjection','Выбранное решение или комбинация решений'),
      text('reason','Почему выбрано это решение или сочетание?'),
+     {...text('conditionB','Новое необходимое условие B*'),required:false},
      text('ensureB',personalDecisionConditionLabel('ensureB',[])),
+     {...text('conditionC','Новое необходимое условие C*'),required:false},
      text('ensureC',personalDecisionConditionLabel('ensureC',[])),
     ]
     :d.fields;

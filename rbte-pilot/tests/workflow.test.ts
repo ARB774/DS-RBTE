@@ -21,6 +21,7 @@ const dilemmaDocs=async(step:string)=>dilemmaAssistantEvidence(step).map(source=
 test('personal dilemma forms one injection for every assumption before choosing',async()=>{
  const draftsAction=await readFile(new URL('../app/actions/drafts.ts',import.meta.url),'utf8');
  const workflowForm=await readFile(new URL('../app/components/workflow-form.tsx',import.meta.url),'utf8');
+ const solutionDiagram=await readFile(new URL('../app/components/solution-diagram.tsx',import.meta.url),'utf8');
  const assistantSpecification=await readFile(new URL('../../WP-45/ТЗ помощника по построению личной дилеммы.md',import.meta.url),'utf8');
  assert.match(draftsAction,/situation\.profile==='DILEMMA'&&step!=='assumptions'[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
  assert.doesNotMatch(draftsAction,/step==='assumption-check'[\s\S]*return \{version:savedVersion,report:checkStep/);
@@ -58,6 +59,12 @@ test('personal dilemma forms one injection for every assumption before choosing'
  assert.doesNotMatch(assistantSpecification,/Почему вы решили поставить под сомнение это\s+убеждение/);
  assert.match(workflowForm,/personalReviewReady/);
  assert.match(workflowForm,/personalDecisionConditionLabel\(field\.key,selectedDecisionKeys\)/);
+ assert.match(workflowForm,/showSolution\?<SolutionDiagram/);
+ assert.match(workflowForm,/Решение D\* и необходимые условия/);
+ assert.match(workflowForm,/Изменить B\*, C\* и решение D\* →/);
+ assert.match(solutionDiagram,/D\* · Решение/);
+ assert.match(solutionDiagram,/D\* → \{bName\}/);
+ assert.match(solutionDiagram,/D\* → \{cName\}/);
  assert.match(workflowForm,/obsoleteDecisionReview=personalDecision&&storedReport\?\.mode==='ai'&&!isCurrentDecisionReviewVersion/);
  assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
  assert.match(workflowForm,/activeLogicKey=issueLogicKey\|\|\(personalLogic&&dirty\?logicLinkKeys\[logicCursor\]/);
@@ -82,7 +89,9 @@ test('personal dilemma application checks only interface completeness',()=>{
 test('current step checks do not require future decisions or results',()=>{
  assert.deepEqual(checkStep('cloud','DILEMMA',{...cloud,actionsCheck:'Да',needsCheck:'Да',goalCheck:'Да'}).issues,[]);
  assert.ok(checkStep('logic','DILEMMA',{ab:'Не знаю'}).issues.some(i=>i.field==='ab'));
- assert.deepEqual(checkStep('decision','DILEMMA',{selected:'["ab"]',finalInjection:'Изолировать передаваемый фрагмент кода',reason:'Сохраняет скорость без передачи всей разработки',ensureB:'Секреты остаются внутри контура',ensureC:'ИИ ускоряет изолированную задачу'}).issues,[]);
+ assert.deepEqual(checkStep('decision','DILEMMA',{selected:'["ab"]',finalInjection:'Изолировать передаваемый фрагмент кода',reason:'Сохраняет скорость без передачи всей разработки',conditionB:'Сохранять коммерческую тайну бизнеса',ensureB:'Изоляция не раскрывает полный замысел',ensureC:'ИИ ускоряет изолированную задачу'}).issues,[]);
+ assert.ok(checkStep('decision','DILEMMA',{selected:'["ab"]',finalInjection:'Решение',reason:'Причина',ensureB:'Причина B',ensureC:'Причина C'}).issues.some(issue=>issue.field==='conditionB'));
+ assert.ok(!checkStep('decision','DILEMMA',{selected:'["ab"]',finalInjection:'Решение',reason:'Причина',conditionB:'Новое B*',ensureB:'Причина B',ensureC:'Причина C'}).issues.some(issue=>issue.field==='conditionC'));
 });
 test('freshness ignores check metadata and future steps but tracks upstream edits',()=>{
  const original=[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да'}}];
@@ -104,13 +113,15 @@ test('invalid fields and option values are rejected; caller cannot forge check m
 });
 test('personal decision replaces B or C labels when their necessity assumption is challenged',async()=>{
  assert.deepEqual(readSelectedDecisionKeys('["ab"]'),['ab']);
- assert.equal(personalDecisionConditionLabel('ensureB',['ab']),'Какое новое необходимое условие B* заменяет B и как решение обеспечивает B*?');
- assert.equal(personalDecisionConditionLabel('ensureC',['ab']),'Как решение обеспечивает необходимое условие C?');
+ assert.equal(personalDecisionConditionLabel('ensureB',['ab']),'Почему решение D* приводит к необходимому условию B*?');
+ assert.equal(personalDecisionConditionLabel('ensureC',['ab']),'Почему решение D* приводит к необходимому условию C?');
  let body:any;
- const report=await evaluateWorkflow('decision',{profile:'DILEMMA',signal:'эпизод'},[{step:'decision',fields:{selected:'["ab"]',finalInjection:'Новое решение',reason:'Меняет условие'}}],{key:'fake',model:'fake'},(async(_url,init)=>{body=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
+ const report=await evaluateWorkflow('decision',{profile:'DILEMMA',signal:'эпизод'},[{step:'decision',fields:{selected:'["ab"]',finalInjection:'Новое решение',reason:'Меняет условие',conditionB:'Новое B*',ensureB:'D* приводит к B*',ensureC:'D* приводит к C'}}],{key:'fake',model:'fake'},(async(_url,init)=>{body=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
  const input=JSON.parse(body.input);
- assert.equal(input.definition.fields.find((field:any)=>field.key==='ensureB').label,'Какое новое необходимое условие B* заменяет B и как решение обеспечивает B*?');
- assert.equal(input.definition.fields.find((field:any)=>field.key==='ensureC').label,'Как решение обеспечивает необходимое условие C?');
+ assert.equal(input.definition.fields.find((field:any)=>field.key==='conditionB').label,'Новое необходимое условие B*');
+ assert.equal(input.definition.fields.find((field:any)=>field.key==='conditionC'),undefined);
+ assert.equal(input.definition.fields.find((field:any)=>field.key==='ensureB').label,'Почему решение D* приводит к необходимому условию B*?');
+ assert.equal(input.definition.fields.find((field:any)=>field.key==='ensureC').label,'Почему решение D* приводит к необходимому условию C?');
  assert.equal(report.method?.version.endsWith(' / '+dilemmaDecisionReviewVersion),true);
  assert.equal(isCurrentDecisionReviewVersion(report.method?.version),true);
  assert.equal(isCurrentDecisionReviewVersion('DS-RBTE old-commit'),false);

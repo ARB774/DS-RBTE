@@ -55,5 +55,5 @@ test('personal injection step contains only interface state, not a hardcoded met
  assert.ok(fields.every(field=>!/факты|исключения|условия|неизвестно/iu.test(field.label)));
 });
 test('personal decision compares accepted injections instead of asking for new variants',()=>{
- assert.deepEqual(definitionFor('decision','DILEMMA')!.fields.map(field=>field.key),['selected','finalInjection','reason','ensureB','ensureC']);
+ assert.deepEqual(definitionFor('decision','DILEMMA')!.fields.map(field=>field.key),['selected','finalInjection','reason','conditionB','ensureB','conditionC','ensureC']);
 });
