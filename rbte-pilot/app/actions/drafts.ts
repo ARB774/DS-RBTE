@@ -5,7 +5,6 @@ import { requireUser } from '@/lib/session';
 import { persistDraft } from '@/lib/drafts';
 import { ownedWorkflow } from '@/lib/workflow-store';
 import { reviewWorkflow } from './workflow';
-import { allAssumptionInjectionsComplete,checkStep } from '@/lib/workflow-check';
 export async function saveDraft(id: string, step: string, version: number, fields: Record<string,string>, draftOnly=false) {
  const me=await requireUser();
  if(typeof draftOnly!=='boolean')return {error:'Некорректный режим сохранения'};
@@ -14,7 +13,6 @@ export async function saveDraft(id: string, step: string, version: number, field
   const savedVersion=await persistDraft(db,me.id,id,step,version,fields,draftOnly);
   if(!draftOnly){
    const {situation}=await ownedWorkflow(db,me.id,id);
-   if(situation.profile==='DILEMMA'&&step==='assumption-check'&&allAssumptionInjectionsComplete(fields))return {version:savedVersion,report:checkStep(step,situation.profile,fields)};
    if(situation.profile==='DILEMMA'&&step!=='assumptions'){
     const checked=await reviewWorkflow(id,step,savedVersion,true);
     return {version:checked.version??savedVersion,report:checked.report,reviewError:checked.error};

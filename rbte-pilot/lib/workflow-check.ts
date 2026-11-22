@@ -5,8 +5,7 @@ import { definitionFor, stepOrder } from './steps';
 import { checkCloud, nodeFields, type Profile, type MethodIssue } from './cloud-method';
 export type AssistantMcpRetrieval={transport:'mcp-stdio';server:'pilot-mentor-methods';commit:string;sourceIds:string[]};
 export type DilemmaRevisionField='goal'|'needA'|'needB'|'actionA'|'actionB';
-export type AssumptionDialogue={status:'question'|'injection-proposed';injection:string;summary:string};
-export type WorkflowCheck={mode:'local'|'ai';issues:MethodIssue[];note:string;dialogue?:AssumptionDialogue;acceptedRevisions?:Partial<Record<DilemmaRevisionField,string>>;method?:{version:string;methodId:string;sourceIds:string[]};semantic?:{status:'completed';retrieval:AssistantMcpRetrieval;links:LinkReview[];verification?:{model:string;passes:number}}};
+export type WorkflowCheck={mode:'local'|'ai';issues:MethodIssue[];note:string;acceptedRevisions?:Partial<Record<DilemmaRevisionField,string>>;method?:{version:string;methodId:string;sourceIds:string[]};semantic?:{status:'completed';retrieval:AssistantMcpRetrieval;links:LinkReview[];verification?:{model:string;passes:number}}};
 export function readAssumptionKeys(value:string|undefined):string[]{
  try{const parsed:unknown=JSON.parse(value||'[]');return Array.isArray(parsed)&&parsed.length<=20&&parsed.every(key=>typeof key==='string'&&key.length<=100)?[...new Set(parsed)]:[];}catch{return [];}
 }
@@ -32,7 +31,7 @@ export function checkStep(step:string,profile:Profile,fields:Record<string,strin
  if(profile==='DILEMMA'&&step==='assumption-check'){
   const keys=readAssumptionKeys(fields.assumptionKeys),injections=readInjections(fields.injections);
   if(!keys.length)issues.push({field:'assumptionKeys',criterion:'Есть исходные предположения для работы',observation:'Список предположений не передан',question:'Вернитесь к предыдущему шагу и сохраните исходные предположения.'});
-  else if(keys.some(key=>!injections[key])&&!keys.includes(fields.selected))issues.push({field:'selected',criterion:'Выбрано следующее предположение без решения',observation:fields.selected||'Предположение не выбрано',question:'Выберите следующее предположение, для которого нужно сформулировать решение.'});
+  else if(keys.some(key=>!injections[key]))issues.push({field:'injections',criterion:'Для каждого исходного убеждения записана инъекция',observation:`Заполнено ${keys.filter(key=>Boolean(injections[key])).length} из ${keys.length}`,question:'Запишите инъекцию в правой колонке напротив каждого исходного убеждения.'});
  }
  if(profile==='DILEMMA'&&step==='decision'){
   let selected:string[]=[];try{const parsed:unknown=JSON.parse(fields.selected||'[]');if(Array.isArray(parsed)&&parsed.every(value=>typeof value==='string'))selected=parsed;}catch{/* The issue below explains the invalid interface value. */}

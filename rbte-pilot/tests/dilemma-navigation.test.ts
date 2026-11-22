@@ -50,7 +50,7 @@ test('assumptions reuse all seven accepted logic reasons without asking for sour
 });
 test('personal injection step contains only interface state, not a hardcoded method questionnaire',()=>{
  const fields=definitionFor('assumption-check','DILEMMA')!.fields;
- assert.deepEqual(fields.map(field=>field.key),['selected','response','dialogue','candidate','injections','assumptionKeys','routeVersion','completionConfirmed']);
+ assert.deepEqual(fields.map(field=>field.key),['injections','assumptionKeys','routeVersion']);
  assert.ok(fields.every(field=>field.required===false));
  assert.ok(fields.every(field=>!/факты|исключения|условия|неизвестно/iu.test(field.label)));
 });

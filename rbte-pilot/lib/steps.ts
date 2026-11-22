@@ -111,14 +111,9 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
   ?logicLinkKeys.map(key=>text(key,dilemmaAssumptionLabels[key]))
   :step==='assumption-check'&&profile==='DILEMMA'
    ?[
-    {...text('selected','Текущее исходное предположение'),required:false},
-    {...text('response','Ваш ответ помощнику'),required:false},
-    {...text('dialogue','Диалог о решении для текущего предположения'),required:false},
-    {...text('candidate','Текущая формулировка решения-кандидата'),required:false},
     {...text('injections','Принятые решения для предположений'),required:false},
     {...text('assumptionKeys','Список предположений в работе'),required:false},
     {...text('routeVersion','Версия маршрута работы с предположениями'),required:false},
-    {...choice('completionConfirmed','Подтверждение решения-кандидата',['false','true']),required:false},
    ]
    :step==='decision'&&profile==='DILEMMA'
     ?[

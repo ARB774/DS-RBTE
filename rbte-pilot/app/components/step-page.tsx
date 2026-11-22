@@ -28,13 +28,10 @@ export async function StepPage({id,step}:{id:string;step:string}) {
  const assumptionChoices=sit.profile==='DILEMMA'&&['assumption-check','decision'].includes(step)?(definitionFor('assumptions','DILEMMA')?.fields||[]).map(field=>({key:field.key,label:field.label,value:assumptionFields[field.key]||''})).filter(choice=>choice.value.trim()):undefined;
  const currentInjectionRoute=injectionDraft?.fields.routeVersion===dilemmaInjectionRouteVersion;
  const injections=readInjections(currentInjectionRoute?injectionDraft?.fields.injections:undefined);
- const savedSelection=currentInjectionRoute?injectionDraft?.fields.selected||'':'';
- const nextAssumption=assumptionChoices?.find(choice=>!injections[choice.key]);
- const selectedAssumption=nextAssumption&&(assumptionChoices?.some(choice=>choice.key===savedSelection&&!injections[choice.key])?savedSelection:nextAssumption.key)||'';
  const initialFields=sit.profile==='DILEMMA'&&step==='assumptions'
   ?assumptionFields
   :sit.profile==='DILEMMA'&&step==='assumption-check'
-   ?{...(draft?.fields||{}),selected:selectedAssumption,response:currentInjectionRoute?draft?.fields.response||'':'',dialogue:currentInjectionRoute?draft?.fields.dialogue||'':'',candidate:currentInjectionRoute?draft?.fields.candidate||'':'',injections:JSON.stringify(injections),assumptionKeys:JSON.stringify(assumptionChoices?.map(choice=>choice.key)||[]),routeVersion:dilemmaInjectionRouteVersion,completionConfirmed:'false'}
+   ?{injections:JSON.stringify(injections),assumptionKeys:JSON.stringify(assumptionChoices?.map(choice=>choice.key)||[]),routeVersion:dilemmaInjectionRouteVersion}
    :draft?.fields||{};
  const injectionChoices=sit.profile==='DILEMMA'&&step==='decision'?assumptionChoices?.flatMap(choice=>injections[choice.key]?[{...choice,injection:injections[choice.key]}]:[])||[]:undefined;
  const allHistory=await db.select().from(revisions).where(eq(revisions.situationId,id)).orderBy(desc(revisions.number));
