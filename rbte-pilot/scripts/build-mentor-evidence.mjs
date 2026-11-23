@@ -64,7 +64,7 @@ addFull('DS-RBTE.CLOUD-DISPLAY', paths.cloud, ['S5']);
 const dilemmaStages = [
   'DILEMMA.details', 'DILEMMA.actions', 'DILEMMA.cloud', 'DILEMMA.logic', 'DILEMMA.assumptions',
   'DILEMMA.assumption-check', 'DILEMMA.decision', 'DILEMMA.trial',
-  'DILEMMA.result', 'DILEMMA.practice',
+  'DILEMMA.result',
 ];
 addFull('DS-RBTE.ASSISTANT-SKILL', paths.assistantSkill, dilemmaStages);
 addFull('DS-RBTE.DILEMMA.ASSISTANT-SPEC', paths.dilemmaAssistantSpecification, dilemmaStages);

@@ -31,7 +31,7 @@ const common:TocCriterion[]=[
 export function tocCriteriaForStep(profile:Profile,step:string):TocCriterion[]{
  if(profile==='DILEMMA')return [];
  const specific=tocProfiles[profile].criteria;
- if(['cloud','practice'].includes(step))return [...common,...specific];
+ if(step==='cloud')return [...common,...specific];
  if(step==='logic')return [{id:'seven-readings',text:'Отдельно проверяются четыре связи необходимости, несовместимость D/D′ в названных условиях и две перекрёстные угрозы. Для каждого ответа есть основание; согласие не заменяет факты.',sourceIds:['TOC.M.003','TOC.WP.004']},...specific];
  if(['assumptions','assumption-check'].includes(step))return [{id:'assumption-link',text:'Посылка относится к точной связи и обоим её элементам, не повторяет их. Самостоятельные утверждения разделены; запись после «потому что» хранится без этого префикса.',sourceIds:['TOC.M.004','TOC.WP.003','TOC.FM.004']},{id:'assumption-scope',text:'Проверяются область, данные за и против, исключения и ограничивающая роль. Личное убеждение не приписывается организации; гипотеза не объявляется заранее ложной.',sourceIds:['TOCT.6','TOC.D.008']},...specific];
  return [{id:'injection',text:'Решение описывает изменение действия, условия или правила и механизм одновременного обеспечения B и C. Компромисс и название инструмента сами по себе не являются инъекцией.',sourceIds:['TOC.M.003','TOC.WP.006','TOCT.7']},...specific];
