@@ -91,6 +91,7 @@ addSection('DS-RBTE.S11', tz, ['S11'], '### `S11`. Отчёт о разрабо�
 
 const packManifest = JSON.parse(readFileSync(join(app, 'lib/pack-toc-sources.json'), 'utf8'));
 const packStages = [
+  ['TOCT.13', dilemmaStages],
   ['TOC.M.003', ['S5', 'S6.1', 'S6.2', 'S6.3']],
   ['TOC.M.004', ['S6.1', 'S6.2', 'S6.3']],
   ['TOCT.6', ['S6.1', 'S6.2', 'S6.3']],

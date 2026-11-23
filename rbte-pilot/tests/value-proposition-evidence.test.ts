@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mentorDocumentationVersion, valuePropositionEvidence } from '../lib/value-proposition-evidence';
+import { dilemmaAssistantEvidence, mentorDocumentationVersion, valuePropositionEvidence } from '../lib/value-proposition-evidence';
 import { valuePropositionStages } from '../lib/value-proposition-route';
 import { readPinnedSource } from './pinned-source';
 import { createHash } from 'node:crypto';
@@ -38,6 +38,11 @@ test('cloud and assumptions receive Pack-TOC; S0 gets admission criteria rather 
   const admission = valuePropositionEvidence('S0');
   assert.ok(!admission.some(s => s.id.startsWith('TOC.')));
   assert.match(admission.find(s => s.id === 'DS-RBTE.S0')!.text, /доступ|данны/);
+});
+
+test('personal dilemma receives one canonical Pack-TOC pattern', () => {
+  const evidence = dilemmaAssistantEvidence('cloud').filter(source => source.repo === 'Victor57618/Pack-TOC');
+  assert.deepEqual(evidence.map(source => source.id), ['TOCT.13']);
 });
 
 test('current mentor documentation carries the previously accepted pilot corrections', () => {

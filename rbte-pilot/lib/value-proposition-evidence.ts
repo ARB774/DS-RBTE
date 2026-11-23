@@ -40,9 +40,10 @@ export function valuePropositionEvidence(stage: ValuePropositionStage) {
 
 export function dilemmaAssistantEvidence(step: string) {
   const evidence = evidenceForStage(`DILEMMA.${step}`, false);
+  const pack = evidence.filter(source => source.repo === 'Victor57618/Pack-TOC');
   if (!evidence.some(source => source.id === 'DS-RBTE.ASSISTANT-SKILL') ||
       !evidence.some(source => source.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC') ||
-      evidence.some(source => source.repo === 'Victor57618/Pack-TOC')) {
+      pack.length !== 1 || pack[0]?.id !== 'TOCT.13') {
     throw new Error('Документация ИИ-помощника по личной дилемме недоступна.');
   }
   return evidence;

@@ -1,7 +1,7 @@
 {
   "repo": "Victor57618/Pack-TOC",
-  "commit": "836c4058ae5c801247f1b76f89b650523492ebbf",
-  "commitDate": "2026-10-09T12:16:41Z",
+  "commit": "8a651eddb670fee8ed6f10f1eca605457ade040e",
+  "commitDate": "2026-11-23T14:28:34+05:00",
   "truncated": false,
   "adaptationVersion": "pilot2-toc-1",
   "scope": "Four individual cloud-building profiles; no consolidation or proof of root conflict",
@@ -18,9 +18,9 @@
       "id": "TOC.M.006",
       "title": "Туча личной дилеммы",
       "path": "thinking-processes/methods/TOC.M.006-ec-personal-dilemma.md",
-      "status": "draft",
-      "sha256": "eaed19c5187f8d73a54871cbf28a34bfc7fddc7f57fe5b2a2d3df7b1eb48cfc8",
-      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/methods/TOC.M.006-ec-personal-dilemma.md"
+      "status": "superseded",
+      "sha256": "1f31b094f67a844289e2dcf34eb607db0ec2f2b1c97fbb426477a4fa7a6e7d59",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/8a651eddb670fee8ed6f10f1eca605457ade040e/thinking-processes/methods/TOC.M.006-ec-personal-dilemma.md"
     },
     "TOC.M.007": {
       "id": "TOC.M.007",
@@ -51,8 +51,8 @@
       "title": "TOCT.13 - Туча личного выбора",
       "path": "thinking-processes/TOCT.13.md",
       "status": "draft",
-      "sha256": "f20c28009b4afd9ddb1cee17198a57316bdebde77cf5746e66176e7e98d86d84",
-      "url": "https://github.com/Victor57618/Pack-TOC/blob/836c4058ae5c801247f1b76f89b650523492ebbf/thinking-processes/TOCT.13.md"
+      "sha256": "581c46644d3f9626f2344e7657e1636b96b337eddc78ff14897bfc918206fa49",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/8a651eddb670fee8ed6f10f1eca605457ade040e/thinking-processes/TOCT.13.md"
     },
     "TOCT.14": {
       "id": "TOCT.14",

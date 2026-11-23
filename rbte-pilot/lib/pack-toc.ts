@@ -6,7 +6,7 @@ export const tocSources:Record<string,{id:string;title:string;path:string;status
 export type TocCriterion={id:string;text:string;sourceIds:string[]};
 export type TocProfile={method:string;pattern:string;order:CloudNode[];scope:string;labels:Record<CloudNode,string>;questions:Record<CloudNode,string>;criteria:TocCriterion[]};
 export const tocProfiles:Record<Profile,TocProfile>={
- DILEMMA:{method:'TOC.M.006',pattern:'TOCT.13',order:['D','Dp','C','B','A'],scope:'Профиль личной дилеммы.',
+ DILEMMA:{method:'TOCT.13',pattern:'TOCT.13',order:['D','Dp','C','B','A'],scope:'Профиль личной дилеммы.',
   labels:{A:'A · Общая цель',B:'B · Потребность за вынужденным действием',C:'C · Потребность за предпочитаемым действием',D:'D · Вынужденное действие',Dp:'D′ · Предпочитаемое действие'},
   questions:{D:'Введите формулировку D.',Dp:'Введите формулировку D′.',C:'Введите формулировку C.',B:'Введите формулировку B.',A:'Введите формулировку A.'},
   criteria:[]},
