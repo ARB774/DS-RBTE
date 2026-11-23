@@ -10,7 +10,7 @@ import { getTocEvidence } from '../lib/pack-toc-reader';
 import { evaluateWorkflow } from '../lib/workflow-ai';
 const cloud={goal:'Выполнять обязательства перед клиентами',needA:'Сохранять согласованные сроки',needB:'Поддерживать качество продукции',actionA:'Передаём заказ сегодня',actionB:'Проверяем каждую деталь до передачи'};
 test('pinned Pack-TOC sources are complete and match their recorded SHA256',async()=>{
- assert.equal(TOC_COMMIT,'8a651eddb670fee8ed6f10f1eca605457ade040e');
+ assert.equal(TOC_COMMIT,'6c7170e107eb1d8d704932078fc945200c39923b');
  for(const source of Object.values(tocSources)){
   const text=(await readFile(new URL('../knowledge/pack-toc/'+source.path,import.meta.url),'utf8')).replace(/\r\n?/g,'\n');
   assert.equal(createHash('sha256').update(text).digest('hex'),source.sha256,source.id);
@@ -20,6 +20,9 @@ test('pinned Pack-TOC sources are complete and match their recorded SHA256',asyn
 test('four profiles use their own source-based order and role definitions',()=>{
  assert.deepEqual(cloudGroups('DILEMMA').flat(),['D','Dp','C','B','A']);
  assert.deepEqual(cloudGroups('CONFLICT').flat(),['D','Dp','B','C','A']);
+ assert.equal(tocProfiles.CONFLICT.method,'TOCT.14');
+ assert.equal(tocProfiles.CONFLICT.pattern,'TOCT.14');
+ assert.ok(!tocCriteriaForStep('CONFLICT','cloud').some(c=>c.sourceIds.includes('TOC.M.007')));
  assert.deepEqual(cloudGroups('LT_CLOUD').flat(),['B','D','Dp','C','A']);
  assert.deepEqual(cloudGroups('IMMUNITY').flat(),['B','Dp','D','C','A']);
  assert.match(profileQuestions.CONFLICT.D,/другая сторона/);
