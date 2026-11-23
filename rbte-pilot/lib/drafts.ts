@@ -17,7 +17,7 @@ export async function persistDraft(database: any, userId: string, situationId: s
   const fields=parseStepFields(step,input,owner.profile);
   if(step==='cloud'||step==='practice')fields.__cloudEntry=MANUAL_CLOUD_VERSION;
   const drafts=await tx.select().from(stepDrafts).where(eq(stepDrafts.situationId,situationId));
-  if(owner.profile==='DILEMMA'&&['actions','cloud','trial'].includes(step)){
+  if(owner.profile==='DILEMMA'&&['actions','cloud','trial','result'].includes(step)){
    if(step==='cloud'&&!drafts.some((d:any)=>d.step==='actions'&&d.fields.__draft!=='true'&&checkStep('actions',owner.profile,d.fields).issues.length===0))throw new Error('Проверьте поля: сначала заполните и сохраните Действия.');
    const errors=draftOnly?[]:checkStep(step,owner.profile,fields).issues;
    if(errors.length)throw new Error('Проверьте поля: '+errors.map(i=>i.question).join(' '));

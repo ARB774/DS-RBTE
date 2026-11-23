@@ -67,6 +67,7 @@ test('personal action check asks only what is needed for the current state',()=>
  assert.equal(checkStep('trial','DILEMMA',{stage:'Сначала нужно изменить условия',conditionChange:'Сначала получить разрешение руководителя'}).issues.length,0);
  assert.equal(checkStep('trial','DILEMMA',{stage:'Сначала нужно изменить условия'}).issues[0]?.field,'conditionChange');
  const result=definitionFor('result','DILEMMA')!;
- assert.ok(result.fields.find(field=>field.key==='next')?.options?.includes('Повторить проверку на практике'));
+ assert.deepEqual(result.fields.map(field=>field.key),['outcome','next']);
+ assert.equal(checkStep('result','DILEMMA',{outcome:'Сотрудники согласились с решением',next:'Продолжать применять D*'}).issues.length,0);
  assert.ok(result.fields.every(field=>!field.options?.some(option=>option.toLocaleLowerCase('ru').includes('проб'))));
 });

@@ -132,9 +132,12 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
      choice('riskLevel','Есть ли в этом действии существенный риск?',['Не выбрано','Существенного риска не вижу','Есть ограниченный риск']),
      {...text('riskBoundary','Какой риск допустим и при каком наблюдаемом признаке действие нужно остановить?'),required:false},
      {...text('conditionChange','Какое условие необходимо изменить до выполнения D*?'),required:false},
-    ]
+   ]
    :step==='result'&&profile==='DILEMMA'
-    ?d.fields
+    ?[
+     text('outcome','Что произошло после применения D*?'),
+     choice('next','Что вы решили делать дальше?',['Не выбрано','Продолжать применять D*','Изменить D*','Вернуться к выбору решения','Нужны дополнительные наблюдения']),
+    ]
    :step==='decision'&&profile==='DILEMMA'
     ?[
      text('selected','Выбранные решения-кандидаты'),

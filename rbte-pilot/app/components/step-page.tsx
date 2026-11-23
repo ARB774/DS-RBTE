@@ -23,7 +23,10 @@ export async function StepPage({id,step}:{id:string;step:string}) {
  const definition=definitionFor(step,sit.profile);if(!definition)notFound();
  const drafts=await db.select().from(stepDrafts).where(eq(stepDrafts.situationId,id));
  if(step==='cloud'&&sit.profile==='DILEMMA'&&!drafts.some(d=>d.step==='actions'&&d.fields.__draft!=='true'&&checkActions(d.fields.actionRows).length===0))redirect('/situations/'+id+'/actions');
- const draft=drafts.find(d=>d.step===step),cloud=drafts.find(d=>d.step==='cloud'),assumptions=drafts.find(d=>d.step==='assumptions'),logic=drafts.find(d=>d.step==='logic'),injectionDraft=drafts.find(d=>d.step==='assumption-check'),decision=drafts.find(d=>d.step==='decision');
+ const draft=drafts.find(d=>d.step===step),cloud=drafts.find(d=>d.step==='cloud'),assumptions=drafts.find(d=>d.step==='assumptions'),logic=drafts.find(d=>d.step==='logic'),injectionDraft=drafts.find(d=>d.step==='assumption-check'),decision=drafts.find(d=>d.step==='decision'),trial=drafts.find(d=>d.step==='trial');
+ const allHistory=await db.select().from(revisions).where(eq(revisions.situationId,id)).orderBy(desc(revisions.number));
+ const archivedTrial=allHistory.find((revision:any)=>revision.snapshot?.pilotVersion===2&&revision.snapshot.step==='trial'&&revision.snapshot.fields?.action?.trim());
+ const carriedOutcome=draft?.fields.outcome?.trim()||[draft?.fields.actual,draft?.fields.observed].filter(value=>value?.trim()).join('\n')||trial?.fields.action?.trim()||archivedTrial?.snapshot.fields.action?.trim()||'';
  const assumptionFields=seedDilemmaAssumptions(assumptions?.fields||{},logic?.fields||{});
  const assumptionChoices=sit.profile==='DILEMMA'&&['assumption-check','decision'].includes(step)?(definitionFor('assumptions','DILEMMA')?.fields||[]).map(field=>({key:field.key,label:field.label,value:assumptionFields[field.key]||''})).filter(choice=>choice.value.trim()):undefined;
  const currentInjectionRoute=injectionDraft?.fields.routeVersion===dilemmaInjectionRouteVersion;
@@ -32,9 +35,10 @@ export async function StepPage({id,step}:{id:string;step:string}) {
   ?assumptionFields
   :sit.profile==='DILEMMA'&&step==='assumption-check'
    ?{injections:JSON.stringify(injections),assumptionKeys:JSON.stringify(assumptionChoices?.map(choice=>choice.key)||[]),routeVersion:dilemmaInjectionRouteVersion}
+   :sit.profile==='DILEMMA'&&step==='result'
+    ?{...draft?.fields,outcome:carriedOutcome}
    :draft?.fields||{};
  const injectionChoices=sit.profile==='DILEMMA'&&step==='decision'?assumptionChoices?.flatMap(choice=>injections[choice.key]?[{...choice,injection:injections[choice.key]}]:[])||[]:undefined;
- const allHistory=await db.select().from(revisions).where(eq(revisions.situationId,id)).orderBy(desc(revisions.number));
  const history=allHistory.filter((r:any)=>r.snapshot?.pilotVersion===2&&r.snapshot.step===step).map((r:any)=>({number:r.number,createdAt:r.createdAt.toISOString(),fields:r.snapshot.fields,comment:r.comment||''}));
  const stale=Boolean(draft&&draft.fields.__basis!==hashBasis(step,sit.profile,contextOf(sit),drafts));
  return <main className="container-x py-10">
