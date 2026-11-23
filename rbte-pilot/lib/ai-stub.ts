@@ -41,11 +41,6 @@ const byStep = {
     { q: "По каждому из 4-х уровней (прохождение / способ / перенос / эффект) — что есть данные, а чего пока нет.", kind: "evidence" } as StubQuestion,
     { q: "Нужна ли повторная или следующая проверка — в какое время или в каком контексте?", kind: "alternatives" } as StubQuestion,
   ],
-  STEP_47: () => [
-    { q: "Какая редакцию и какие элементы ты точно не будешь раскрывать — почему?", kind: "safe" } as StubQuestion,
-    { q: "Какой критерий качества (из шкалы RBTE) сейчас на первом месте для ведущего?", kind: "clarify" } as StubQuestion,
-    { q: "Что конкретно ты хочешь получить от обратной связи следующим действием?", kind: "clarify" } as StubQuestion,
-  ],
 } as const;
 
 export function maskRussianNamesFree(text: string): string {

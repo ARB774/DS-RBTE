@@ -14,7 +14,7 @@ export async function ownedWorkflow(database:any,userId:string,id:string){
 // Serialize revision numbering on the situation row in the caller's transaction.
 export async function recordWorkflowRevision(tx:any,owner:any,step:string,fields:Record<string,string>,comment:string){
  const [last]=await tx.select().from(revisions).where(eq(revisions.situationId,owner.id)).orderBy(desc(revisions.number)).limit(1);
- const kinds:Record<string,string>={cloud:'STEP_43',decision:'STEP_44',trial:'STEP_45',result:'STEP_46',feedback:'STEP_47'};
+ const kinds:Record<string,string>={cloud:'STEP_43',decision:'STEP_44',trial:'STEP_45',result:'STEP_46'};
  const [revision]=await tx.insert(revisions).values({situationId:owner.id,number:(last?.number||0)+1,parentId:last?.id||null,kind:kinds[step]||'STEP_43',snapshot:{pilotVersion:2,step,profile:owner.profile,fields,methodVersion:TOC_VERSION,sourceIds:tocSourceIds(owner.profile,step)},createdBy:owner.creatorId,comment}).returning();
  await tx.update(situations).set({currentRevisionId:revision.id,updatedAt:new Date()}).where(eq(situations.id,owner.id));
 }

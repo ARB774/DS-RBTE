@@ -51,7 +51,7 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    fields.__basis=hashBasis(step,current.situation.profile,contextOf(current.situation),[...current.drafts.filter((d:any)=>d.step!==step),{step,fields}]);
    const [saved]=await tx.update(stepDrafts).set({fields,version:version+1,updatedAt:new Date()}).where(and(eq(stepDrafts.situationId,id),eq(stepDrafts.step,step),eq(stepDrafts.version,version))).returning();
    if(!saved)throw new Error('Записи изменились. Повторите проверку.');
-   await recordWorkflowRevision(tx,current.situation,step,fields,'Обратная связь ИИ по текущему шагу');
+   await recordWorkflowRevision(tx,current.situation,step,fields,'Результат проверки ИИ по текущему шагу');
    return {version:saved.version,report:JSON.parse(fields.__check),assistance:step==='practice'?fields.assistance:undefined};
   });
   return result;
