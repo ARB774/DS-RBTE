@@ -11,10 +11,9 @@ test('all profiles start empty instead of importing an old saved cloud',()=>{
   assert.equal(old.goal,'Прежняя цель'); // Read-only transition retains previous content.
  }
 });
-test('manual saved answers survive reopening; old practice starts empty too',()=>{
+test('manual saved cloud answers survive reopening',()=>{
  const manual={goal:'Моя цель',__cloudEntry:MANUAL_CLOUD_VERSION};
  assert.equal(cloudEntryFields('cloud',manual),manual);
- assert.deepEqual(cloudEntryFields('practice',{goal:'Старый пример'}),{});
  const logic={ab:'Моя проверка'};
  assert.equal(cloudEntryFields('logic',logic),logic);
 });

@@ -32,8 +32,8 @@ export function reviewConfig(){
  return {key,model,dilemmaModel};
 }
 export async function evaluateSituation(snapshot:ReviewSnapshot,config:{key:string;model:string},transport:typeof fetch=fetch){
- const toc=tocContext(snapshot.profile as Profile,'practice');
- const evidence=await getTocEvidence(snapshot.profile as Profile,'practice');
+ const toc=tocContext(snapshot.profile as Profile,'cloud');
+ const evidence=await getTocEvidence(snapshot.profile as Profile,'cloud');
  const response=await transport('https://api.openai.com/v1/responses',{
   method:'POST',redirect:'error',signal:AbortSignal.timeout(65000),
   headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},

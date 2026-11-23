@@ -20,10 +20,10 @@ function interfaceCloudIssues(fields:Record<string,string>):MethodIssue[]{
  return Object.entries(nodeFields).flatMap(([node,field])=>fields[field]?.trim()?[]:[{field,criterion:`Поле ${node==='Dp'?'D′':node} заполнено`,observation:'Поле пока пусто',question:'Введите формулировку или сохраните шаг как черновик.'}]);
 }
 export function checkStep(step:string,profile:Profile,fields:Record<string,string>):WorkflowCheck{
- const issues=step==='actions'?checkActions(fields.actionRows):step==='cloud'||step==='practice'?(profile==='DILEMMA'?interfaceCloudIssues(fields):checkCloud(profile,fields)):[];
+ const issues=step==='actions'?checkActions(fields.actionRows):step==='cloud'?(profile==='DILEMMA'?interfaceCloudIssues(fields):checkCloud(profile,fields)):[];
  const definition=definitionFor(step,profile);
  for(const f of definition?.fields||[]){
-  if(['cloud','practice'].includes(step)&&['goal','needA','needB','actionA','actionB'].includes(f.key))continue;
+  if(step==='cloud'&&['goal','needA','needB','actionA','actionB'].includes(f.key))continue;
   if(step==='decision'&&fields.choice==='Отказ от выбора'&&!['choice','reason','risks'].includes(f.key))continue;
   if(profile==='DILEMMA'&&step==='trial'){
    const stage=fields.stage;

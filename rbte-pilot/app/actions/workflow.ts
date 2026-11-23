@@ -13,7 +13,7 @@ import { acceptedDilemmaRevisions,mergeDilemmaIssues,unresolvedDilemmaIssues } f
 import { readDilemmaReviewReplies } from '@/lib/dilemma-review-replies';
 import { reviewConfig } from '@/lib/review-openai';
 import { reviewCooldownMs,reviewDailyLimit } from '@/lib/review-store';
-export async function reviewWorkflow(id:string,step:string,version:number,consent:boolean):Promise<{version?:number;report?:WorkflowCheck;assistance?:string;error?:string}>{
+export async function reviewWorkflow(id:string,step:string,version:number,consent:boolean):Promise<{version?:number;report?:WorkflowCheck;error?:string}>{
  const me=await requireUser();
  if(!z.string().uuid().safeParse(id).success||!Number.isSafeInteger(version)||consent!==true)return {error:'Подтвердите проверку сохранённых данных через OpenAI.'};
  try{
@@ -47,12 +47,11 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    const persistedReport={...report,acceptedRevisions:accepted};
    const semanticIssues=current.situation.profile==='DILEMMA'&&step==='cloud'?unresolvedDilemmaIssues(report.issues,accepted,revisedFields):report.issues;
    const fields:Record<string,string>={...revisedFields,__check:JSON.stringify({...persistedReport,issues:current.situation.profile==='DILEMMA'&&step==='cloud'?mergeDilemmaIssues(local.issues,semanticIssues):[...local.issues,...semanticIssues]})};
-   if(step==='practice')fields.assistance=fields.assistance==='Без содержательных подсказок'?'ИИ':fields.assistance==='ИИ'?'ИИ':'Несколько видов помощи';
    fields.__basis=hashBasis(step,current.situation.profile,contextOf(current.situation),[...current.drafts.filter((d:any)=>d.step!==step),{step,fields}]);
    const [saved]=await tx.update(stepDrafts).set({fields,version:version+1,updatedAt:new Date()}).where(and(eq(stepDrafts.situationId,id),eq(stepDrafts.step,step),eq(stepDrafts.version,version))).returning();
    if(!saved)throw new Error('Записи изменились. Повторите проверку.');
    await recordWorkflowRevision(tx,current.situation,step,fields,'Результат проверки ИИ по текущему шагу');
-   return {version:saved.version,report:JSON.parse(fields.__check),assistance:step==='practice'?fields.assistance:undefined};
+   return {version:saved.version,report:JSON.parse(fields.__check)};
   });
   return result;
  }catch(error){
