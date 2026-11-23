@@ -69,9 +69,9 @@ test('personal dilemma forms one injection for every assumption before choosing'
  assert.match(workflowForm,/Записи изменились[\s\S]*type="submit"[\s\S]*Сохранить изменения и повторить проверку/);
  assert.match(workflowForm,/activeLogicKey=issueLogicKey\|\|\(personalLogic&&dirty\?logicLinkKeys\[logicCursor\]/);
 });
-test('personal dilemma adds actions; other profiles retain ten steps',()=>{
- assert.equal(stepOrder.filter(s=>definitionFor(s,'DILEMMA')).length+1,11);
- assert.equal(stepOrder.filter(s=>definitionFor(s,'CONFLICT')).length+1,10);
+test('personal dilemma adds actions; other profiles retain nine steps',()=>{
+ assert.equal(stepOrder.filter(s=>definitionFor(s,'DILEMMA')).length+1,10);
+ assert.equal(stepOrder.filter(s=>definitionFor(s,'CONFLICT')).length+1,9);
  for(const p of ['DILEMMA','CONFLICT','LT_CLOUD','IMMUNITY'] as Profile[])for(const step of stepOrder.filter(s=>s!=='actions'||p==='DILEMMA'))assert.ok(definitionFor(step,p));
  assert.deepEqual(cloudGroups('IMMUNITY'),[['B'],['Dp'],['D'],['C'],['A']]);
  assert.equal(profileLinks('IMMUNITY').length,7);

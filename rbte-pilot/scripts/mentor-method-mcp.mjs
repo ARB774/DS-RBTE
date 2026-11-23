@@ -51,7 +51,7 @@ serveStdio(() => {
   const server = new McpServer({ name: 'pilot-mentor-methods', version: '2.0.0' });
   server.registerTool('search_mentor_methods', {
     description: 'List exact DS-RBTE and Pack-TOC sources for one declared RBTE stage.',
-    inputSchema: z.object({ stage: z.string().regex(/^(?:S(?:[0-9]|10|11|6\.[123])|DILEMMA\.(?:details|actions|cloud|logic|assumptions|assumption-check|decision|trial|result|feedback|practice))$/) }), annotations,
+    inputSchema: z.object({ stage: z.string().regex(/^(?:S(?:[0-9]|10|11|6\.[123])|DILEMMA\.(?:details|actions|cloud|logic|assumptions|assumption-check|decision|trial|result|practice))$/) }), annotations,
   }, async ({ stage }) => result({ sources: records.filter(s => s.stages.includes(stage) || (stage.startsWith('S') && s.stages.includes('*'))).map(({ text, ...s }) => s) }));
   server.registerTool('get_mentor_method', {
     description: 'Read a pinned method from GitHub or its SHA-256 verified cache. Never silently substitutes a prompt snapshot.',

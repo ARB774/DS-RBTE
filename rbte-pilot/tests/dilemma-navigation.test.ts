@@ -15,7 +15,8 @@ test('resume requires checked, fresh steps and never treats a draft as completio
 test('personal step numbering leaves other profile titles intact',()=>{
  assert.equal(definitionFor('cloud','DILEMMA')?.title,'3 · Туча');
  assert.equal(definitionFor('logic','DILEMMA')?.title,'4 · Проверка связей');
- assert.equal(definitionFor('practice','DILEMMA')?.title,'11 · Самостоятельная практика');
+ assert.equal(definitionFor('practice','DILEMMA')?.title,'10 · Самостоятельная практика');
+ assert.equal(definitionFor('feedback','DILEMMA'),undefined);
  assert.equal(definitionFor('assumption-check','DILEMMA')?.title,'6 · Решения для предположений');
  assert.equal(definitionFor('decision','DILEMMA')?.title,'7 · Выбор решения');
  assert.equal(definitionFor('cloud','CONFLICT')?.title,'2 · Построение грозовой тучи');

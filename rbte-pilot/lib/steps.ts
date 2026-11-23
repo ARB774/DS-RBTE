@@ -54,11 +54,6 @@ const legacySteps: Record<string, StepDefinition> = {
   {key:'effect',label:'Эффект: изменения в работе и основания вывода'},
   {key:'next',label:'Следующий шаг',options:['Наблюдать','Изменить проверку','Вернуться к исследованию','Завершить']},
   {key:'reason',label:'Почему выбран этот следующий шаг'}]},
- feedback:{title:'4.7 · Подготовка обратной связи',
- note:'Это ваш закрытый план обратной связи. Сохранение не отправляет его другим людям. Совместный доступ в этой версии ещё не включён.',
- fields:[{key:'recipient',label:'Кому хотите предъявить результат'}, {key:'disclose',label:'Что готовы раскрыть'},
- {key:'exclude',label:'Что необходимо исключить'}, {key:'request',label:'Какую обратную связь хотите получить'},
- {key:'received',label:'Полученная обратная связь и её источник'}, {key:'next',label:'Что решено сделать дальше'}]},
 };
 
 const text=(key:string,label:string,profiles?:string[]):Field=>({key,label,profiles,required:true});
@@ -82,7 +77,6 @@ export const steps:Record<string,StepDefinition>={
  decision:{...legacySteps.decision,title:'6 · Поиск и обоснование решения',fields:[...legacySteps.decision.fields.map(f=>({...f,required:!['optionB','optionC'].includes(f.key)})),text('link','Какую связь и исходную посылку меняет решение?'),text('ensureB','D* обеспечит B, потому что…'),text('ensureC','D* обеспечит C, потому что…'),text('ensureA','Как сохранение B и C помогает достичь A?')]},
  trial:{...legacySteps.trial,title:'7 · План проверки решения на практике',fields:[text('selectedAssumption','Какую посылку или решение проверяет это действие?'),...legacySteps.trial.fields.map(f=>({...f,required:f.key!=='obstacle'})),text('partner','С кем обсудите достаточность и допустимость испытания?',['IMMUNITY'])]},
  result:{...legacySteps.result,title:'8 · Результат и пересмотр',fields:[...legacySteps.result.fields.map(f=>({...f,required:true,options:f.key==='next'?['Наблюдать','Повторить проверку на практике','Изменить решение','Пересмотреть посылку','Вернуться к туче','Завершить']:f.options})),text('needB','Что произошло с потребностью B?'),text('needC','Что произошло с потребностью C?'),text('goal','Как изменилось достижение A?'),text('assumption','Что выяснилось о выбранной посылке?')]},
- feedback:{...legacySteps.feedback,title:'9 · Обратная связь',fields:[...legacySteps.feedback.fields,text('target','К какому элементу Тучи, связи, посылке или результату относится замечание?'),text('evidence','Какое наблюдение послужило основанием?'),text('criterion','Какой критерий применён и в чём затруднение?'),text('question','Какой вопрос или следующее действие предлагается?'),choice('response','Ваше решение',['Не выбрано','Принять','Изменить','Обоснованно отклонить']),text('reason','Почему выбрано это решение?')]},
  practice:{title:'10 · Самостоятельное построение новой тучи',fields:[text('episode','Другой эпизод: кто, что, когда, где?'),text('actionA','D · Действие'),text('actionB','D′ · Действие'),text('needA','B · Потребность'),text('needB','C · Потребность'),text('goal','A · Общая цель'),text('logic','Объясните необходимость связей и конфликт (для иммунитета — угрозу B со стороны D′)'),text('assumption','Выявите исходную посылку и предложите её проверку'),choice('assistance','Какую помощь использовали?',['Без содержательных подсказок','Подсказки сервиса','Партнёр или преподаватель','ИИ','Несколько видов помощи']),text('reflection','Что удалось объяснить самостоятельно, а что пока вызывает затруднения?')]}
 };
 function profileLinksAll():Field[]{

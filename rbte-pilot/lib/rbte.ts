@@ -28,7 +28,6 @@ export const stepRoute = {
   STEP_44: { n: "4.4", t: "Решение", url: "/situations/[id]/decision" },
   STEP_45: { n: "4.5", t: "Проверка решения на практике", url: "/situations/[id]/trial" },
   STEP_46: { n: "4.6", t: "Возврат с результатом", url: "/situations/[id]/result" },
-  STEP_47: { n: "4.7", t: "Предъявление и обратная связь", url: "/situations/[id]/feedback" },
 } as const;
 
 export type StepKind = keyof typeof stepRoute;
