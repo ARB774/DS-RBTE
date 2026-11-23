@@ -40,7 +40,7 @@ test('semantic review uses MCP evidence, checks all seven links and excludes fut
  assert.ok(!body.input.includes('FUTURE_SECRET')&&!body.input.includes('PRIVATE_CHECK'));
  const input=JSON.parse(body.input);assert.equal(input.retrieval.transport,'mcp-stdio');
  assert.equal(input.retrieval.server,'pilot-mentor-methods');
- assert.deepEqual(input.methodEvidence.map((e:any)=>e.id).sort(),['DS-RBTE.ASSISTANT-SKILL','DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
+ assert.deepEqual(input.methodEvidence.map((e:any)=>e.id).sort(),['DS-RBTE.ASSISTANT-SKILL','DS-RBTE.DILEMMA.ASSISTANT-SPEC','TOCT.13']);
  assert.equal(input.formalFindings,undefined);
  assert.equal(report.semantic?.links.length,7);assert.equal(hasDilemmaSemanticReview(report),true);
  assert.equal(hasDilemmaSemanticReview(checkStep('cloud','DILEMMA',cloud)),false);

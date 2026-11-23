@@ -9,9 +9,9 @@ import { TOC_COMMIT,TOC_VERSION,tocSourceIds,tocSources } from './pack-toc';
 export type TocMcpEvidence={id:string;title:string;url:string;path:string;sha256:string;excerpt:string};
 export type TocMcpRetrieval={transport:'mcp-stdio';server:'pilot-pack-toc';commit:string;version:string;queries:string[];sourceIds:string[]};
 const queries=[
- 'TOC.M.006 личная дилемма вынужденное предпочитаемое действие потребность цель',
+ 'TOCT.13 личная дилемма вынужденное предпочитаемое действие потребность цель инъекция',
  'TOC.M.003 критерии качества формулировок проверка логики связей необходимость конфликт угрозы',
- 'TOCT.13 личная дилемма потребность действие контекст'
+ 'TOCT.13 личная дилемма предположение B* C* контекст'
 ];
 export async function retrieveDilemmaEvidence(){
  const cwd=process.cwd(),root=existsSync(join(cwd,'scripts/pack-toc-mcp.mjs'))?cwd:resolve(cwd,'../..');
@@ -37,7 +37,7 @@ export async function retrieveDilemmaEvidence(){
   if(!['search_pack_toc','get_pack_toc'].every(name=>tools.tools.some(t=>t.name===name)))throw new Error('MCP tools missing');
   const searches=[];
   for(const query of queries)searches.push(await call('search_pack_toc',{query,limit:6}));
-  if(!searches.some(s=>s.hits?.some((h:any)=>h.id==='TOC.M.006')))throw new Error('Personal dilemma method not found via MCP');
+  if(!searches.some(s=>s.hits?.some((h:any)=>h.id==='TOCT.13')))throw new Error('Personal dilemma pattern not found via MCP');
   const evidence:TocMcpEvidence[]=[];
   // Read all required criteria, not only the most popular search hits.
   for(const id of allowed){
