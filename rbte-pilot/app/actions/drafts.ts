@@ -13,7 +13,7 @@ export async function saveDraft(id: string, step: string, version: number, field
   const savedVersion=await persistDraft(db,me.id,id,step,version,fields,draftOnly);
   if(!draftOnly){
    const {situation}=await ownedWorkflow(db,me.id,id);
-   if(situation.profile==='DILEMMA'&&step!=='assumptions'){
+   if(situation.profile==='DILEMMA'&&!['assumptions','trial','result'].includes(step)){
     const checked=await reviewWorkflow(id,step,savedVersion,true);
     return {version:checked.version??savedVersion,report:checked.report,reviewError:checked.error};
    }

@@ -15,7 +15,16 @@ export async function evaluateWorkflow(step:string,situation:{profile:Profile;si
  const definition=definitionFor(step,situation.profile);if(!definition)throw new Error('Unknown step');
  const context=drafts.filter(d=>stepOrder.indexOf(d.step)>=0&&stepOrder.indexOf(d.step)<=stepOrder.indexOf(step)).map(d=>({...d,fields:Object.fromEntries(Object.entries(d.fields).filter(([k])=>!k.startsWith('__')))}));
  const selectedDecisionKeys=situation.profile==='DILEMMA'&&step==='decision'?readSelectedDecisionKeys(context.find(d=>d.step==='decision')?.fields.selected):[];
- const reviewFields=definition.fields.filter(field=>!(situation.profile==='DILEMMA'&&step==='decision'&&((field.key==='conditionB'&&!selectedDecisionKeys.includes('ab'))||(field.key==='conditionC'&&!selectedDecisionKeys.includes('ac'))))).map(field=>({...field,label:situation.profile==='DILEMMA'&&step==='decision'&&(field.key==='ensureB'||field.key==='ensureC')?personalDecisionConditionLabel(field.key,selectedDecisionKeys):field.label}));
+ const currentFields=context.find(d=>d.step===step)?.fields||{};
+ const trialStage=currentFields.stage;
+ const reviewFields=definition.fields.filter(field=>
+  !(situation.profile==='DILEMMA'&&step==='decision'&&((field.key==='conditionB'&&!selectedDecisionKeys.includes('ab'))||(field.key==='conditionC'&&!selectedDecisionKeys.includes('ac'))))&&
+  !(situation.profile==='DILEMMA'&&step==='trial'&&(
+   (trialStage==='Действие уже выполнено'&&field.key!=='stage')||
+   (trialStage==='Готовлю ближайшее выполнение'&&!['stage','situationAction','expectation','riskLevel',...(currentFields.riskLevel==='Есть ограниченный риск'?['riskBoundary']:[])].includes(field.key))||
+   (trialStage==='Сначала нужно изменить условия'&&!['stage','conditionChange'].includes(field.key))
+  ))
+ ).map(field=>({...field,label:situation.profile==='DILEMMA'&&step==='decision'&&(field.key==='ensureB'||field.key==='ensureC')?personalDecisionConditionLabel(field.key,selectedDecisionKeys):field.label}));
  const fieldKeys=reviewFields.map(f=>f.key);
  const fieldReferences=Object.fromEntries(reviewFields.map(field=>[field.key,`${field.key} — ${field.label}`]));
  const responseFieldValues=situation.profile==='DILEMMA'?fieldKeys.map(key=>fieldReferences[key]):fieldKeys;

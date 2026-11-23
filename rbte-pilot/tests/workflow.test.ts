@@ -23,12 +23,12 @@ test('personal dilemma forms one injection for every assumption before choosing'
  const workflowForm=await readFile(new URL('../app/components/workflow-form.tsx',import.meta.url),'utf8');
  const solutionDiagram=await readFile(new URL('../app/components/solution-diagram.tsx',import.meta.url),'utf8');
  const assistantSpecification=await readFile(new URL('../../WP-45/ТЗ помощника по построению личной дилеммы.md',import.meta.url),'utf8');
- assert.match(draftsAction,/situation\.profile==='DILEMMA'&&step!=='assumptions'[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
+ assert.match(draftsAction,/situation\.profile==='DILEMMA'&&!\['assumptions','trial','result'\]\.includes\(step\)[\s\S]*reviewWorkflow\(id,step,savedVersion,true\)/);
  assert.doesNotMatch(draftsAction,/step==='assumption-check'[\s\S]*return \{version:savedVersion,report:checkStep/);
  assert.doesNotMatch(workflowForm,/Дополнительно проверить смысл с ИИ/);
- assert.match(workflowForm,/assistantReviewRequired=personal&&!personalAssumptions/);
+ assert.match(workflowForm,/assistantReviewRequired=personal&&!personalAssumptions&&!personalTrial&&!personalResult/);
  assert.match(workflowForm,/Исходные предположения сохранены без оспаривания/);
- assert.match(workflowForm,/!personalCloud&&!personalAssumptions&&!personalAssumptionCheck&&currentReport/);
+ assert.match(workflowForm,/!personalCloud&&!personalAssumptions&&!personalAssumptionCheck&&!personalTrial&&!personalResult&&currentReport/);
  assert.match(workflowForm,/assumptionChoices\.map\(\(choice,index\)=>/);
  assert.match(workflowForm,/<table className="w-full border-collapse">/);
  assert.match(workflowForm,/Исходное убеждение<\/th><th[\s\S]*Инъекция, опровергающая убеждение/);

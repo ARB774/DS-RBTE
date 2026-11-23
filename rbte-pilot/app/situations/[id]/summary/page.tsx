@@ -21,6 +21,7 @@ export default async function Summary({params}:{params:Promise<{id:string}>}){
  const resume=dilemmaResume(progress);
  return <div className="container-x py-10 max-w-4xl"><Link href="/dashboard">← Мои ситуации</Link>
   <h1 className="text-2xl font-bold my-4">{situation.title}</h1>
+  <div className="my-4"><a className="btn btn-primary" href={'/situations/'+id+'/summary/word'} download>Скачать отчёт Word</a></div>
   {situation.profile==='DILEMMA'&&<h2 className="text-xl font-bold mb-4">Результат разбора</h2>}
   <nav className="flex flex-wrap gap-3">{situation.profile==='DILEMMA'?dilemmaSteps.map(([key,label],i)=><Link key={key} href={'/situations/'+id+'/'+key}>{i+1} · {label}</Link>):<><Link href={'/situations/'+id+'/details'}>1 · Описание ситуации</Link>{Object.entries(steps).filter(([key])=>key!='actions'||situation.profile==='DILEMMA').map(([key,step])=><Link key={key} href={'/situations/'+id+'/'+key}>{step.title}</Link>)}</>}</nav>
   {situation.profile==='DILEMMA'?<>

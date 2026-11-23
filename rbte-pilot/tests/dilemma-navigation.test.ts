@@ -57,13 +57,17 @@ test('personal injection step contains only interface state, not a hardcoded met
 test('personal decision compares accepted injections instead of asking for new variants',()=>{
  assert.deepEqual(definitionFor('decision','DILEMMA')!.fields.map(field=>field.key),['selected','finalInjection','reason','conditionB','ensureB','conditionC','ensureC']);
 });
-test('personal practice check uses direct action language from its own route',()=>{
+test('personal action check asks only what is needed for the current state',()=>{
  const trial=definitionFor('trial','DILEMMA')!;
- assert.equal(trial.fields.find(field=>field.key==='selectedAssumption')?.label,'Какую посылку или решение проверяет это действие?');
- assert.equal(trial.fields.find(field=>field.key==='transfer')?.label,'Как это действие связано с реальной рабочей ситуацией?');
- assert.equal(trial.fields.find(field=>field.key==='repeat')?.label,'При каких условиях нужно повторить или изменить проверку?');
+ assert.deepEqual(trial.fields.map(field=>field.key),['stage','situationAction','expectation','riskLevel','riskBoundary','conditionChange']);
  assert.ok(trial.fields.every(field=>!field.label.toLocaleLowerCase('ru').includes('проб')));
+ assert.equal(checkStep('trial','DILEMMA',{stage:'Действие уже выполнено'}).issues.length,0);
+ assert.equal(checkStep('trial','DILEMMA',{stage:'Готовлю ближайшее выполнение',situationAction:'Покажу команде новый порядок на совещании',expectation:'Сравню число возражений и согласованных действий',riskLevel:'Существенного риска не вижу'}).issues.length,0);
+ assert.equal(checkStep('trial','DILEMMA',{stage:'Готовлю ближайшее выполнение',situationAction:'Покажу команде новый порядок на совещании',expectation:'Сравню число возражений и согласованных действий',riskLevel:'Есть ограниченный риск'}).issues[0]?.field,'riskBoundary');
+ assert.equal(checkStep('trial','DILEMMA',{stage:'Сначала нужно изменить условия',conditionChange:'Сначала получить разрешение руководителя'}).issues.length,0);
+ assert.equal(checkStep('trial','DILEMMA',{stage:'Сначала нужно изменить условия'}).issues[0]?.field,'conditionChange');
  const result=definitionFor('result','DILEMMA')!;
- assert.ok(result.fields.find(field=>field.key==='next')?.options?.includes('Повторить проверку на практике'));
+ assert.deepEqual(result.fields.map(field=>field.key),['outcome','next']);
+ assert.equal(checkStep('result','DILEMMA',{outcome:'Сотрудники согласились с решением',next:'Продолжать применять D*'}).issues.length,0);
  assert.ok(result.fields.every(field=>!field.options?.some(option=>option.toLocaleLowerCase('ru').includes('проб'))));
 });
