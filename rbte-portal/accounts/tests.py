@@ -1,6 +1,7 @@
 import re
 from datetime import timedelta
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.core import mail
@@ -10,6 +11,7 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase, Client
 from django.utils import timezone
 from .models import User, AccessRequest, MailJob, Service, RateBucket, service_url
+from .pilot_sso import bridge_key, digest
 from .management.commands.send_portal_mail import deliver
 
 PASSWORD = "Initial-Strong-Pass!2026"
@@ -126,6 +128,33 @@ class PortalTests(TestCase):
         self.assertContains(response, "Доступ к Pilot пока закрыт", status_code=403)
         self.assertContains(response, "обратитесь к администратору портала RBTE", status_code=403)
         self.assertContains(response, 'href="/services/"', status_code=403)
+
+    def test_pilot_logout_requires_a_fresh_login_in_the_same_browser(self):
+        self.user.pilot_enabled = True
+        self.user.save(update_fields=["pilot_enabled"])
+        self.login()
+        other_browser = Client()
+        other_browser.force_login(self.user)
+        verifier = "a" * 43
+        authorization = {"state": "b" * 43, "code_challenge": digest(verifier)}
+        response = self.client.get("/sso/pilot/", authorization, secure=True)
+        code = parse_qs(urlsplit(response.url).query)["code"][0]
+
+        bridge = Client(HTTP_AUTHORIZATION="Bearer " + bridge_key())
+        exchange = bridge.post(
+            "/internal/pilot/", {"action": "exchange", "code": code, "verifier": verifier},
+            content_type="application/json", secure=True,
+        )
+        self.assertEqual(exchange.status_code, 200)
+        revoke = bridge.post(
+            "/internal/pilot/", {"action": "revoke", "token": exchange.json()["token"]},
+            content_type="application/json", secure=True,
+        )
+        self.assertEqual(revoke.status_code, 200)
+        response = self.client.get("/sso/pilot/", authorization, secure=True)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(urlsplit(response.url).path, "/")
+        self.assertEqual(other_browser.get("/services/", secure=True).status_code, 200)
 
     def test_duplicate_request_is_reported_without_duplicate_mail(self):
         data = {"email": "new@example.test", "name": "Test"}
