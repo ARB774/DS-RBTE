@@ -29,7 +29,7 @@ export function localReview(snapshot:ReviewSnapshot){
   for(const issue of checkStep(step,snapshot.profile as Profile,fields).issues)issues.push({fields:[step+'.'+issue.field],source:issue.sourceIds?.join(', ')||'Pack-TOC',question:issue.question,impact:issue.criterion});
  }
  function fv(key:string){return f[key]||'';}
- need(['decision.reason'],'AL.WP.005','Почему выбран этот вариант или отказ?','Выбор требует собственного основания.');
+ if(snapshot.profile!=='CONFLICT')need(['decision.reason'],'AL.WP.005','Почему выбран этот вариант или отказ?','Выбор требует собственного основания.');
  const choice=f['decision.choice'];
  const selected:Record<string,string>={'Вариант 1':'decision.optionA','Вариант 2':'decision.optionB','Дополнительный вариант':'decision.optionC'};
  if(!selected[choice]&&choice!=='Отказ от выбора')issues.push({fields:['decision.choice'],source:'AL.P.002:4',question:'Какое решение вы принимаете?',impact:'Система не выбирает решение за участника.'});
@@ -47,7 +47,7 @@ export function localReview(snapshot:ReviewSnapshot){
  const summary=[
   {title:'Проблема',fields:['creation.signal','creation.task']},
   {title:'Противоречие',fields:cloudKeys},
-  {title:'Выбранное решение',fields:['decision.choice',...(selected[choice]?[selected[choice]]:[]),'decision.reason']},
+  {title:'Выбранное решение',fields:['decision.choice',...(selected[choice]?[selected[choice]]:[]),...(snapshot.profile!=='CONFLICT'||has('decision.reason')?['decision.reason']:[])]},
   {title:'Проверка решения на практике',fields:['trial.status','trial.hypothesis','trial.action']},
   {title:'Результат',fields:done?['result.actual','result.observed','result.interpretation','result.effect','result.next']:[]},
  ].map(section=>({...section,values:section.fields.map(key=>({key,text:f[key]||'Не заполнено'}))}));

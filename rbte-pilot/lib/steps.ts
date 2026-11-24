@@ -147,6 +147,7 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
   if(step==='cloud'&&profile==='DILEMMA')return ['actionA','actionB','needA','needB','goal'].includes(f.key);
   if(profile==='CONFLICT'&&(step==='cloud'||step==='logic'))return !f.options||f.key==='otherPositionStatus';
   if(profile==='CONFLICT'&&step==='assumption-check')return f.key!=='state';
+  if(profile==='CONFLICT'&&step==='decision')return f.key!=='reason';
   return true;
  }).map(f=>{
   const node=({goal:'A',needA:'B',needB:'C',actionA:'D',actionB:'Dp'} as const)[f.key as 'goal'];
