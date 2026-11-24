@@ -21,10 +21,12 @@ export async function askDilemmaAssistantHelp(input:unknown):Promise<{answer?:st
  const me=await requireUser();
  try{
   const {situation}=await ownedWorkflow(db,me.id,parsed.data.id);
-  if(situation.profile!=='DILEMMA'||(parsed.data.step!=='details'&&!definitionFor(parsed.data.step,'DILEMMA')))throw new Error('Assistant help unavailable');
+  const conflict=situation.profile==='CONFLICT';
+  if((!conflict&&situation.profile!=='DILEMMA')||(parsed.data.step!=='details'&&!definitionFor(parsed.data.step,situation.profile)))throw new Error('Assistant help unavailable');
   const fields=Object.fromEntries(Object.entries(parsed.data.currentFields).filter(([key])=>!key.startsWith('__')));
   const answer=await answerDilemmaAssistantHelp({
-   step:parsed.data.step,stepTitle:dilemmaTitle(parsed.data.step),question:parsed.data.question,history:parsed.data.history,
+   ...(conflict?{profile:'CONFLICT' as const}:{}),
+   step:parsed.data.step,stepTitle:conflict?(definitionFor(parsed.data.step,'CONFLICT')?.title||'Описание конфликта'):dilemmaTitle(parsed.data.step),question:parsed.data.question,history:parsed.data.history,
    situation:{signal:situation.signal||'',task:situation.task||'',desiredChange:situation.desiredChange||''},
    currentFields:fields,currentIssue:parsed.data.currentIssue,
   },reviewConfig());

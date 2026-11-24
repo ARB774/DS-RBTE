@@ -142,7 +142,7 @@ test('semantic review sends only current/earlier content and validates field ref
  let dilemmaBody:any;
  await evaluateWorkflow('logic',{profile:'DILEMMA',signal:'эпизод'},[{step:'cloud',fields:cloud},{step:'logic',fields:{ab:'Да'}}],{key:'fake',model:'fake',dilemmaModel:'gpt-5.4'},(async(_url,init)=>{dilemmaBody=JSON.parse(String(init?.body));return new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({issues:[],note:'Проверено по документации.'})}]}]}));}) as typeof fetch,dilemmaDocs);
  const dilemmaInput=JSON.parse(dilemmaBody.input);
- assert.deepEqual(dilemmaInput.methodEvidence.map((source:any)=>source.id).sort(),['DS-RBTE.ASSISTANT-SKILL','DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
+ assert.deepEqual(dilemmaInput.methodEvidence.map((source:any)=>source.id).sort(),['DS-RBTE.ASSISTANT-SKILL','DS-RBTE.DILEMMA.ASSISTANT-SPEC','TOCT.13']);
  assert.equal(dilemmaBody.model,'gpt-5.4');
  assert.deepEqual(dilemmaInput.definition.fields.find((field:any)=>field.key==='acReason'),{key:'acReason',label:'Исходное предположение: для того чтобы A, необходимо C, потому что…',issueField:'acReason — Исходное предположение: для того чтобы A, необходимо C, потому что…'});
  assert.equal(dilemmaInput.questions,undefined);assert.equal(dilemmaInput.learningCriteria,undefined);assert.equal(dilemmaInput.toc,undefined);assert.equal(dilemmaInput.evidence,undefined);

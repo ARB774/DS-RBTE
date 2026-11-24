@@ -70,7 +70,7 @@ export function seedDilemmaAssumptions(initial:Record<string,string>,logic:Recor
 }
 export const steps:Record<string,StepDefinition>={
  actions:{title:'Действия',fields:[text('actionRows','Возможные действия',['DILEMMA'])]},
- cloud:{title:'2 · Построение грозовой тучи',fields:[text('actionA','D · Действие'),text('actionB','D′ · Действие'),text('needA','B · Потребность'),text('needB','C · Потребность'),text('goal','A · Общая цель'),text('positionEvidence','Откуда известна позиция другой стороны? Что подтверждено, а что предполагается?',['CONFLICT']),text('recurrence','Как часто повторяется пожар? Какие эпизоды это подтверждают?',['LT_CLOUD'])]},
+ cloud:{title:'2 · Построение грозовой тучи',fields:[text('actionA','D · Действие'),text('actionB','D′ · Действие'),text('needA','B · Потребность'),text('needB','C · Потребность'),text('goal','A · Общая цель'),{...text('positionEvidence','Источник сведений о позиции другой стороны (если известен)',['CONFLICT']),required:false},text('recurrence','Как часто повторяется пожар? Какие эпизоды это подтверждают?',['LT_CLOUD'])]},
  logic:{title:'3 · Проверка логики',fields:profileLinksAll()},
  assumptions:{title:'4 · Выявление исходных посылок',fields:['ab','ac','bd','cd','conflict'].flatMap(key=>[text(key,assumptionLabels[key],undefined),text(key+'Source','На чём основаны посылки: наблюдения, правила, предположения?',undefined)])},
  'assumption-check':{title:'5 · Проверка исходных посылок',fields:[text('selected','Какую посылку и связь проверяете?'),text('support','Какие факты поддерживают посылку?'),text('counter','Какие есть исключения или противоречащие наблюдения?'),text('conditions','В каких условиях посылка верна, а в каких требует пересмотра?'),text('unknown','Что неизвестно и как это проверить?'),choice('state','Состояние посылки',['Не проверено','Есть основания','Есть основания сомневаться','Недостаточно данных']),text('behavior','Что вы замечаете в текущем поведении?',['IMMUNITY']),text('history','Когда возникло убеждение и применимо ли оно сейчас?',['IMMUNITY'])]},
@@ -87,7 +87,7 @@ function profileLinksAll():Field[]{
 const cloudCheck=(key:string,label:string,profiles?:string[])=>choice(key,label,['Не проверено','Да','Нужно уточнить'],profiles);
 steps.cloud.fields.push(
  {...text('alternatives','Какие действия рассматривали? Отметьте вынужденные и предпочитаемые.',['DILEMMA']),required:false},
- choice('otherPositionStatus','Статус позиции другой стороны',['Не проверено','Подтверждено другой стороной','Гипотеза автора — требуется уточнение'],['CONFLICT']),
+ choice('otherPositionStatus','Статус позиции другой стороны',['Не проверено','Подтверждено пользователем','Гипотеза автора — требуется уточнение'],['CONFLICT']),
  choice('stabilization','Текущий эпизод',['Не проверено','Стабилизирован — разбираю механизм повторения','Требуется срочное реагирование'],['LT_CLOUD']),
  text('rule','Какое действующее правило или ограничение предписывает D′?',['LT_CLOUD']),
  text('knowledgeGap','Были ли знания и освоенный способ действия? Что именно известно?',['LT_CLOUD']),
@@ -142,7 +142,12 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
      text('ensureC',personalDecisionConditionLabel('ensureC',[])),
     ]
     :d.fields;
- return {...d,title:profile==='DILEMMA'?dilemmaTitle(step):d.title,fields:sourceFields.filter(f=>(!f.profiles||f.profiles.includes(profile))&&!(step==='cloud'&&profile==='DILEMMA'&&!['actionA','actionB','needA','needB','goal'].includes(f.key))).map(f=>{
+ return {...d,title:profile==='DILEMMA'?dilemmaTitle(step):d.title,fields:sourceFields.filter(f=>{
+  if(f.profiles&&!f.profiles.includes(profile))return false;
+  if(step==='cloud'&&profile==='DILEMMA')return ['actionA','actionB','needA','needB','goal'].includes(f.key);
+  if(profile==='CONFLICT'&&(step==='cloud'||step==='logic'))return !f.options||f.key==='otherPositionStatus';
+  return true;
+ }).map(f=>{
   const node=({goal:'A',needA:'B',needB:'C',actionA:'D',actionB:'Dp'} as const)[f.key as 'goal'];
   const optionalAssumption=step==='assumptions'&&((profile==='IMMUNITY'&&!f.key.startsWith('cd'))||(profile==='CONFLICT'&&['ab','ac','abSource','acSource'].includes(f.key)));
   return {...f,label:node&&step==='cloud'?tocProfiles[p].labels[node]:f.label,required:optionalAssumption?false:f.required,sourceIds:tocSourceIds(p,step)};
@@ -159,7 +164,7 @@ export function parseStepFields(step: string, input: Record<string, unknown>, pr
    throw new Error('Проверьте поля: не более 4000 символов в каждом');
    result[field.key]=value;
   }
-  if(step==='cloud'&&profile==='DILEMMA'&&input.reviewReplies!==undefined)result.reviewReplies=normalizeDilemmaReviewReplies(input.reviewReplies);
+  if(step==='cloud'&&(profile==='DILEMMA'||profile==='CONFLICT')&&input.reviewReplies!==undefined)result.reviewReplies=normalizeDilemmaReviewReplies(input.reviewReplies);
  if (JSON.stringify(result).length>60000) throw new Error('Слишком большой объём данных');
  return result;
 }

@@ -16,6 +16,6 @@ export function DetailsForm({id,initial,initialVersion}:{id:string;initial:Recor
  }} className="card p-6 space-y-5"><fieldset disabled={pending} className="space-y-5">
  {Object.entries(creationLabels).map(([key,label])=><div className="field" key={key}><label htmlFor={key}>{label}</label>{options[key]?<select name={key} id={key} value={fields[key]||''} onChange={event=>change(key,event.target.value)}>{Object.entries(options[key]).map(([value,text])=><option key={value} value={value}>{text}</option>)}</select>:<textarea rows={3} id={key} name={key} value={fields[key]||''} onChange={event=>change(key,event.target.value)} maxLength={key==='title'?160:key==='aiAttemptBaseline'?4000:2000}/>}</div>)}
  </fieldset><button disabled={pending} className="btn btn-primary">{pending?'Сохранение…':'Сохранить шаг'}</button><p role="status">{message}</p>{!dirty&&<Link className="btn btn-ghost" href={'/situations/'+id+(initial.profile==='DILEMMA'?'/actions':'/cloud')}>{initial.profile==='DILEMMA'?'Действия':'2 · Построение грозовой тучи'} →</Link>}</form>
- {initial.profile==='DILEMMA'&&<AssistantHelpPanel id={id} step="details" fields={fields}/>}
+ {(initial.profile==='DILEMMA'||initial.profile==='CONFLICT')&&<AssistantHelpPanel id={id} step="details" fields={fields}/>}
  {initial.profile!=='DILEMMA'&&<ReviewControl key={version} id={id} compact disabled={dirty||pending}/>}</>;
 }

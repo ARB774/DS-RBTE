@@ -35,8 +35,13 @@ test('knowledge MCP exposes read-only stage search and exact get; arbitrary path
   try {
     await client.connect(transport);
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map(t => t.name).sort(), ['get_mentor_method', 'search_mentor_methods']);
+    assert.deepEqual(tools.map(t => t.name).sort(), ['get_conflict_assistant_rules', 'get_mentor_method', 'search_mentor_methods']);
     assert.ok(tools.every(t => t.annotations?.readOnlyHint));
+    const conflict = await client.callTool({name:'get_conflict_assistant_rules',arguments:{}});
+    assert.ok(!conflict.isError);
+    const content = conflict.content?.[0];
+    assert.ok(content?.type==='text');
+    assert.deepEqual(JSON.parse(content.text).sources.map((source: {id:string})=>source.id), ['DS-RBTE.ASSISTANT-SKILL','DS-RBTE.CONFLICT.ACCEPTANCE','DS-RBTE.CONFLICT.ASSISTANT-SPEC']);
     assert.equal((await client.callTool({ name: 'get_mentor_method', arguments: { id: '../../etc/passwd' } })).isError, true);
   } finally { await client.close(); await transport.close(); }
 });
@@ -52,8 +57,8 @@ test('personal dilemma reads its assistant documentation through the same verifi
     }
     const sources = await retrieveDilemmaAssistantMethods('cloud');
     const detailsSources = await retrieveDilemmaAssistantMethods('details');
-    assert.deepEqual(sources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
-    assert.deepEqual(detailsSources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC']);
+    assert.deepEqual(sources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC', 'TOCT.13']);
+    assert.deepEqual(detailsSources.map(source => source.id).sort(), ['DS-RBTE.ASSISTANT-SKILL', 'DS-RBTE.DILEMMA.ASSISTANT-SPEC', 'TOCT.13']);
     assert.ok(sources.some(s => s.id === 'DS-RBTE.ASSISTANT-SKILL' && s.text.includes('помощник')));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /Для каждого принятого участником предположения активная роль помогает\s+сформулировать инъекцию `D\*`/.test(s.text)));
     assert.ok(sources.some(s => s.id === 'DS-RBTE.DILEMMA.ASSISTANT-SPEC' && /одно из двух независимых оснований:[\s\S]*делает соответствующее убеждение\s+неверным[\s\S]*оставляет его возможным или верным[\s\S]*прежнее действие необязательным/.test(s.text)));

@@ -13,6 +13,11 @@ const records = JSON.parse(await readFile(join(root, 'lib/value-proposition-evid
 const cache = process.env.MENTOR_KNOWLEDGE_CACHE || join(tmpdir(), 'pilot-mentor-knowledge-' + (process.getuid?.() ?? 'windows'));
 const digest = text => createHash('sha256').update(text).digest('hex');
 const normalize = text => text.replace(/\r\n/g, '\n');
+const conflictDocuments = {
+  'DS-RBTE.ASSISTANT-SKILL': ['Общий навык помощников.md', '8bd1cd16595d74f5825b2d3d54e412fd2a54c479e13282012ff0a97dc4c19f10'],
+  'DS-RBTE.CONFLICT.ACCEPTANCE': ['Критерии приёмки профиля Конфликт сторон.md', '386e2201a877ee2cbe814160e9035ccb6f2298cd1eaa0c967d698b023f8704de'],
+  'DS-RBTE.CONFLICT.ASSISTANT-SPEC': ['ТЗ помощника по построению Тучи конфликта сторон.md', '5f4cc0e88c1d721e3196c7b527d83b81dcfe18bdc8a5428f05322abc1e84fea6'],
+};
 const pending = new Map();
 async function document(source) {
   if (!/^[\w.-]+\/[\w.-]+$/.test(source.repo) || !/^[a-f0-9]{40}$/.test(source.commit)) throw new Error('Invalid source');
@@ -49,6 +54,29 @@ const result = value => ({ content: [{ type: 'text', text: JSON.stringify(value)
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 serveStdio(() => {
   const server = new McpServer({ name: 'pilot-mentor-methods', version: '2.0.0' });
+  server.registerTool('get_conflict_assistant_rules', {
+    description: 'Read the checksum-pinned WP-45 rules for the single-user conflict assistant.',
+    inputSchema: z.object({}), annotations,
+  }, async () => {
+    try {
+      const sources = await Promise.all(Object.entries(conflictDocuments).map(async ([id, [filename, sha256]]) => {
+        const path = 'WP-45/' + filename;
+        let raw;
+        try {
+          raw = await readFile(join(root, 'knowledge/conflict-rules', filename), 'utf8');
+        } catch (error) {
+          if (error.code !== 'ENOENT') throw error;
+          raw = await readFile(join(root, '..', path), 'utf8');
+        }
+        const text = normalize(raw);
+        if (digest(text) !== sha256) throw new Error('Unverified source: ' + id);
+        return { id, path, sha256, text };
+      }));
+      return result({ sources });
+    } catch (error) {
+      return { ...result({ error: error.message }), isError: true };
+    }
+  });
   server.registerTool('search_mentor_methods', {
     description: 'List exact DS-RBTE and Pack-TOC sources for one declared RBTE stage.',
     inputSchema: z.object({ stage: z.string().regex(/^(?:S(?:[0-9]|10|11|6\.[123])|DILEMMA\.(?:details|actions|cloud|logic|assumptions|assumption-check|decision|trial|result))$/) }), annotations,

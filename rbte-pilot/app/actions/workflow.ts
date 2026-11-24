@@ -33,7 +33,7 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    await tx.insert(reviewLimits).values({userId:me.id,day,count:count+1,lastAt:now}).onConflictDoUpdate({target:reviewLimits.userId,set:{day,count:count+1,lastAt:now}});
    return {situation,drafts,draft,basis:hashBasis(step,situation.profile,contextOf(situation),drafts)};
   });
-  const report=job.situation.profile==='DILEMMA'&&step==='cloud'?await evaluateDilemmaCloud(job.situation,job.drafts,config):await evaluateWorkflow(step,job.situation,job.drafts,config);
+  const report=['DILEMMA','CONFLICT'].includes(job.situation.profile)&&step==='cloud'?await evaluateDilemmaCloud(job.situation,job.drafts,config):await evaluateWorkflow(step,job.situation,job.drafts,config);
   const result=await db.transaction(async tx=>{
    // Lock owner first, matching saveDraft, so a concurrent save cannot race the check.
    const {situations}=await import('@/db/schema');
