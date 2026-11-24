@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Доступ к Pilot — RBTE{% endblock %}
+{% block content %}
+<section class="card centered">
+    <h1>Доступ к Pilot пока закрыт</h1>
+    <p class="muted">Для вашей учётной записи доступ к Pilot не включён.</p>
+    <p>Если вам нужен Pilot, обратитесь к администратору портала RBTE и укажите email, с которым вы вошли. После того как администратор включит доступ, снова откройте Pilot из кабинета.</p>
+    <a class="primary button-link" href="{% url 'services' %}">Вернуться к сервисам</a>
+</section>
+{% endblock %}

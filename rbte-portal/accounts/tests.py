@@ -120,6 +120,13 @@ class PortalTests(TestCase):
         self.assertFalse(AccessRequest.objects.exists())
         self.assertFalse(MailJob.objects.exists())
 
+    def test_pilot_access_denial_explains_next_steps(self):
+        self.login()
+        response = self.client.get("/sso/pilot/", secure=True)
+        self.assertContains(response, "Доступ к Pilot пока закрыт", status_code=403)
+        self.assertContains(response, "обратитесь к администратору портала RBTE", status_code=403)
+        self.assertContains(response, 'href="/services/"', status_code=403)
+
     def test_duplicate_request_is_reported_without_duplicate_mail(self):
         data = {"email": "new@example.test", "name": "Test"}
         first = self.client.post("/register/", data, secure=True)

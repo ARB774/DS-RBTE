@@ -13,6 +13,7 @@ from django.contrib.auth import get_user
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpResponseRedirect, JsonResponse
+from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
@@ -38,7 +39,7 @@ def bridge_key():
 @require_GET
 def authorize(request):
     if not request.user.pilot_enabled:
-        return JsonResponse({"error": "pilot_access_denied"}, status=403)
+        return render(request, "accounts/pilot_access_denied.html", status=403)
     state = request.GET.get("state", "")
     challenge = request.GET.get("code_challenge", "")
     if not TOKEN.fullmatch(state) or not re.fullmatch(r"[a-f0-9]{64}", challenge):
