@@ -112,7 +112,9 @@ def internal(request):
     if grant is None:
         return JsonResponse({"error": "invalid_session"}, status=401)
     if data.get("action") == "revoke":
-        grant.delete()
+        with transaction.atomic():
+            import_module(settings.SESSION_ENGINE).SessionStore(grant.session_key).delete()
+            grant.delete()
         return JsonResponse({"ok": True})
     if data.get("action") != "validate":
         return JsonResponse({"error": "invalid_request"}, status=400)
