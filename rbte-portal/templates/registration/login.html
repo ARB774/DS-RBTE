@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% load static %}{% block content %}
+<script src="{% static 'login.js' %}" defer></script>
+<div class="login-layout"><section class="intro"><div class="eyebrow">ПОРТАЛ RBTE</div><h1>Ваши сервисы.<br><span>Одно пространство.</span></h1><p>Войдите в учётную запись, чтобы перейти к инструментам и сервисам портала.</p><div class="intro-note"><span class="note-line"></span>Доступ для участников, подключённых администратором</div></section>
+<section class="card login-card"><div class="eyebrow">ДОБРО ПОЖАЛОВАТЬ</div><h2>Вход в портал</h2><p class="muted">Используйте email и назначенный вам пароль.</p>
+<form method="post" id="portal-login">{% csrf_token %}{% include 'form_fields.html' %}<button class="primary" type="submit">Авторизоваться <span aria-hidden="true">→</span></button><p id="login-status" role="alert" aria-live="polite"></p><a id="login-reload" href="{% url 'login' %}" hidden>Открыть страницу входа заново</a></form>
+<div class="auth-links"><a href="{% url 'register' %}">Зарегистрироваться</a><a href="{% url 'password_reset' %}">Забыл пароль</a></div></section></div>
+{% endblock %}
