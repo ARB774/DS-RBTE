@@ -20,6 +20,11 @@ export function allAssumptionInjectionsComplete(fields:Record<string,string>){
 function interfaceCloudIssues(fields:Record<string,string>):MethodIssue[]{
  return Object.entries(nodeFields).flatMap(([node,field])=>fields[field]?.trim()?[]:[{field,criterion:`Поле ${node==='Dp'?'D′':node} заполнено`,observation:'Поле пока пусто',question:'Введите формулировку или сохраните шаг как черновик.'}]);
 }
+const conflictDecisionQuestions:Record<string,string>={
+ risks:'Что может пойти не так при выбранном решении? Укажите конкретный риск или неизвестное и как вы ограничите последствия.',
+ link:'Какую связь Тучи меняет решение? Назовите её, запишите прежнюю посылку и объясните, что изменит решение.',
+};
+
 export function checkStep(step:string,profile:Profile,fields:Record<string,string>):WorkflowCheck{
  const issues=step==='actions'?checkActions(fields.actionRows):step==='cloud'?(profile==='DILEMMA'?interfaceCloudIssues(fields):checkCloud(profile,fields)):[];
  const definition=definitionFor(step,profile);
@@ -35,7 +40,10 @@ export function checkStep(step:string,profile:Profile,fields:Record<string,strin
    if(!stage&&f.key!=='stage')continue;
   }
   const value=fields[f.key]?.trim();
-  if(f.required&&(!value||['Не проверено','Не выбран','Не выбрано','Нужно уточнить','Не знаю'].includes(value)))issues.push({field:f.key,criterion:f.label,observation:value||'Ответ пока не записан',question:'Уточните: '+f.label,sourceIds:f.sourceIds});
+  if(f.required&&(!value||['Не проверено','Не выбран','Не выбрано','Нужно уточнить','Не знаю'].includes(value))){
+   const question=profile==='CONFLICT'&&step==='decision'?conflictDecisionQuestions[f.key]:undefined;
+   issues.push({field:f.key,criterion:f.label,observation:value||'Ответ пока не записан',question:question||'Уточните: '+f.label,sourceIds:f.sourceIds});
+  }
  }
  if(profile==='DILEMMA'&&step==='trial'&&fields.stage==='Готовлю ближайшее выполнение'&&fields.riskLevel==='Есть ограниченный риск'&&!fields.riskBoundary?.trim())issues.push({field:'riskBoundary',criterion:'Для указанного риска задана наблюдаемая граница остановки',observation:'Граница риска пока не записана',question:'При каком наблюдаемом признаке действие нужно остановить?'});
  if(profile==='DILEMMA'&&step==='trial'&&fields.stage==='Сначала нужно изменить условия'&&!fields.conditionChange?.trim())issues.push({field:'conditionChange',criterion:'Названо условие, которое необходимо изменить до действия',observation:'Условие пока не записано',question:'Что именно нужно изменить до выполнения выбранного решения?'});

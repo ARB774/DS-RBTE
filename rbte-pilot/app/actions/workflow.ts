@@ -46,7 +46,12 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    const local=checkStep(step,current.situation.profile,revisedFields);
    const persistedReport={...report,acceptedRevisions:accepted};
    const semanticIssues=current.situation.profile==='DILEMMA'&&step==='cloud'?unresolvedDilemmaIssues(report.issues,accepted,revisedFields):report.issues;
-   const fields:Record<string,string>={...revisedFields,__check:JSON.stringify({...persistedReport,issues:current.situation.profile==='DILEMMA'&&step==='cloud'?mergeDilemmaIssues(local.issues,semanticIssues):[...local.issues,...semanticIssues]})};
+   const issues=current.situation.profile==='DILEMMA'&&step==='cloud'
+    ?mergeDilemmaIssues(local.issues,semanticIssues)
+    :current.situation.profile==='CONFLICT'&&step==='decision'
+     ?[...local.issues,...semanticIssues].filter((issue,index,all)=>all.findIndex(other=>other.field===issue.field)===index)
+     :[...local.issues,...semanticIssues];
+   const fields:Record<string,string>={...revisedFields,__check:JSON.stringify({...persistedReport,issues})};
    fields.__basis=hashBasis(step,current.situation.profile,contextOf(current.situation),[...current.drafts.filter((d:any)=>d.step!==step),{step,fields}]);
    const [saved]=await tx.update(stepDrafts).set({fields,version:version+1,updatedAt:new Date()}).where(and(eq(stepDrafts.situationId,id),eq(stepDrafts.step,step),eq(stepDrafts.version,version))).returning();
    if(!saved)throw new Error('Записи изменились. Повторите проверку.');
