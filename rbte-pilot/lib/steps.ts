@@ -146,11 +146,12 @@ export function definitionFor(step:string,profile:string):StepDefinition|undefin
   if(f.profiles&&!f.profiles.includes(profile))return false;
   if(step==='cloud'&&profile==='DILEMMA')return ['actionA','actionB','needA','needB','goal'].includes(f.key);
   if(profile==='CONFLICT'&&(step==='cloud'||step==='logic'))return !f.options||f.key==='otherPositionStatus';
+  if(profile==='CONFLICT'&&step==='assumption-check')return f.key!=='state';
   return true;
  }).map(f=>{
   const node=({goal:'A',needA:'B',needB:'C',actionA:'D',actionB:'Dp'} as const)[f.key as 'goal'];
   const optionalAssumption=step==='assumptions'&&((profile==='IMMUNITY'&&!f.key.startsWith('cd'))||(profile==='CONFLICT'&&['ab','ac','abSource','acSource'].includes(f.key)));
-  return {...f,label:node&&step==='cloud'?tocProfiles[p].labels[node]:f.label,required:optionalAssumption?false:f.required,sourceIds:tocSourceIds(p,step)};
+  return {...f,label:node&&step==='cloud'?tocProfiles[p].labels[node]:f.label,required:optionalAssumption||(profile==='CONFLICT'&&step==='assumption-check'&&f.key!=='selected')?false:f.required,sourceIds:tocSourceIds(p,step)};
  })};
 }
 export const legacyExplore=legacySteps.explore;
