@@ -1,0 +1,31 @@
+[Unit]
+Description=RBTE authentication portal
+After=network.target
+
+[Service]
+Type=simple
+User=rbteportal
+Group=rbteportal
+WorkingDirectory=/opt/rbte-portal/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/rbte-portal/current/.venv/bin/python serve.py
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/rbte-portal
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=384M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

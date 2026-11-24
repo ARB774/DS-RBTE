@@ -1,0 +1,10 @@
+[Unit]
+Description=Send RBTE portal mail every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=60s
+Unit=rbte-portal-mail.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,16 @@
+[Unit]
+Description=Remove expired RBTE portal sessions
+
+[Service]
+Type=oneshot
+User=rbteportal
+Group=rbteportal
+WorkingDirectory=/opt/rbte-portal/current
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/rbte-portal/current/.venv/bin/python manage.py clearsessions
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/rbte-portal
