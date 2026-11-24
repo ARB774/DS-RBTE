@@ -46,7 +46,7 @@ def register(request):
         with transaction.atomic():
             if User.objects.filter(email__iexact=email).exists():
                 form.add_error("email", "Этот email уже зарегистрирован. Войдите в портал.")
-                return render(request, "accounts/register.html", {"form": form})
+                return render(request, "accounts/register.html", {"form": form, "show_password_reset": True})
             access, created = AccessRequest.objects.get_or_create(
                 email=email,
                 defaults={"name": form.cleaned_data["name"], "organization": form.cleaned_data["organization"]},

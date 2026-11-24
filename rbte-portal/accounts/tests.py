@@ -116,6 +116,7 @@ class PortalTests(TestCase):
             "/register/", {"email": self.user.email.upper(), "name": "Test"}, secure=True
         )
         self.assertContains(response, "Этот email уже зарегистрирован. Войдите в портал.")
+        self.assertContains(response, '<a href="/forgot-password/">Напомнить пароль</a>', html=True)
         self.assertFalse(AccessRequest.objects.exists())
         self.assertFalse(MailJob.objects.exists())
 
@@ -125,6 +126,7 @@ class PortalTests(TestCase):
         second = self.client.post("/register/", data, secure=True)
         self.assertRedirects(first, "/register/done/", fetch_redirect_response=False)
         self.assertContains(second, "Заявка с этим email уже получена.")
+        self.assertNotContains(second, "Напомнить пароль")
         self.assertEqual(AccessRequest.objects.count(), 1)
         self.assertEqual(MailJob.objects.count(), 1)
 
