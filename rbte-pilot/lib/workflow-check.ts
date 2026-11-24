@@ -5,7 +5,8 @@ import { definitionFor, readSelectedDecisionKeys, stepOrder } from './steps';
 import { checkCloud, nodeFields, type Profile, type MethodIssue } from './cloud-method';
 export type AssistantMcpRetrieval={transport:'mcp-stdio';server:'pilot-mentor-methods';commit:string;sourceIds:string[]};
 export type DilemmaRevisionField='goal'|'needA'|'needB'|'actionA'|'actionB';
-export type WorkflowCheck={mode:'local'|'ai';issues:MethodIssue[];note:string;acceptedRevisions?:Partial<Record<DilemmaRevisionField,string>>;method?:{version:string;methodId:string;sourceIds:string[]};semantic?:{status:'completed';retrieval:AssistantMcpRetrieval;links:LinkReview[];verification?:{model:string;passes:number}}};
+export type AssumptionState='Есть основания'|'Есть основания сомневаться'|'Недостаточно данных';
+export type WorkflowCheck={mode:'local'|'ai';issues:MethodIssue[];note:string;assumptionState?:AssumptionState;acceptedRevisions?:Partial<Record<DilemmaRevisionField,string>>;method?:{version:string;methodId:string;sourceIds:string[]};semantic?:{status:'completed';retrieval:AssistantMcpRetrieval;links:LinkReview[];verification?:{model:string;passes:number}}};
 export function readAssumptionKeys(value:string|undefined):string[]{
  try{const parsed:unknown=JSON.parse(value||'[]');return Array.isArray(parsed)&&parsed.length<=20&&parsed.every(key=>typeof key==='string'&&key.length<=100)?[...new Set(parsed)]:[];}catch{return [];}
 }

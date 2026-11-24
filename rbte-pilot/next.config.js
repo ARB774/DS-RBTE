@@ -14,6 +14,15 @@ module.exports = {
   env: { RBTE_APP_COMMIT: applicationCommit() },
   output: 'standalone',
   serverExternalPackages: ['@modelcontextprotocol/client'],
+  outputFileTracingIncludes: {
+    '/*': [
+      './scripts/pack-toc-mcp.mjs',
+      './knowledge/pack-toc/**/*',
+      './lib/pack-toc-sources.json',
+      './node_modules/@modelcontextprotocol/server/**/*',
+      './node_modules/zod/**/*',
+    ],
+  },
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
