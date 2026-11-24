@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { retrieveDilemmaAssistantMethods, type MentorMethodSource } from './mentor-method-client';
+import { retrieveConflictAssistantMethods, retrieveDilemmaAssistantMethods, type MentorMethodSource } from './mentor-method-client';
 
 export type AssistantHelpMessage={role:'user'|'assistant';content:string};
 export type AssistantHelpIssue={criterion:string;observation:string;question:string};
 export type AssistantHelpInput={
+ profile?:'CONFLICT';
  step:string;
  stepTitle:string;
  question:string;
@@ -24,7 +25,7 @@ export async function answerDilemmaAssistantHelp(
  input:AssistantHelpInput,
  config:{key:string;model:string;dilemmaModel?:string},
  transport:typeof fetch=fetch,
- retrieveAssistant:(step:string,context?:string)=>Promise<MentorMethodSource[]>=retrieveDilemmaAssistantMethods,
+ retrieveAssistant:(step:string,context?:string)=>Promise<MentorMethodSource[]>=input.profile==='CONFLICT'?retrieveConflictAssistantMethods:retrieveDilemmaAssistantMethods,
 ){
  const retrievalContext=JSON.stringify({step:input.step,question:input.question,situation:input.situation,currentFields:input.currentFields,currentIssue:input.currentIssue}).slice(0,20000);
  const sources=await retrieveAssistant(input.step,retrievalContext);
@@ -34,7 +35,7 @@ export async function answerDilemmaAssistantHelp(
  if(payload.length>150000)throw new Error('Assistant help context is too large');
  const shape={type:'object',additionalProperties:false,required:['answer','sourceIds'],properties:{answer:{type:'string'},sourceIds:{type:'array',minItems:1,maxItems:8,items:{type:'string',enum:sourceIds}}}};
  const model=config.dilemmaModel||config.model;
- const response=await transport('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:AbortSignal.timeout(65000),headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},body:JSON.stringify({model,store:false,max_output_tokens:1800,...(/^gpt-5\./.test(model)?{reasoning:{effort:'none'}}:{}),instructions:assistantHelpInstructions,input:payload,text:{format:{type:'json_schema',name:'personal_dilemma_assistant_help',strict:true,schema:shape}}})});
+ const response=await transport('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:AbortSignal.timeout(65000),headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},body:JSON.stringify({model,store:false,max_output_tokens:1800,...(/^gpt-5\./.test(model)?{reasoning:{effort:'none'}}:{}),instructions:input.profile==='CONFLICT'?assistantHelpInstructions.replace('по личной дилемме','в Туче конфликта сторон'):assistantHelpInstructions,input:payload,text:{format:{type:'json_schema',name:'personal_dilemma_assistant_help',strict:true,schema:shape}}})});
  if(!response.ok){await response.body?.cancel();throw new Error('Provider unavailable');}
  const reader=response.body?.getReader();if(!reader)throw new Error('Empty response');
  let size=0;const chunks:Uint8Array[]=[];

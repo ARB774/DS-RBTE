@@ -43,7 +43,9 @@ test('local objections cite the actual method or failure mode',()=>{
 });
 test('profile entry conditions do not silently pass as established facts',()=>{
  const conflict=checkStep('cloud','CONFLICT',{...cloud,otherPositionStatus:'Гипотеза автора — требуется уточнение'});
- assert.ok(conflict.issues.some(i=>i.field==='otherPositionStatus'&&i.sourceIds?.includes('TOCT.14')));
+ assert.ok(!conflict.issues.some(i=>i.field==='otherPositionStatus'));
+ assert.ok(definitionFor('cloud','CONFLICT')!.fields.find(f=>f.key==='otherPositionStatus')?.options?.includes('Подтверждено пользователем'));
+ assert.ok(definitionFor('logic','CONFLICT')!.fields.every(f=>!f.options));
  const fire=checkStep('cloud','LT_CLOUD',{...cloud,stabilization:'Требуется срочное реагирование'});
  assert.ok(fire.issues.some(i=>i.field==='stabilization'&&i.sourceIds?.includes('TOCT.15')));
  const immunity=definitionFor('cloud','IMMUNITY')!;

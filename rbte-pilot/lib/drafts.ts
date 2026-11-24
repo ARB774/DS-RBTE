@@ -6,7 +6,7 @@ import { checkStep } from './workflow-check';
 import { hashBasis,contextOf } from './workflow-store';
 import { dilemmaCloudFlow } from './dilemma-cloud-flow';
 import { MANUAL_CLOUD_VERSION } from './cloud-entry';
-import { priorDilemmaReview } from './dilemma-review';
+import { dilemmaLinkFields, priorDilemmaReview } from './dilemma-review';
 // The caller must derive userId from authenticated portal identity.
 export async function persistDraft(database: any, userId: string, situationId: string, step: string, version: number, input: Record<string,unknown>, draftOnly=false) {
  if (!Number.isSafeInteger(version) || version<0) throw new Error('Некорректная версия');
@@ -31,6 +31,15 @@ export async function persistDraft(database: any, userId: string, situationId: s
   const previous=drafts.find((draft:any)=>draft.step===step);
   if(owner.profile==='DILEMMA'&&step==='cloud'&&previous){
    const prior=priorDilemmaReview(previous.fields,fields);if(prior)fields.__priorReview=prior;
+  }
+  if(owner.profile==='CONFLICT'&&step==='cloud'&&previous&&previous.fields.__basis===hashBasis(step,owner.profile,contextOf(owner),drafts)){
+   try{
+    const report=JSON.parse(previous.fields.__check||'null');
+    if(report?.semantic?.status==='completed'&&['positionEvidence','otherPositionStatus'].every(key=>previous.fields[key]===fields[key])){
+     report.semantic.links=report.semantic.links.filter((link:{key:keyof typeof dilemmaLinkFields})=>dilemmaLinkFields[link.key]?.every(key=>previous.fields[key]===fields[key]));
+     fields.__priorReview=JSON.stringify(report);
+    }
+   }catch{/* Ignore invalid history. */}
   }
   if(previous&&!previous.fields.__basis)await recordWorkflowRevision(tx,owner,step,previous.fields,'Архив полей первой версии перед переходом на PILOT-2');
   const basis=hashBasis(step,owner.profile,contextOf(owner),[...drafts.filter((d:any)=>d.step!==step),{step,fields}]);

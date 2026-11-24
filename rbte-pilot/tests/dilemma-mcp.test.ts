@@ -104,8 +104,8 @@ test('missing/duplicate links, invented sources and unanswered uncertainty are r
  ];
  for(const report of invalid)await assert.rejects(()=>evaluate(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},provider(report)));
 });
-test('MCP semantic path is limited to DILEMMA and a provider failure is not a passed review',async()=>{
- await assert.rejects(()=>evaluate({...situation,profile:'CONFLICT'},[],{key:'test',model:'test'}),/limited/);
+test('MCP semantic path is limited to supported cloud profiles and a provider failure is not a passed review',async()=>{
+ await assert.rejects(()=>evaluate({...situation,profile:'LT_CLOUD'},[],{key:'test',model:'test'}),/limited/);
  await assert.rejects(()=>evaluate(situation,[{step:'cloud',fields:cloud}],{key:'test',model:'test'},(async()=>new Response('offline',{status:503})) as typeof fetch),/unavailable/);
 });
 test('participant reply is saved as review context and must be considered instead of ignored',async()=>{

@@ -2,7 +2,7 @@ import 'server-only';
 import { z } from 'zod/v4';
 import { dilemmaLinkKeys,dilemmaLinkLabels,dilemmaLinkFields,mergeDilemmaIssues,unresolvedDilemmaIssues,type DilemmaLink,type LinkReview } from './dilemma-review';
 import type { WorkflowCheck } from './workflow-check';
-import { retrieveDilemmaAssistantMethods, type MentorMethodSource } from './mentor-method-client';
+import { retrieveConflictAssistantMethods, retrieveDilemmaAssistantMethods, type MentorMethodSource } from './mentor-method-client';
 import { readDilemmaReviewReplies } from './dilemma-review-replies';
 
 const fields=['goal','needA','needB','actionA','actionB'] as const;
@@ -35,11 +35,12 @@ previouslyConfirmedLinks содержит связи, уже подтвержд�
 const auditInstructions=`Независимо перепроверь предыдущий ответ по фактическому тексту участника и methodEvidence. Не соглашайся с прежним ответом автоматически. Любой положительный вывод без основания в данных и источниках замени на issue или uncertain с одним вопросом. Не добавляй замечания ради количества и не переписывай рабочий продукт за участника. Верни тот же полный формат.`;
 
 const fpfUsageInstructions='Источники FPF в methodEvidence не заменяют ТЗ и Pack-TOC и не создают дополнительного вопроса сами по себе. Применяй паттерн FPF только если он меняет проверку, объяснение, границу вывода или следующий ход в текущей ситуации. Не переноси примеры FPF в ситуацию участника.';
-export async function evaluateDilemmaCloud(situation:{profile:string;signal:string;task?:string|null;desiredChange?:string|null},drafts:Array<{step:string;fields:Record<string,string>}>,config:{key:string;model:string;dilemmaModel?:string},transport:typeof fetch=fetch,retrieveAssistant:(step:string,context?:string)=>Promise<MentorMethodSource[]>=retrieveDilemmaAssistantMethods):Promise<WorkflowCheck>{
- if(situation.profile!=='DILEMMA')throw new Error('Semantic MCP review is limited to personal dilemma');
+export async function evaluateDilemmaCloud(situation:{profile:string;signal:string;task?:string|null;desiredChange?:string|null},drafts:Array<{step:string;fields:Record<string,string>}>,config:{key:string;model:string;dilemmaModel?:string},transport:typeof fetch=fetch,retrieveAssistant:(step:string,context?:string)=>Promise<MentorMethodSource[]>=situation.profile==='CONFLICT'?retrieveConflictAssistantMethods:retrieveDilemmaAssistantMethods):Promise<WorkflowCheck>{
+ const conflict=situation.profile==='CONFLICT';
+ if(!conflict&&situation.profile!=='DILEMMA')throw new Error('Semantic MCP review is limited to personal dilemma');
  const cloud=drafts.find(d=>d.step==='cloud')?.fields;
  if(!cloud)throw new Error('Cloud draft missing');
- const model=config.dilemmaModel||config.model;
+ const model=conflict?config.model:config.dilemmaModel||config.model;
  const retrievalContext=JSON.stringify({situation,drafts:drafts.map(draft=>({step:draft.step,fields:Object.fromEntries(Object.entries(draft.fields).filter(([key])=>!key.startsWith('__')))}))}).slice(0,12000);
  const assistantSources=await retrieveAssistant('cloud',retrievalContext);
  const evidence=assistantSources.map(source=>({id:source.id,title:source.path,url:source.url,path:source.path,sha256:source.excerptSha256,excerpt:source.text}));
@@ -51,13 +52,13 @@ export async function evaluateDilemmaCloud(situation:{profile:string;signal:stri
  const schema=dilemmaResponseSchema(ids);
  const {$schema,...shape}=z.toJSONSchema(schema);
  let previouslyConfirmedLinks:LinkReview[]=[];
- try{const prior=JSON.parse(cloud.__priorReview||'');if(prior?.mode==='ai'&&prior?.semantic?.status==='completed'&&Array.isArray(prior.semantic.links))previouslyConfirmedLinks=prior.semantic.links.filter((link:LinkReview)=>link.status==='ok'&&dilemmaLinkKeys.includes(link.key));}catch{/* Invalid prior state is ignored, never inferred. */}
+ try{const prior=JSON.parse((conflict?(JSON.parse(cloud.__check||'null')?.mode==='ai'?cloud.__check:cloud.__priorReview):cloud.__priorReview)||'');if(prior?.mode==='ai'&&(!conflict||(prior.method?.sourceIds?.includes('DS-RBTE.CONFLICT.ASSISTANT-SPEC')&&prior.semantic?.retrieval.commit===commit))&&prior?.semantic?.status==='completed'&&Array.isArray(prior.semantic.links))previouslyConfirmedLinks=prior.semantic.links.filter((link:LinkReview)=>link.status==='ok'&&dilemmaLinkKeys.includes(link.key));}catch{/* Invalid prior state is ignored, never inferred. */}
  const participantReplies=readDilemmaReviewReplies(cloud.reviewReplies);
- const payload={profile:'DILEMMA',situation:{signal:situation.signal,task:situation.task||'',desiredChange:situation.desiredChange||''},cloud:{A:cloud.goal||'',B:cloud.needA||'',C:cloud.needB||'',D:cloud.actionA||'',Dp:cloud.actionB||''},fieldContract:{A:'goal',B:'needA',C:'needB',D:'actionA',Dp:'actionB'},actions:drafts.find(d=>d.step==='actions')?.fields.actionRows||'',participantReplies,previouslyConfirmedLinks,requiredLinks:dilemmaLinkKeys,retrieval,assistantDocumentation:assistantSources.map(source=>({id:source.id,commit:source.commit,path:source.path,origin:source.origin})),methodEvidence:evidence};
+ const payload={profile:situation.profile,...(conflict?{currentFields:Object.fromEntries(Object.entries(cloud).filter(([key])=>!key.startsWith('__')))}:{}),situation:{signal:situation.signal,task:situation.task||'',desiredChange:situation.desiredChange||''},cloud:{A:cloud.goal||'',B:cloud.needA||'',C:cloud.needB||'',D:cloud.actionA||'',Dp:cloud.actionB||''},fieldContract:{A:'goal',B:'needA',C:'needB',D:'actionA',Dp:'actionB'},actions:drafts.find(d=>d.step==='actions')?.fields.actionRows||'',participantReplies,previouslyConfirmedLinks,requiredLinks:dilemmaLinkKeys,retrieval,assistantDocumentation:assistantSources.map(source=>({id:source.id,commit:source.commit,path:source.path,origin:source.origin})),methodEvidence:evidence};
  const input=JSON.stringify(payload);
  if(input.length>140000)throw new Error('Для проверки сократите объём описания ситуации и элементов Тучи.');
  async function assess(candidate?:unknown){
- const response=await transport('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:AbortSignal.timeout(120000),headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},body:JSON.stringify({model,store:false,max_output_tokens:6500,...(model==='gpt-5.4'?{reasoning:{effort:'none'}}:{}),instructions:instructions+'\n'+fpfUsageInstructions+(candidate?'\n'+auditInstructions:''),input:candidate?JSON.stringify({...payload,previousReview:candidate}):input,text:{format:{type:'json_schema',name:'personal_dilemma_cloud_review',strict:true,schema:shape}}})});
+ const response=await transport('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:AbortSignal.timeout(120000),headers:{Authorization:'Bearer '+config.key,'Content-Type':'application/json'},body:JSON.stringify({model,store:false,max_output_tokens:6500,...(model==='gpt-5.4'?{reasoning:{effort:'none'}}:{}),instructions:(conflict?instructions.replace('маршрута личной дилеммы','маршрута конфликта сторон')+'\nПроверяй Тучу одного пользователя по профильному ТЗ. Позицию, подтверждённую пользователем, принимай как исходное данное. Не требуй участия или подтверждения второй стороны.':instructions)+'\n'+fpfUsageInstructions+(candidate?'\n'+auditInstructions:''),input:candidate?JSON.stringify({...payload,previousReview:candidate}):input,text:{format:{type:'json_schema',name:conflict?'conflict_cloud_review':'personal_dilemma_cloud_review',strict:true,schema:shape}}})});
  if(!response.ok){await response.body?.cancel();throw new Error('Provider unavailable (HTTP '+response.status+')');}
  const reader=response.body?.getReader();if(!reader)throw new Error('Empty response');
  let size=0;const chunks:Uint8Array[]=[];
@@ -72,7 +73,7 @@ export async function evaluateDilemmaCloud(situation:{profile:string;signal:stri
  const cloudFields={goal:cloud.goal||'',needA:cloud.needA||'',needB:cloud.needB||'',actionA:cloud.actionA||'',actionB:cloud.actionB||''};
  function reconcile(candidate:Awaited<ReturnType<typeof assess>>){
   const repliedFields=new Set(participantReplies.map(reply=>reply.field));
-  const accepted=Object.fromEntries(fields.flatMap(field=>{const value=candidate.acceptedRevisions[field]?.trim();return value&&repliedFields.has(field)?[[field,value]]:[];}));
+  const accepted=conflict?{}:Object.fromEntries(fields.flatMap(field=>{const value=candidate.acceptedRevisions[field]?.trim();return value&&repliedFields.has(field)?[[field,value]]:[];}));
   return {...candidate,issues:unresolvedDilemmaIssues(candidate.issues,accepted,cloudFields),links:candidate.links.map(link=>confirmed.get(link.key)||link)};
  }
  const first=reconcile(await assess());
@@ -80,5 +81,5 @@ export async function evaluateDilemmaCloud(situation:{profile:string;signal:stri
  const audit=first.issues.length===0&&first.links.every(l=>l.status==='ok')?reconcile(await assess(first)):null;
  const report=audit||first;
  const issues=mergeDilemmaIssues(first.issues,audit?.issues||[],report.links.filter(l=>l.status!=='ok').map(l=>({field:dilemmaLinkFields[l.key][1],link:l.key,criterion:dilemmaLinkLabels[l.key],observation:l.observation,question:l.question,sourceIds:l.sourceIds})));
- return {mode:'ai',issues,note:report.note,acceptedRevisions:report.acceptedRevisions,method:{version:`DS-RBTE ${commit}`,methodId:'DS-RBTE.DILEMMA.ASSISTANT-SPEC',sourceIds:ids},semantic:{status:'completed',retrieval,links:report.links,verification:{model,passes:audit?2:1}}};
+ return {mode:'ai',issues,note:report.note,acceptedRevisions:report.acceptedRevisions,method:{version:`DS-RBTE ${commit}`,methodId:conflict?'DS-RBTE.CONFLICT.ASSISTANT-SPEC':'DS-RBTE.DILEMMA.ASSISTANT-SPEC',sourceIds:ids},semantic:{status:'completed',retrieval,links:report.links,verification:{model,passes:audit?2:1}}};
 }

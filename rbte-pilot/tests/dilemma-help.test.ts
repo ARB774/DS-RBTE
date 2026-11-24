@@ -39,8 +39,8 @@ test('assistant window is an independent interface channel',async()=>{
   readFile(new URL('../app/actions/dilemma-help.ts',import.meta.url),'utf8'),
   readFile(new URL('../../WP-45/ТЗ помощника по построению личной дилеммы.md',import.meta.url),'utf8'),
  ]);
- assert.match(form,/personal&&<AssistantHelpPanel/);
- assert.match(details,/initial\.profile==='DILEMMA'&&<AssistantHelpPanel/);
+ assert.match(form,/\(personal\|\|profile==='CONFLICT'\)&&<AssistantHelpPanel/);
+ assert.match(details,/\(initial\.profile==='DILEMMA'\|\|initial\.profile==='CONFLICT'\)&&<AssistantHelpPanel/);
  assert.match(panel,/Напомнить правила этого шага/);
  assert.match(panel,/Справочный диалог не проверяет шаг и не изменяет поля/);
  assert.doesNotMatch(panel,/reviewWorkflow|saveDraft/);

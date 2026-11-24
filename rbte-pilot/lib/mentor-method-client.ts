@@ -6,6 +6,8 @@ import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { dilemmaAssistantEvidence, valuePropositionEvidence } from './value-proposition-evidence';
 import type { ValuePropositionStage } from './value-proposition-route';
+import { retrievePackTocEvidence } from './pack-toc-mcp';
+import { z } from 'zod';
 
 export type MentorMethodSource = ReturnType<typeof valuePropositionEvidence>[number] & {
   origin: 'github' | 'verified-cache' | 'mcp'; fetchedAt: string; excerptSha256: string;
@@ -128,7 +130,7 @@ async function retrieveMethodSources(stage: string, expected: ReturnType<typeof 
       const { source } = await call('get_mentor_method', { id: e.id });
       if (source.commit !== e.commit || source.sha256 !== e.sha256 || source.path !== e.path || source.text !== e.text ||
         !['github', 'verified-cache'].includes(source.origin) || createHash('sha256').update(source.text).digest('hex') !== source.excerptSha256) throw new Error('Unverified source');
-      return { ...e, origin: source.origin, fetchedAt: source.fetchedAt, excerptSha256: source.excerptSha256 } as MentorMethodSource;
+      return { ...e, text: source.text, origin: source.origin, fetchedAt: source.fetchedAt, excerptSha256: source.excerptSha256 } as MentorMethodSource;
     }));
     return sources;
   } catch (error) {
@@ -147,4 +149,38 @@ export async function retrieveDilemmaAssistantMethods(step: string, context = ''
   const methods = await retrieveMethodSources(`DILEMMA.${step}`, dilemmaAssistantEvidence(step));
   const fpf = await retrieveFpfMethods(`Помощь в построении личной дилеммы методом Тучи ТОС, текущий шаг ${step}. ${context}`);
   return [...methods, ...fpf];
+}
+
+const conflictRules = z.object({
+  sources: z.array(z.object({id:z.string(),path:z.string(),sha256:z.string().regex(/^[a-f0-9]{64}$/),text:z.string().min(1)})).length(3),
+});
+
+export async function retrieveConflictAssistantMethods(_step: string, context = ''): Promise<MentorMethodSource[]> {
+  const root = existsSync(join(process.cwd(), 'scripts/mentor-method-mcp.mjs')) ? process.cwd() : resolve(process.cwd(), '../..');
+  const client = new Client({name:'conflict-assistant',version:'1.0.0'});
+  const transport = new StdioClientTransport({command:process.execPath,args:[join(root,'scripts/mentor-method-mcp.mjs')],cwd:root,env:{NODE_ENV:'production'},stderr:'pipe'});
+  try {
+    await client.connect(transport,{timeout:10000});
+    const reply = await client.callTool({name:'get_conflict_assistant_rules',arguments:{}},{timeout:10000});
+    const content = reply.content?.[0];
+    if (reply.isError || content?.type !== 'text') throw new Error('Conflict rules unavailable');
+    const {sources} = conflictRules.parse(JSON.parse(content.text));
+    const required = ['DS-RBTE.ASSISTANT-SKILL','DS-RBTE.CONFLICT.ACCEPTANCE','DS-RBTE.CONFLICT.ASSISTANT-SPEC'];
+    if (!required.every(id => sources.some(source => source.id === id)) ||
+        sources.some(source => createHash('sha256').update(source.text).digest('hex') !== source.sha256)) {
+      throw new Error('Unverified conflict rules');
+    }
+    const {evidence,retrieval} = await retrievePackTocEvidence(['TOCT.14','TOC.M.003','TOC.WP.006']);
+    const revision = createHash('sha256').update(sources.map(source=>source.sha256).join('')).digest('hex');
+    const fetchedAt = new Date().toISOString();
+    const rules = sources.map(source => ({...source,repo:'ARB774/DS-RBTE',commit:revision,range:'full',url:'',origin:'mcp' as const,fetchedAt,excerptSha256:source.sha256}));
+    const methods = evidence.map(({excerpt,...source}) => ({...source,text:excerpt,repo:'Victor57618/Pack-TOC',commit:retrieval.commit,range:'full',origin:'mcp' as const,fetchedAt,excerptSha256:source.sha256}));
+    const fpf = await retrieveFpfMethods(`Конфликт сторон, проверка масштаба и основания вывода по C.39.SA и C.39.GA. ${context}`);
+    return [...rules,...methods,...fpf];
+  } catch {
+    throw new Error('Методические источники через MCP недоступны или не прошли проверку. Ход не изменён; повторите позже.');
+  } finally {
+    await client.close();
+    await transport.close();
+  }
 }

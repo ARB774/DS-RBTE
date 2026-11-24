@@ -6,7 +6,7 @@
     "dev": "next dev -p 3000",
     "mentor:evidence": "node scripts/build-mentor-evidence.mjs",
     "mentor:evidence:check": "node scripts/build-mentor-evidence.mjs --check",
-    "prebuild": "npm run mentor:evidence:check",
+    "prebuild": "npm run mentor:evidence:check && node scripts/stage-conflict-rules.mjs",
     "build": "next build --webpack",
     "start": "next start -H 127.0.0.1 -p 8300",
     "lint": "tsc --noEmit",
