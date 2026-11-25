@@ -35,3 +35,31 @@ test('Word report filename is safe and has a UTF-8 download header',()=>{
  assert.match(header,/filename\*=UTF-8''/u);
  assert.ok(header.includes(encodeURIComponent(fileName)));
 });
+
+test('Word report numbers all active conflict steps in route order', async () => {
+ const drafts = [
+  { step: 'trial', fields: { selectedAssumption: 'Проверить решение' } },
+  { step: 'negative-branch', fields: { condition: 'Различаются версии чертежа' } },
+  { step: 'decision', fields: { optionA: 'Сравнить версии чертежа' } },
+  { step: 'assumption-check', fields: { support: 'Совпадение версий чертежа' } },
+  { step: 'assumptions', fields: { bd: 'Чертёж подтверждён' } },
+  { step: 'logic', fields: { bdReason: 'Версия указана в заказе' } },
+  { step: 'cloud', fields: { goal: 'Согласовать решение по заказу' } },
+  { step: 'result', fields: { observed: 'Архивная запись сохранена' } },
+ ];
+ const report = await buildWordReport({ title: 'Переделка деталей', profile: 'CONFLICT' }, drafts);
+ const xml = strFromU8(unzipSync(report)['word/document.xml']);
+ const headings = [...xml.matchAll(/<w:t[^>]*>([1-8] · [^<]+)<\/w:t>/gu)].map(match => match[1]);
+ assert.deepEqual(headings, [
+  '1 · Описание ситуации',
+  '2 · Построение грозовой тучи',
+  '3 · Проверка логики',
+  '4 · Выявление исходных посылок',
+  '5 · Проверка исходных посылок',
+  '6 · Поиск и обоснование решения',
+  '7 · Негативная ветвь решения',
+  '8 · План проверки решения на практике',
+ ]);
+ assert.match(xml, /Архив результата и пересмотра/u);
+ assert.match(xml, /Архивная запись сохранена/u);
+});
