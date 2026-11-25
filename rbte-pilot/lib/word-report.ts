@@ -7,6 +7,8 @@ import {
  Paragraph,
  TextRun,
 } from 'docx';
+import sharp from 'sharp';
+import { profileNodeName } from './cloud-method';
 import { actionRows } from './dilemma-actions';
 import { dilemmaSteps,dilemmaTitle } from './dilemma-route';
 import { profileLabels,type ProfileKey } from './profiles';
@@ -29,7 +31,6 @@ export type WordReportSituation={
 export type WordReportDraft={step:string;fields:Record<string,string>};
 
 const hiddenFields=new Set(['assumptionKeys','routeVersion','selected']);
-const imageFallback=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64');
 
 type DiagramNode={
  x:number;
@@ -64,24 +65,26 @@ function wrapDiagramText(value:string,maxLength=29,maxLines=4){
 
 function nodeSvg(node:DiagramNode){
  const lines=wrapDiagramText(node.value,node.width>=280?32:28);
- const bodyY=node.y+62-Math.max(0,lines.length-2)*9;
- const body=lines.map((line,index)=>`<tspan x="${node.x+node.width/2}" y="${bodyY+index*21}">${escapeXml(line)}</tspan>`).join('');
- return `<g><rect x="${node.x}" y="${node.y}" width="${node.width}" height="${node.height}" rx="${node.square?4:22}" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/><text x="${node.x+node.width/2}" y="${node.y+30}" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="${node.accent}">${escapeXml(node.title)}</text><text text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#0f172a">${body}</text></g>`;
+ const titles=wrapDiagramText(node.title,node.width<=250?23:27,2);
+ const title=titles.map((line,index)=>`<tspan x="${node.x+node.width/2}" y="${node.y+25+index*18}">${escapeXml(line)}</tspan>`).join('');
+ const bodyY=node.y+(titles.length===2?63:54);
+ const body=lines.map((line,index)=>`<tspan x="${node.x+node.width/2}" y="${bodyY+index*18}">${escapeXml(line)}</tspan>`).join('');
+ return `<g><rect x="${node.x}" y="${node.y}" width="${node.width}" height="${node.height}" rx="${node.square?4:22}" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/><text text-anchor="middle" font-family="Arial, sans-serif" font-size="17" font-weight="700" fill="${node.accent}">${title}</text><text text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#0f172a">${body}</text></g>`;
 }
 
 function diagramSvg(nodes:DiagramNode[],arrows:string[],extra=' ',height=520){
  return `<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${height}" viewBox="0 0 1000 ${height}"><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#1e293b"/></marker></defs><rect width="1000" height="${height}" fill="#ffffff"/><g fill="none" stroke="#1e293b" stroke-width="3" marker-end="url(#arrow)">${arrows.join('')}</g>${nodes.map(nodeSvg).join('')}${extra}</svg>`;
 }
 
-function cloudDiagram(fields:Record<string,string>){
+function cloudDiagram(profile:ProfileKey,fields:Record<string,string>){
  const values=['goal','needA','needB','actionA','actionB'].map(key=>fields[key]?.trim());
- if(values.some(value=>!value))return null;
+ if(!values.some(Boolean))return null;
  const nodes:DiagramNode[]=[
-  {x:20,y:195,width:260,height:130,title:'A · Общая цель',value:fields.goal,accent:'#b91c1c'},
-  {x:370,y:55,width:270,height:130,title:'B · Потребность',value:fields.needA,accent:'#047857'},
-  {x:370,y:335,width:270,height:130,title:'C · Потребность',value:fields.needB,accent:'#047857'},
-  {x:730,y:55,width:250,height:130,title:'D · Действие',value:fields.actionA,accent:'#1d4ed8'},
-  {x:730,y:335,width:250,height:130,title:'D′ · Действие',value:fields.actionB,accent:'#1d4ed8'},
+  {x:20,y:195,width:260,height:130,title:profileNodeName(profile,'A'),value:values[0]||'Не заполнено',accent:'#b91c1c'},
+  {x:370,y:55,width:270,height:130,title:profileNodeName(profile,'B'),value:values[1]||'Не заполнено',accent:'#047857'},
+  {x:370,y:335,width:270,height:130,title:profileNodeName(profile,'C'),value:values[2]||'Не заполнено',accent:'#047857'},
+  {x:730,y:55,width:250,height:130,title:profileNodeName(profile,'D'),value:values[3]||'Не заполнено',accent:'#1d4ed8'},
+  {x:730,y:335,width:250,height:130,title:profileNodeName(profile,'Dp'),value:values[4]||'Не заполнено',accent:'#1d4ed8'},
  ];
  const arrows=[
   '<path d="M730 120 L650 120"/>',
@@ -122,12 +125,15 @@ function solutionDiagram(cloud:Record<string,string>,decision:Record<string,stri
  return diagramSvg(nodes,arrows,reasons,610);
 }
 
-function diagramParagraph(svg:string,height:number){
+async function diagramParagraph(svg:string,height:number,caption:string){
+ const data=Buffer.from(svg,'utf8');
+ const fallback=await sharp(data).png().toBuffer();
  return new Paragraph({
   children:[new ImageRun({
    type:'svg',
-   data:Buffer.from(svg,'utf8'),
-   fallback:{type:'png',data:imageFallback},
+   data,
+   fallback:{type:'png',data:fallback},
+   altText:{title:caption,description:caption,name:caption},
    transformation:{width:650,height},
   })],
   alignment:AlignmentType.CENTER,
@@ -206,13 +212,13 @@ export async function buildWordReport(situation:WordReportSituation,drafts:WordR
   const definition=definitionFor(draft.step,situation.profile);
   if(!definition)continue;
   const content:Paragraph[]=[];
-  if(situation.profile==='DILEMMA'&&draft.step==='cloud'){
-   const svg=cloudDiagram(draft.fields);
-   if(svg)content.push(diagramParagraph(svg,338));
+  if(draft.step==='cloud'&&Object.hasOwn(profileLabels,situation.profile)){
+   const svg=cloudDiagram(situation.profile as ProfileKey,draft.fields);
+   if(svg)content.push(await diagramParagraph(svg,338,'Схема Тучи'));
   }
   if(situation.profile==='DILEMMA'&&draft.step==='decision'&&cloudDraft){
    const svg=solutionDiagram(cloudDraft.fields,draft.fields);
-   if(svg)content.push(diagramParagraph(svg,397));
+   if(svg)content.push(await diagramParagraph(svg,397,'Схема решения'));
   }
   if(draft.step==='assumption-check')content.push(...injectionParagraphs(draft,assumptions));
   for(const field of definition.fields){
