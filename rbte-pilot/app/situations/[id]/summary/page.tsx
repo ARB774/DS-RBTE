@@ -28,12 +28,13 @@ export default async function Summary({params}:{params:Promise<{id:string}>}){
   <div className="my-4"><a className="btn btn-primary" href={'/situations/'+id+'/summary/word'} download>Скачать отчёт Word</a></div>
   {situation.profile==='CONFLICT'&&<section aria-labelledby="agent-report-title" className="card p-4 my-4">
    <h2 id="agent-report-title" className="font-bold">Отчёт агента</h2>
-   {report!==null&&<a className="underline" href={'/situations/'+id+'/summary/agent-report'} download>Скачать отчёт агента (.txt)</a>}
+   {report!==null&&<a className="underline" href={'/situations/'+id+'/summary/agent-report'} download>Скачать отчёт агента Word</a>}
    <details className="mt-2">
     <summary>{report===null?'Добавить отчёт агента':'Обновить отчёт агента'}</summary>
     <form action={saveAgentReport.bind(null,id)} className="grid gap-2 mt-2">
      <label htmlFor="agent-report">Замечания, пожелания и результаты проверки</label>
-     <textarea id="agent-report" name="report" className="input" rows={8} required maxLength={agentReportMaxLength} defaultValue={report?.trimEnd()}/>
+     <p id="agent-report-format" className="text-sm">Начинайте заголовок с #, пункт списка с дефиса или номера.</p>
+     <textarea aria-describedby="agent-report-format" id="agent-report" name="report" className="input" rows={8} required maxLength={agentReportMaxLength} defaultValue={report?.trimEnd()}/>
      <button className="btn btn-primary justify-self-start" type="submit">Сохранить отчёт агента</button>
     </form>
    </details>
