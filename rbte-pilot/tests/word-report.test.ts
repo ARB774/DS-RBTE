@@ -23,8 +23,35 @@ test('Word report contains accepted situation content and hides service fields',
  assert.doesNotMatch(documentXml,/w:pageBreakBefore/u);
  const diagrams=Object.entries(files).filter(([path])=>path.startsWith('word/media/')&&path.endsWith('.svg')).map(([,data])=>strFromU8(data));
  assert.equal(diagrams.length,2);
- assert.ok(diagrams.some(svg=>svg.includes('A · Общая цель')&&svg.includes('D′ · Действие')&&svg.includes('конфликт')));
+ assert.ok(diagrams.some(svg=>svg.includes('A · Общая цель')&&svg.includes('D′ · Предпочитаемое')&&svg.includes('конфликт')));
  assert.ok(diagrams.some(svg=>svg.includes('D* · Решение')&&svg.includes('B* · Новое условие')&&svg.includes('Почему D* приводит к B*')));
+});
+
+test('all cloud profiles embed their own labels and a usable image for saved drafts',async()=>{
+ const labels={
+  DILEMMA:'Вынужденное действие',
+  CONFLICT:'Общая цель сторон',
+  LT_CLOUD:'Условие под угрозой',
+  IMMUNITY:'Значимая цель изменения',
+ };
+ for(const [profile,label] of Object.entries(labels)){
+  const buffer=await buildWordReport({title:'Проверка Тучи',profile},[
+   {step:'cloud',fields:{goal:'Сохранить сроки & точность',actionA:'Проверить записи'}},
+  ]);
+  const files=unzipSync(new Uint8Array(buffer));
+  const images=Object.entries(files).filter(([path])=>path.startsWith('word/media/'));
+  const svg=images.find(([path])=>path.endsWith('.svg'));
+  const png=images.find(([path])=>path.endsWith('.png'));
+  assert.ok(svg&&png,profile);
+  const diagram=strFromU8(svg[1]).replace(/<\/tspan><tspan [^>]+>/gu,' ');
+  assert.ok(diagram.includes(label),profile);
+  assert.ok(diagram.includes('Сохранить сроки &amp; точность'));
+  assert.ok(diagram.includes('Не заполнено'));
+  const bytes=Buffer.from(png[1]);
+  assert.equal(bytes.readUInt32BE(16),1000);
+  assert.equal(bytes.readUInt32BE(20),520);
+  assert.match(strFromU8(files['word/document.xml']),/Схема Тучи/u);
+ }
 });
 
 test('Word report filename is safe and has a UTF-8 download header',()=>{
