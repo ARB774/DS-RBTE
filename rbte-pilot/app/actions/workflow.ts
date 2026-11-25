@@ -15,6 +15,7 @@ import { reviewConfig } from '@/lib/review-openai';
 import { reviewCooldownMs,reviewDailyLimit } from '@/lib/review-store';
 export async function reviewWorkflow(id:string,step:string,version:number,consent:boolean):Promise<{version?:number;report?:WorkflowCheck;error?:string}>{
  const me=await requireUser();
+ if(step==='result')return {error:'Шаг перенесён в архив.'};
  if(!z.string().uuid().safeParse(id).success||!Number.isSafeInteger(version)||consent!==true)return {error:'Подтвердите проверку сохранённых данных через OpenAI.'};
  try{
   const config=reviewConfig();

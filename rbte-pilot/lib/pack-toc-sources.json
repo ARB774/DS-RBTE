@@ -157,6 +157,14 @@
       "status": "draft",
       "sha256": "2b20bb168450ae19aeb8526f1957dd004cd5d2f22ac27e7a690e4b8897c5248f",
       "url": "https://github.com/Victor57618/Pack-TOC/blob/6c7170e107eb1d8d704932078fc945200c39923b/thinking-processes/failure-modes/TOC.FM.004-assumption-repeats-element.md"
+    },
+    "TOCT.9": {
+      "id": "TOCT.9",
+      "title": "TOCT.9 - Выявление и устранение негативных ветвей",
+      "path": "thinking-processes/TOCT.9.md",
+      "status": "draft",
+      "sha256": "0e18aaed20b78409ec543c492ce1b1ac3e13abb658aed26f70752686ce141e9d",
+      "url": "https://github.com/Victor57618/Pack-TOC/blob/6c7170e107eb1d8d704932078fc945200c39923b/thinking-processes/TOCT.9.md"
     }
   }
 }
