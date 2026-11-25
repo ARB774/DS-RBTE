@@ -9,6 +9,7 @@ import { MANUAL_CLOUD_VERSION } from './cloud-entry';
 import { priorDilemmaReview } from './dilemma-review';
 // The caller must derive userId from authenticated portal identity.
 export async function persistDraft(database: any, userId: string, situationId: string, step: string, version: number, input: Record<string,unknown>, draftOnly=false) {
+ if(step==='result')throw new Error('Проверьте поля: шаг перенесён в архив.');
  if (!Number.isSafeInteger(version) || version<0) throw new Error('Некорректная версия');
 
  return database.transaction(async (tx:any) => {
