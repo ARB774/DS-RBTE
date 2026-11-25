@@ -37,7 +37,7 @@ test('Word report filename is safe and has a UTF-8 download header',()=>{
 });
 
 test('Word report numbers all active conflict steps in route order', async () => {
- const drafts = [
+ const drafts: Parameters<typeof buildWordReport>[1] = [
   { step: 'trial', fields: { selectedAssumption: 'Проверить решение' } },
   { step: 'negative-branch', fields: { condition: 'Различаются версии чертежа' } },
   { step: 'decision', fields: { optionA: 'Сравнить версии чертежа' } },
