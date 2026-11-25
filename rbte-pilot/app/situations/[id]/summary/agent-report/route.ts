@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSituationAction } from '@/app/actions/situations';
 import { readAgentReport } from '@/lib/agent-report';
+import { buildAgentWordReport } from '@/lib/agent-word-report';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
  if (situation?.profile !== 'CONFLICT') return new Response(null, { status: 404 });
  const report = await readAgentReport(situation.id);
  if (report === null) return new Response(null, { status: 404 });
- return new Response(report, {
+ const document = await buildAgentWordReport(situation.title, report);
+ return new Response(new Uint8Array(document), {
   headers: {
-   'Content-Type': 'text/plain; charset=utf-8',
-   'Content-Disposition': 'attachment; filename="pilot-agent-report.txt"',
+   'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+   'Content-Disposition': 'attachment; filename="pilot-agent-report.docx"',
    'Cache-Control': 'private, no-store',
    'X-Content-Type-Options': 'nosniff',
   },
