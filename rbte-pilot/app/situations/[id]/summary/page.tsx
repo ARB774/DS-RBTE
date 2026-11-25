@@ -13,6 +13,8 @@ import { ReviewControl } from '@/app/components/review-control';
 import { dilemmaSteps } from '@/lib/dilemma-route';
 import { steps,stepOrder } from '@/lib/steps';
 import { z } from 'zod';
+import { saveAgentReport } from '@/app/actions/agent-report';
+import { agentReportMaxLength, readAgentReport } from '@/lib/agent-report';
 export default async function Summary({params}:{params:Promise<{id:string}>}){
  const {id}=await params;if(!z.string().uuid().safeParse(id).success)notFound();
  const situation=await getSituationAction(id);if(!situation)notFound();
@@ -20,9 +22,22 @@ export default async function Summary({params}:{params:Promise<{id:string}>}){
  const archivedResult=drafts.find(draft=>draft.step==='result');
  const progress=drafts.map(d=>({...d,fresh:d.fields.__basis===hashBasis(d.step,situation.profile,contextOf(situation),drafts)}));
  const resume=dilemmaResume(progress);
+ const report=situation.profile==='CONFLICT'?await readAgentReport(situation.id):null;
  return <div className="container-x py-10 max-w-4xl"><Link href="/dashboard">← Мои ситуации</Link>
   <h1 className="text-2xl font-bold my-4">{situation.title}</h1>
   <div className="my-4"><a className="btn btn-primary" href={'/situations/'+id+'/summary/word'} download>Скачать отчёт Word</a></div>
+  {situation.profile==='CONFLICT'&&<section aria-labelledby="agent-report-title" className="card p-4 my-4">
+   <h2 id="agent-report-title" className="font-bold">Отчёт агента</h2>
+   {report!==null&&<a className="underline" href={'/situations/'+id+'/summary/agent-report'} download>Скачать отчёт агента (.txt)</a>}
+   <details className="mt-2">
+    <summary>{report===null?'Добавить отчёт агента':'Обновить отчёт агента'}</summary>
+    <form action={saveAgentReport.bind(null,id)} className="grid gap-2 mt-2">
+     <label htmlFor="agent-report">Замечания, пожелания и результаты проверки</label>
+     <textarea id="agent-report" name="report" className="input" rows={8} required maxLength={agentReportMaxLength} defaultValue={report?.trimEnd()}/>
+     <button className="btn btn-primary justify-self-start" type="submit">Сохранить отчёт агента</button>
+    </form>
+   </details>
+  </section>}
   {situation.profile==='DILEMMA'&&<h2 className="text-xl font-bold mb-4">Результат разбора</h2>}
   <nav className="flex flex-wrap gap-3">{situation.profile==='DILEMMA'?dilemmaSteps.map(([key,label],i)=><Link key={key} href={'/situations/'+id+'/'+key}>{i+1} · {label}</Link>):<><Link href={'/situations/'+id+'/details'}>1 · Описание ситуации</Link>{stepOrder.filter(key=>key!=='actions').map(key=><Link key={key} href={'/situations/'+id+'/'+key}>{steps[key].title}</Link>)}</>}</nav>
   {situation.profile==='DILEMMA'?<>
