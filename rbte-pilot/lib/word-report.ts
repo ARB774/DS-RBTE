@@ -8,7 +8,7 @@ import {
  TextRun,
 } from 'docx';
 import { actionRows } from './dilemma-actions';
-import { dilemmaSteps } from './dilemma-route';
+import { dilemmaSteps,dilemmaTitle } from './dilemma-route';
 import { profileLabels,type ProfileKey } from './profiles';
 import { creationLabels } from './review-types';
 import { definitionFor,readSelectedDecisionKeys,stepOrder } from './steps';
@@ -157,7 +157,9 @@ function displayValue(step:string,key:string,value:string){
 }
 
 function stepTitle(profile:string,step:string){
- if(profile==='DILEMMA')return dilemmaSteps.find(([key])=>key===step)?.[1]||step;
+ if(step==='result')return 'Архив результата и пересмотра';
+ if(profile==='DILEMMA')return dilemmaTitle(step);
+ if(step==='details')return '1 · Описание ситуации';
  return definitionFor(step,profile)?.title||step;
 }
 
@@ -191,7 +193,7 @@ export async function buildWordReport(situation:WordReportSituation,drafts:WordR
   new Paragraph({text:situation.title,heading:HeadingLevel.HEADING_1,alignment:AlignmentType.CENTER}),
   new Paragraph({children:[new TextRun({text:`Профиль: ${profile}`,italics:true})],alignment:AlignmentType.CENTER}),
   new Paragraph({children:[new TextRun({text:`Сформировано: ${generatedAt}`,italics:true})],alignment:AlignmentType.CENTER,spacing:{after:300}}),
-  new Paragraph({text:'Описание ситуации',heading:HeadingLevel.HEADING_1}),
+  new Paragraph({text:stepTitle(situation.profile,'details'),heading:HeadingLevel.HEADING_1}),
  ];
  for(const key of ['signal','task','desiredChange','experience','authority'] as const){
   const value=String(situation[key]||'').trim();
