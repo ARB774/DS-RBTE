@@ -29,7 +29,7 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    const count=limit?.day===day?limit.count:0;
    const dailyLimit=reviewDailyLimit();
    if(dailyLimit!==null&&count>=dailyLimit)throw new Error(`Достигнут лимит: ${dailyLimit} проверок за сутки UTC.`);
-   const cooldown=reviewCooldownMs(situation.profile);
+   const cooldown=reviewCooldownMs(situation.profile,true);
    if(limit&&now.getTime()-limit.lastAt.getTime()<cooldown)throw new Error('Подождите '+Math.ceil((cooldown-(now.getTime()-limit.lastAt.getTime()))/1000)+' секунд перед повторной проверкой ИИ.');
    await tx.insert(reviewLimits).values({userId:me.id,day,count:count+1,lastAt:now}).onConflictDoUpdate({target:reviewLimits.userId,set:{day,count:count+1,lastAt:now}});
    return {situation,drafts,draft,basis:hashBasis(step,situation.profile,contextOf(situation),drafts)};
@@ -45,13 +45,16 @@ export async function reviewWorkflow(id:string,step:string,version:number,consen
    const accepted=current.situation.profile==='DILEMMA'&&step==='cloud'?acceptedDilemmaRevisions(report,readDilemmaReviewReplies(draft.fields.reviewReplies)):{};
    const revisedFields={...draft.fields,...accepted};
    const local=checkStep(step,current.situation.profile,revisedFields);
+   const localIssues=current.situation.profile==='CONFLICT'&&step==='cloud'
+    ?local.issues.filter(issue=>issue.criterion!=='Подтверждение позиции другой стороны')
+    :local.issues;
    const persistedReport={...report,acceptedRevisions:accepted};
    const semanticIssues=current.situation.profile==='DILEMMA'&&step==='cloud'?unresolvedDilemmaIssues(report.issues,accepted,revisedFields):report.issues;
    const issues=current.situation.profile==='DILEMMA'&&step==='cloud'
     ?mergeDilemmaIssues(local.issues,semanticIssues)
     :current.situation.profile==='CONFLICT'&&step==='decision'
-     ?[...local.issues,...semanticIssues].filter((issue,index,all)=>all.findIndex(other=>other.field===issue.field)===index)
-     :[...local.issues,...semanticIssues];
+     ?[...localIssues,...semanticIssues].filter((issue,index,all)=>all.findIndex(other=>other.field===issue.field)===index)
+     :[...localIssues,...semanticIssues];
    const fields:Record<string,string>={...revisedFields,__check:JSON.stringify({...persistedReport,issues})};
    fields.__basis=hashBasis(step,current.situation.profile,contextOf(current.situation),[...current.drafts.filter((d:any)=>d.step!==step),{step,fields}]);
    const [saved]=await tx.update(stepDrafts).set({fields,version:version+1,updatedAt:new Date()}).where(and(eq(stepDrafts.situationId,id),eq(stepDrafts.step,step),eq(stepDrafts.version,version))).returning();

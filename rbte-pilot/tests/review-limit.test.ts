@@ -13,4 +13,5 @@ test('daily AI review limit is disabled unless the server explicitly enables it'
 test('personal dilemma retries use only a short duplicate-submit cooldown',()=>{
  assert.equal(reviewCooldownMs('DILEMMA'),3000);
  assert.equal(reviewCooldownMs('CONFLICT'),90000);
+ assert.equal(reviewCooldownMs('CONFLICT',true),3000);
 });
