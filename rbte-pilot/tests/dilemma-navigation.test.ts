@@ -1,13 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dilemmaResume,dilemmaReady,dilemmaSteps,firstIncompleteLogicLink } from '../lib/dilemma-navigation';
+import { dilemmaResume,dilemmaReady,dilemmaStepStatus,dilemmaSteps,firstIncompleteLogicLink } from '../lib/dilemma-navigation';
 import { definitionFor,logicLinkKeys,seedDilemmaAssumptions } from '../lib/steps';
 import { checkStep } from '../lib/workflow-check';
 const fields={actionRows:JSON.stringify([{text:'Сообщить руководителю',kind:'forced',selected:true},{text:'Не сообщать руководителю',kind:'preferred',selected:true}])};
 const saved={...fields,__check:JSON.stringify(checkStep('actions','DILEMMA',fields))};
 test('resume requires checked, fresh steps and never treats a draft as completion',()=>{
  assert.equal(dilemmaResume([]),'actions');
- assert.equal(dilemmaResume([{step:'actions',fields:saved}]),'cloud');
+ assert.equal(dilemmaResume([{step:'actions',fields:saved}]),'actions');
+ assert.equal(dilemmaStepStatus('actions',saved,true),'проверка не завершена');
+ const reviewed={...fields,__check:JSON.stringify({...checkStep('actions','DILEMMA',fields),mode:'ai'})};
+ assert.equal(dilemmaResume([{step:'actions',fields:reviewed}]),'cloud');
+ assert.equal(dilemmaStepStatus('actions',reviewed,true),'проверено помощником');
  assert.equal(dilemmaResume([{step:'actions',fields:saved,fresh:false}]),'actions');
  assert.equal(dilemmaResume([{step:'actions',fields:{...saved,__draft:'true'}}]),'actions');
  assert.equal(dilemmaReady('cloud',{goal:'Цель',__check:JSON.stringify({mode:'local',issues:[]})}),false);
@@ -39,6 +43,9 @@ test('logic screen has a stable seven-link sequence for one-link-at-a-time navig
 test('completed logic links do not reopen the last saved yes answer',()=>{
  const completed=Object.fromEntries(logicLinkKeys.flatMap(key=>[[key,'Да'],[key+'Reason','Принятое исходное предположение']]));
  assert.equal(firstIncompleteLogicLink(completed,logicLinkKeys),undefined);
+ const uncertain={...completed,bd:'Нужно уточнить',dc:'Не знаю'};
+ assert.equal(firstIncompleteLogicLink(uncertain,logicLinkKeys),undefined);
+ assert.equal(checkStep('logic','DILEMMA',uncertain).issues.length,0);
  assert.equal(firstIncompleteLogicLink({...completed,cdReason:''},logicLinkKeys),'cd');
 });
 test('assumptions reuse all seven accepted logic reasons without asking for sources again',()=>{

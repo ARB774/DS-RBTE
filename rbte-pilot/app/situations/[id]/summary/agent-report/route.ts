@@ -9,7 +9,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
  const { id } = await params;
  if (!z.string().uuid().safeParse(id).success) return new Response(null, { status: 404 });
  const situation = await getSituationAction(id);
- if (situation?.profile !== 'CONFLICT') return new Response(null, { status: 404 });
+ if (!situation || (situation.profile !== 'CONFLICT' && situation.profile !== 'DILEMMA')) return new Response(null, { status: 404 });
  const report = await readAgentReport(situation.id);
  if (report === null) return new Response(null, { status: 404 });
  const document = await buildAgentWordReport(situation.title, report);
