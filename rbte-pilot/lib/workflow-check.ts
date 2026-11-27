@@ -40,7 +40,10 @@ export function checkStep(step:string,profile:Profile,fields:Record<string,strin
    if(!stage&&f.key!=='stage')continue;
   }
   const value=fields[f.key]?.trim();
-  if(f.required&&(!value||['Не проверено','Не выбран','Не выбрано','Нужно уточнить','Не знаю'].includes(value))){
+  const unansweredOptions=profile==='DILEMMA'&&step==='logic'
+   ?['Не проверено']
+   :['Не проверено','Не выбран','Не выбрано','Нужно уточнить','Не знаю'];
+  if(f.required&&(!value||unansweredOptions.includes(value))){
    const question=profile==='CONFLICT'&&step==='decision'?conflictDecisionQuestions[f.key]:undefined;
    issues.push({field:f.key,criterion:f.label,observation:value||'Ответ пока не записан',question:question||'Уточните: '+f.label,sourceIds:f.sourceIds});
   }
